@@ -25,7 +25,7 @@ supabase/
 | 1 | Fundação — schema, RLS, auth, ambiente | ✅ concluída |
 | 2 | Autenticação e onboarding (Seções 5.5, 7.10–7.13) | ✅ concluída |
 | 3 | Estoque e produtos (Seções 4.5/4.6, 8.3, 8.4) | ✅ concluída |
-| 4 | Vendas (Seções 7.3, 7.4, 8.1, 8.2, 8.5) | pendente |
+| 4 | Vendas (Seções 7.3, 7.4, 8.1, 8.2, 8.5) | ✅ concluída |
 | 5 | Financeiro e relatórios (Seções 8.6, 10.2) | pendente |
 | 6 | Funcionários e permissões (Seções 5.2, 5.3, 7.8) | pendente |
 | 7 | Assinatura e pagamento — Asaas (Seções 6.4–6.7, 7.14) | pendente |
@@ -89,6 +89,10 @@ Pontos que o documento não cobria e foram fechados durante a implementação:
   divergência da Seção 8.1 é correção de contagem, não entrada de mercadoria,
   então soma ao estoque sem iniciar um ciclo novo. A auditoria distingue as
   duas (`estoque.reposicao` vs. `estoque.divergencia_ajustada`).
+- **Cidade no QR Code Pix.** O padrão EMV exige o campo "cidade do
+  recebedor", mas `empresas` só tem `endereco` como texto livre (Seção 4.1).
+  O payload usa `BRASIL` como padrão — os PSPs não validam esse campo de forma
+  estrita.
 - **Rótulo de funcionalidade de plano.** `planos.funcionalidades` é uma lista de
   chaves técnicas (Seção 4.12.1) e o documento não define rótulos comerciais. A
   tela humaniza a chave (`relatorios_avancados` → "Relatorios avancados") em vez
@@ -101,6 +105,7 @@ Pontos que o documento não cobria e foram fechados durante a implementação:
 \i supabase/tests/rls_fase1.sql
 \i supabase/tests/onboarding_fase2.sql
 \i supabase/tests/estoque_fase3.sql
+\i supabase/tests/vendas_fase4.sql
 ```
 
 Os scripts rodam em transação e fazem `ROLLBACK` no fim — não deixam resíduo.
@@ -119,6 +124,10 @@ trial esteja ligado ou desligado.
 a validação de atributos por tipo e obrigatoriedade, o ciclo de alerta com o
 exemplo literal da Seção 8.3, as guardas do ajuste de estoque e o ciclo de vida
 do produto.
+
+`vendas_fase4.sql` cobre a venda feita por um Funcionário sem `gerenciar_estoque`,
+o cálculo de preço e desconto pelo servidor, as guardas de estoque e desconto, e
+a reversão completa do cancelamento pelos dois caminhos da Seção 8.5.
 
 **Ao ler os resultados:** dentro de um mesmo statement, todas as ramificações de
 um `UNION ALL` enxergam o snapshot do início do statement. Verificações de

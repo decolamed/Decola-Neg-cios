@@ -86,6 +86,17 @@ export default function Dashboard() {
         {/* Acessos das Seções 7.2 e 7.9 já implementados. Os cards de resumo
             com totais e o sino de notificações entram com o Dashboard completo. */}
         <Botao
+          titulo="Nova venda"
+          aoPressionar={() => router.push('/vendas/nova')}
+          estilo={{ marginBottom: tema.espacamento.sm }}
+        />
+        <Botao
+          titulo="Vendas"
+          variante="secundario"
+          aoPressionar={() => router.push('/vendas')}
+          estilo={{ marginBottom: tema.espacamento.sm }}
+        />
+        <Botao
           titulo="Estoque"
           variante="secundario"
           aoPressionar={() => router.push('/produtos')}

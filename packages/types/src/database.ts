@@ -389,6 +389,28 @@ export type Database = {
         };
         Returns: string;
       };
+      registrar_venda: {
+        Args: {
+          /** [{ produto_id, quantidade }] — o servidor define preço e total. */
+          p_itens: Json;
+          p_forma_pagamento: Enums['forma_pagamento_venda'];
+          p_desconto_tipo?: Enums['desconto_tipo'] | null;
+          p_desconto_valor?: number;
+        };
+        Returns: Json;
+      };
+      cancelar_venda: {
+        Args: { p_venda_id: string; p_motivo?: string | null };
+        Returns: undefined;
+      };
+      solicitar_cancelamento_venda: {
+        Args: { p_venda_id: string; p_motivo?: string | null };
+        Returns: string;
+      };
+      decidir_solicitacao_cancelamento: {
+        Args: { p_solicitacao_id: string; p_aprovar: boolean };
+        Returns: undefined;
+      };
     };
     Enums: Enums;
     CompositeTypes: Record<never, never>;

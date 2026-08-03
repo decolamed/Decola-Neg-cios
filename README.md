@@ -14,6 +14,7 @@ apps/admin/         Painel Administrativo SaaS (Seção 7.15) — Fase 8
 packages/theme/     Design tokens centralizados (Seções 2.1–2.3)
 supabase/
   migrations/       Schema, RLS, triggers e RPCs
+  functions/        Edge Functions (geração de PDF/Excel, Seção 10.3)
   tests/            Testes de RLS e regras de negócio
   scripts/          Seeds manuais (não replayados automaticamente)
 ```
@@ -26,7 +27,7 @@ supabase/
 | 2 | Autenticação e onboarding (Seções 5.5, 7.10–7.13) | ✅ concluída |
 | 3 | Estoque e produtos (Seções 4.5/4.6, 8.3, 8.4) | ✅ concluída |
 | 4 | Vendas (Seções 7.3, 7.4, 8.1, 8.2, 8.5) | ✅ concluída |
-| 5 | Financeiro e relatórios (Seções 8.6, 10.2) | pendente |
+| 5 | Financeiro e relatórios (Seções 8.6, 10.2) | ✅ concluída |
 | 6 | Funcionários e permissões (Seções 5.2, 5.3, 7.8) | pendente |
 | 7 | Assinatura e pagamento — Asaas (Seções 6.4–6.7, 7.14) | pendente |
 | 8 | Painel Administrativo (Seções 7.15, 11) | pendente |
@@ -89,6 +90,11 @@ Pontos que o documento não cobria e foram fechados durante a implementação:
   divergência da Seção 8.1 é correção de contagem, não entrada de mercadoria,
   então soma ao estoque sem iniciar um ciclo novo. A auditoria distingue as
   duas (`estoque.reposicao` vs. `estoque.divergencia_ajustada`).
+- **Exportação devolve os bytes, não um link.** A Seção 10.3 fala em "retorna
+  um link de download". A Edge Function devolve o arquivo direto na resposta e
+  o app abre a folha de compartilhamento — evita criar um bucket público e um
+  ciclo de limpeza de arquivos temporários só para o download. Trocar por
+  Storage com URL assinada depois é uma mudança contida.
 - **Cidade no QR Code Pix.** O padrão EMV exige o campo "cidade do
   recebedor", mas `empresas` só tem `endereco` como texto livre (Seção 4.1).
   O payload usa `BRASIL` como padrão — os PSPs não validam esse campo de forma

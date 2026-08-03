@@ -411,6 +411,21 @@ export type Database = {
         Args: { p_solicitacao_id: string; p_aprovar: boolean };
         Returns: undefined;
       };
+      /** Seção 8.6 — resumo do Financeiro, por agregação em tempo real. */
+      resumo_financeiro: {
+        Args: { p_desde: string; p_ate: string };
+        Returns: Json;
+      };
+      /** Seção 8.6 — autocomplete das categorias já usadas pela empresa. */
+      categorias_financeiras_usadas: {
+        Args: Record<string, never>;
+        Returns: string[];
+      };
+      /** Seção 10.2 — dados dos cinco gráficos, numa chamada só. */
+      relatorio_vendas: {
+        Args: { p_desde: string; p_ate: string };
+        Returns: Json;
+      };
     };
     Enums: Enums;
     CompositeTypes: Record<never, never>;

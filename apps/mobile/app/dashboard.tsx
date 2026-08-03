@@ -54,7 +54,7 @@ function avisoDaConta(
 }
 
 export default function Dashboard() {
-  const { carregando, conta, erro, recarregar, sair } = useSessao();
+  const { carregando, conta, erro, recarregar, sair, temPermissao } = useSessao();
 
   if (carregando) return <TelaCarregando />;
 
@@ -108,6 +108,22 @@ export default function Dashboard() {
           aoPressionar={() => router.push('/estoque-baixo')}
           estilo={{ marginBottom: tema.espacamento.sm }}
         />
+        {temPermissao('visualizar_financeiro') ? (
+          <Botao
+            titulo="Financeiro"
+            variante="secundario"
+            aoPressionar={() => router.push('/financeiro')}
+            estilo={{ marginBottom: tema.espacamento.sm }}
+          />
+        ) : null}
+        {temPermissao('exportar_relatorios') ? (
+          <Botao
+            titulo="Relatórios"
+            variante="secundario"
+            aoPressionar={() => router.push('/relatorios')}
+            estilo={{ marginBottom: tema.espacamento.sm }}
+          />
+        ) : null}
         {conta.ehGestor ? (
           <Botao
             titulo="Configurações"

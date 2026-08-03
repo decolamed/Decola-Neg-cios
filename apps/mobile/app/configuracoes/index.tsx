@@ -63,7 +63,8 @@ export default function Configuracoes() {
     {
       titulo: 'Funcionários e permissões',
       descricao: 'Convide colaboradores e defina o que cada um pode fazer.',
-      disponivel: false,
+      destino: '/funcionarios',
+      disponivel: true,
     },
     {
       titulo: 'Plano e assinatura',

@@ -125,12 +125,20 @@ export default function Dashboard() {
           />
         ) : null}
         {conta.ehGestor ? (
-          <Botao
-            titulo="Configurações"
-            variante="secundario"
-            aoPressionar={() => router.push('/configuracoes')}
-            estilo={{ marginBottom: tema.espacamento.md }}
-          />
+          <>
+            <Botao
+              titulo="Funcionários"
+              variante="secundario"
+              aoPressionar={() => router.push('/funcionarios')}
+              estilo={{ marginBottom: tema.espacamento.sm }}
+            />
+            <Botao
+              titulo="Configurações"
+              variante="secundario"
+              aoPressionar={() => router.push('/configuracoes')}
+              estilo={{ marginBottom: tema.espacamento.md }}
+            />
+          </>
         ) : null}
 
         <View style={estilos.placeholder}>

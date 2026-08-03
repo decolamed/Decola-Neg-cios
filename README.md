@@ -28,7 +28,7 @@ supabase/
 | 3 | Estoque e produtos (Seções 4.5/4.6, 8.3, 8.4) | ✅ concluída |
 | 4 | Vendas (Seções 7.3, 7.4, 8.1, 8.2, 8.5) | ✅ concluída |
 | 5 | Financeiro e relatórios (Seções 8.6, 10.2) | ✅ concluída |
-| 6 | Funcionários e permissões (Seções 5.2, 5.3, 7.8) | pendente |
+| 6 | Funcionários e permissões (Seções 5.2, 5.3, 7.8) | ✅ concluída |
 | 7 | Assinatura e pagamento — Asaas (Seções 6.4–6.7, 7.14) | pendente |
 | 8 | Painel Administrativo (Seções 7.15, 11) | pendente |
 
@@ -112,6 +112,7 @@ Pontos que o documento não cobria e foram fechados durante a implementação:
 \i supabase/tests/onboarding_fase2.sql
 \i supabase/tests/estoque_fase3.sql
 \i supabase/tests/vendas_fase4.sql
+\i supabase/tests/funcionarios_fase6.sql
 ```
 
 Os scripts rodam em transação e fazem `ROLLBACK` no fim — não deixam resíduo.
@@ -135,11 +136,28 @@ do produto.
 o cálculo de preço e desconto pelo servidor, as guardas de estoque e desconto, e
 a reversão completa do cancelamento pelos dois caminhos da Seção 8.5.
 
+`funcionarios_fase6.sql` cobre a validade e o reenvio do convite, o aceite, a
+promoção e o rebaixamento, as permissões individuais, a imutabilidade do Gestor
+Principal, o limite de funcionários do plano e a remoção que preserva o
+histórico.
+
 **Ao ler os resultados:** dentro de um mesmo statement, todas as ramificações de
 um `UNION ALL` enxergam o snapshot do início do statement. Verificações de
 efeito colateral (auditoria, estoque final) precisam ficar em statements
 separados das ações que as produzem — caso contrário parecem falhar sem estarem
 falhando.
+
+### Secrets das Edge Functions
+
+O envio do convite por e-mail (Seção 5.2) precisa de um provedor configurado
+nos secrets do projeto. Sem eles a função responde 503 com mensagem clara — o
+convite continua criado no banco e pode ser reenviado depois:
+
+- `RESEND_API_KEY` — credencial do provedor de e-mail.
+- `EMAIL_REMETENTE` — remetente verificado, ex.: `Decola <nao-responda@seu-dominio>`.
+- `URL_CONVITE_BASE` — base do link de aceite. Sem ela cai no esquema do app
+  (`decolanegocios://convite/<id>`), que funciona no dispositivo mas é
+  bloqueado por vários webmails. O ideal é uma página web que redirecione.
 
 ### Configuração necessária no Supabase Auth
 

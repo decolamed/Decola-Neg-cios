@@ -27,7 +27,7 @@ import { carregarContextoDaConta } from '@/dados/empresa';
 import { assinarMudancaDeConexao, MENSAGENS_SEM_CONEXAO } from '@/lib/conectividade';
 
 export default function Login() {
-  const params = useLocalSearchParams<{ aviso?: string }>();
+  const params = useLocalSearchParams<{ aviso?: string; convite?: string }>();
 
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
@@ -59,6 +59,13 @@ export default function Login() {
       return;
     }
 
+    // Seção 5.2 — quem chegou por um link de convite ainda não tem vínculo:
+    // em vez de encerrar a sessão, segue para o aceite.
+    if (params.convite) {
+      router.replace(`/convite/${params.convite}`);
+      return;
+    }
+
     if (origemGoogle) {
       // Primeira vez com Google: segue para o cadastro da empresa, já
       // autenticado — a criação de senha é pulada (Seção 7.11).
@@ -70,7 +77,7 @@ export default function Login() {
 
     await sair();
     setMensagem(AVISO_SEM_EMPRESA);
-  }, []);
+  }, [params.convite]);
 
   const aoEntrar = useCallback(async () => {
     setMensagem(null);

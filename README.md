@@ -24,7 +24,7 @@ supabase/
 |---|---|---|
 | 1 | Fundação — schema, RLS, auth, ambiente | ✅ concluída |
 | 2 | Autenticação e onboarding (Seções 5.5, 7.10–7.13) | ✅ concluída |
-| 3 | Estoque e produtos (Seções 4.5/4.6, 8.3, 8.4) | pendente |
+| 3 | Estoque e produtos (Seções 4.5/4.6, 8.3, 8.4) | ✅ concluída |
 | 4 | Vendas (Seções 7.3, 7.4, 8.1, 8.2, 8.5) | pendente |
 | 5 | Financeiro e relatórios (Seções 8.6, 10.2) | pendente |
 | 6 | Funcionários e permissões (Seções 5.2, 5.3, 7.8) | pendente |
@@ -84,6 +84,15 @@ Pontos que o documento não cobria e foram fechados durante a implementação:
   7.11 manda ir direto ao Cadastro, mas a Seção 7.12 exige um plano
   selecionado. O plano é escolhido primeiro; o que se pula, conforme a 7.11,
   são os campos de e-mail e senha.
+- **Divergência de estoque não reinicia o ciclo de alerta.** A Seção 8.3 manda
+  recalcular `estoque_referencia_alerta` "a cada reposição". O ajuste de
+  divergência da Seção 8.1 é correção de contagem, não entrada de mercadoria,
+  então soma ao estoque sem iniciar um ciclo novo. A auditoria distingue as
+  duas (`estoque.reposicao` vs. `estoque.divergencia_ajustada`).
+- **Rótulo de funcionalidade de plano.** `planos.funcionalidades` é uma lista de
+  chaves técnicas (Seção 4.12.1) e o documento não define rótulos comerciais. A
+  tela humaniza a chave (`relatorios_avancados` → "Relatorios avancados") em vez
+  de inventar nomes.
 
 ### Rodando os testes
 
@@ -91,6 +100,7 @@ Pontos que o documento não cobria e foram fechados durante a implementação:
 -- No SQL Editor do Supabase, com privilégio de service role:
 \i supabase/tests/rls_fase1.sql
 \i supabase/tests/onboarding_fase2.sql
+\i supabase/tests/estoque_fase3.sql
 ```
 
 Os scripts rodam em transação e fazem `ROLLBACK` no fim — não deixam resíduo.
@@ -104,6 +114,17 @@ imutabilidade do Gestor Principal e as regras de modo limitado da Seção 6.6.
 de planos pela role `anon` (a tela de Escolha do Plano é pré-autenticação), as
 validações do botão "Criar conta" e os dois desfechos da assinatura conforme o
 trial esteja ligado ou desligado.
+
+`estoque_fase3.sql` cobre a geração da chave técnica de campos personalizados,
+a validação de atributos por tipo e obrigatoriedade, o ciclo de alerta com o
+exemplo literal da Seção 8.3, as guardas do ajuste de estoque e o ciclo de vida
+do produto.
+
+**Ao ler os resultados:** dentro de um mesmo statement, todas as ramificações de
+um `UNION ALL` enxergam o snapshot do início do statement. Verificações de
+efeito colateral (auditoria, estoque final) precisam ficar em statements
+separados das ações que as produzem — caso contrário parecem falhar sem estarem
+falhando.
 
 ### Configuração necessária no Supabase Auth
 

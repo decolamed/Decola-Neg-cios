@@ -83,9 +83,32 @@ export default function Dashboard() {
 
         {aviso ? <Aviso mensagem={aviso.texto} tom={aviso.tom} /> : null}
 
+        {/* Acessos das Seções 7.2 e 7.9 já implementados. Os cards de resumo
+            com totais e o sino de notificações entram com o Dashboard completo. */}
+        <Botao
+          titulo="Estoque"
+          variante="secundario"
+          aoPressionar={() => router.push('/produtos')}
+          estilo={{ marginBottom: tema.espacamento.sm }}
+        />
+        <Botao
+          titulo="Estoque baixo"
+          variante="secundario"
+          aoPressionar={() => router.push('/estoque-baixo')}
+          estilo={{ marginBottom: tema.espacamento.sm }}
+        />
+        {conta.ehGestor ? (
+          <Botao
+            titulo="Configurações"
+            variante="secundario"
+            aoPressionar={() => router.push('/configuracoes')}
+            estilo={{ marginBottom: tema.espacamento.md }}
+          />
+        ) : null}
+
         <View style={estilos.placeholder}>
           <Text style={estilos.textoPlaceholder}>
-            O Dashboard completo (Seção 7.2) entra na próxima fase.
+            Os cards de resumo e o sino de notificações (Seção 7.2) entram nas próximas fases.
           </Text>
         </View>
 

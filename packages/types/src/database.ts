@@ -32,6 +32,8 @@ export type Enums = {
   tipo_campo: 'texto' | 'numero' | 'selecao' | 'booleano' | 'data';
   venda_status: 'pendente' | 'confirmada' | 'cancelada';
   vinculo_status: 'convidado' | 'ativo' | 'removido';
+  /** Computado em tempo de leitura pela view `produtos_com_status` (Seção 8.3). */
+  status_estoque: 'disponivel' | 'estoque_baixo' | 'esgotado';
 };
 
 /** Chaves canônicas de permissão da Seção 5.3 — espelham app.chaves_permissao(). */
@@ -213,6 +215,106 @@ export type Notificacao = {
   criado_em: string;
 };
 
+export type CampoProdutoDisponivel = {
+  id: string;
+  chave: string;
+  nome_exibicao: string;
+  tipo_campo: Enums['tipo_campo'];
+  opcoes: Json | null;
+  /** Nulo = campo padrão do sistema, disponível a todas as empresas. */
+  empresa_id: string | null;
+  criado_em: string;
+};
+
+export type EmpresaCampoProduto = {
+  id: string;
+  empresa_id: string;
+  campo_id: string;
+  ativo: boolean;
+  obrigatorio: boolean;
+  ordem: number;
+};
+
+export type VendaItem = {
+  id: string;
+  venda_id: string;
+  produto_id: string;
+  quantidade: number;
+  preco_unitario: number;
+  subtotal: number;
+};
+
+export type Cobranca = {
+  id: string;
+  assinatura_id: string;
+  asaas_payment_id: string;
+  valor: number;
+  forma_pagamento: Enums['cobranca_forma_pagamento'];
+  status: Enums['cobranca_status'];
+  vencimento: string;
+  pago_em: string | null;
+  criado_em: string;
+};
+
+export type SolicitacaoCancelamento = {
+  id: string;
+  empresa_id: string;
+  venda_id: string;
+  solicitado_por: string;
+  motivo: string | null;
+  status: Enums['solicitacao_status'];
+  decidido_por: string | null;
+  decidido_em: string | null;
+  criado_em: string;
+};
+
+export type DispositivoPush = {
+  id: string;
+  usuario_id: string;
+  expo_push_token: string;
+  plataforma: string | null;
+  criado_em: string;
+  atualizado_em: string;
+};
+
+export type PreferenciaNotificacao = {
+  usuario_id: string;
+  estoque: boolean;
+  assinatura: boolean;
+  administrativo: boolean;
+  atualizado_em: string;
+};
+
+export type LogAuditoria = {
+  id: string;
+  empresa_id: string | null;
+  usuario_id: string | null;
+  acao: string;
+  entidade: string;
+  entidade_id: string | null;
+  dados_anteriores: Json | null;
+  dados_novos: Json | null;
+  criado_em: string;
+};
+
+export type AdministradorPlataforma = {
+  id: string;
+  nome: string;
+  email: string;
+  criado_em: string;
+};
+
+/**
+ * View `produtos_com_status` (migration 0016) — Seção 8.3.
+ * O status e o percentual restante são computados pelo banco em tempo de
+ * leitura; o app nunca os recalcula.
+ */
+export type ProdutoComStatusRow = Produto & {
+  categoria_nome: string | null;
+  status_estoque: Enums['status_estoque'];
+  percentual_restante: number | null;
+};
+
 export type Database = {
   public: {
     Tables: {
@@ -228,8 +330,26 @@ export type Database = {
       movimentacoes_financeiras: Linha<MovimentacaoFinanceira>;
       alertas_estoque: Linha<AlertaEstoque>;
       notificacoes: Linha<Notificacao>;
+      campos_produto_disponiveis: Linha<CampoProdutoDisponivel>;
+      empresa_campos_produto: Linha<
+        EmpresaCampoProduto,
+        Omit<EmpresaCampoProduto, 'id'> & { id?: string },
+        Partial<EmpresaCampoProduto>
+      >;
+      venda_itens: Linha<VendaItem>;
+      cobrancas: Linha<Cobranca>;
+      solicitacoes_cancelamento: Linha<SolicitacaoCancelamento>;
+      dispositivos_push: Linha<DispositivoPush>;
+      preferencias_notificacao: Linha<PreferenciaNotificacao>;
+      logs_auditoria: Linha<LogAuditoria>;
+      administradores_plataforma: Linha<AdministradorPlataforma>;
     };
-    Views: Record<never, never>;
+    Views: {
+      produtos_com_status: {
+        Row: ProdutoComStatusRow;
+        Relationships: [];
+      };
+    };
     Functions: {
       criar_empresa_e_assinatura: {
         Args: {
@@ -249,6 +369,26 @@ export type Database = {
       };
       definir_permissoes: { Args: { p_vinculo_id: string; p_permissoes: Json }; Returns: undefined };
       remover_usuario: { Args: { p_vinculo_id: string }; Returns: undefined };
+      ajustar_estoque: {
+        Args: {
+          p_produto_id: string;
+          p_quantidade: number;
+          p_motivo?: string | null;
+          p_tipo?: string;
+        };
+        Returns: Json;
+      };
+      arquivar_produto: { Args: { p_produto_id: string }; Returns: undefined };
+      restaurar_produto: { Args: { p_produto_id: string }; Returns: undefined };
+      excluir_produto: { Args: { p_produto_id: string }; Returns: undefined };
+      criar_campo_personalizado: {
+        Args: {
+          p_nome_exibicao: string;
+          p_tipo: Enums['tipo_campo'];
+          p_opcoes?: Json | null;
+        };
+        Returns: string;
+      };
     };
     Enums: Enums;
     CompositeTypes: Record<never, never>;

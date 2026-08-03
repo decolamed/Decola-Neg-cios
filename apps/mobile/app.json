@@ -1,0 +1,25 @@
+{
+  "expo": {
+    "name": "Decola Negócios",
+    "slug": "decola-negocios",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "scheme": "decolanegocios",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "resizeMode": "contain",
+      "backgroundColor": "#01395E"
+    },
+    "assetBundlePatterns": ["**/*"],
+    "ios": { "supportsTablet": true, "bundleIdentifier": "br.com.decolanegocios.app" },
+    "android": {
+      "package": "br.com.decolanegocios.app",
+      "adaptiveIcon": { "backgroundColor": "#01395E" }
+    },
+    "plugins": ["expo-notifications"],
+    "extra": {
+      "supabaseUrl": null,
+      "supabaseAnonKey": null
+    }
+  }
+}

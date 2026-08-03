@@ -16,10 +16,7 @@
       "package": "br.com.decolanegocios.app",
       "adaptiveIcon": { "backgroundColor": "#01395E" }
     },
-    "plugins": ["expo-notifications"],
-    "extra": {
-      "supabaseUrl": null,
-      "supabaseAnonKey": null
-    }
+    "plugins": ["expo-router"],
+    "experiments": { "typedRoutes": false }
   }
 }

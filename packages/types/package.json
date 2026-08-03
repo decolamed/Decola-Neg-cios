@@ -1,0 +1,7 @@
+{
+  "name": "@decola/types",
+  "version": "0.1.0",
+  "private": true,
+  "main": "src/database.ts",
+  "types": "src/database.ts"
+}

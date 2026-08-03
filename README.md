@@ -23,7 +23,7 @@ supabase/
 | Fase | Escopo | Estado |
 |---|---|---|
 | 1 | Fundação — schema, RLS, auth, ambiente | ✅ concluída |
-| 2 | Autenticação e onboarding (Seções 5.5, 7.10–7.13) | pendente |
+| 2 | Autenticação e onboarding (Seções 5.5, 7.10–7.13) | ✅ concluída |
 | 3 | Estoque e produtos (Seções 4.5/4.6, 8.3, 8.4) | pendente |
 | 4 | Vendas (Seções 7.3, 7.4, 8.1, 8.2, 8.5) | pendente |
 | 5 | Financeiro e relatórios (Seções 8.6, 10.2) | pendente |
@@ -67,19 +67,55 @@ Projeto Supabase: **Decola Negócios** (`nakqafnchwydfogcozvc`).
 As migrations em `supabase/migrations/` estão aplicadas e numeradas na ordem de
 execução. Para um ambiente novo, rode-as em sequência.
 
+### Decisões registradas fora da especificação
+
+Pontos que o documento não cobria e foram fechados durante a implementação:
+
+- **`movimentacoes_financeiras.data_movimentacao`** — a Seção 8.6 dá ao
+  lançamento manual um campo "data" que a Seção 4.11 não modelou. A coluna foi
+  criada; `criado_em` continua registrando quando a linha foi gravada.
+- **Assinatura `cancelada`** — mantém a conta em modo de consulta, com toda
+  escrita bloqueada, preservando os dados da empresa.
+- **Leitura do status sem trava** — `empresas` e `assinaturas` são legíveis por
+  qualquer membro ativo mesmo com a conta suspensa, em modo limitado ou
+  pendente de pagamento. Sem isso o app não teria como explicar ao usuário o
+  motivo do bloqueio. Os dados de negócio é que ficam travados.
+- **Primeira vez com Google → Escolha do Plano antes do Cadastro.** A Seção
+  7.11 manda ir direto ao Cadastro, mas a Seção 7.12 exige um plano
+  selecionado. O plano é escolhido primeiro; o que se pula, conforme a 7.11,
+  são os campos de e-mail e senha.
+
 ### Rodando os testes
 
 ```sql
 -- No SQL Editor do Supabase, com privilégio de service role:
 \i supabase/tests/rls_fase1.sql
+\i supabase/tests/onboarding_fase2.sql
 ```
 
-O script roda em transação e faz `ROLLBACK` no fim — não deixa resíduo.
+Os scripts rodam em transação e fazem `ROLLBACK` no fim — não deixam resíduo.
 Cada linha do resultado é uma asserção; procure por `FALHA` na saída.
 
-Cobre isolamento multi-tenant, imutabilidade da auditoria, permissões
-granulares por coluna, alerta de estoque, limite de plano, imutabilidade do
-Gestor Principal e as regras de modo limitado da Seção 6.6.
+`rls_fase1.sql` cobre isolamento multi-tenant, imutabilidade da auditoria,
+permissões granulares por coluna, alerta de estoque, limite de plano,
+imutabilidade do Gestor Principal e as regras de modo limitado da Seção 6.6.
+
+`onboarding_fase2.sql` cobre o provisionamento de conta pelo trigger, a leitura
+de planos pela role `anon` (a tela de Escolha do Plano é pré-autenticação), as
+validações do botão "Criar conta" e os dois desfechos da assinatura conforme o
+trial esteja ligado ou desligado.
+
+### Configuração necessária no Supabase Auth
+
+Dois ajustes no painel do projeto, sem os quais a Fase 2 não funciona:
+
+- **Confirm email: desligado.** A Seção 5.5 decide que a verificação de e-mail
+  não é obrigatória antes do primeiro acesso. Com a opção ligada, o `signUp`
+  não devolve sessão e a criação da empresa não tem como prosseguir — o app
+  detecta isso e mostra uma mensagem explícita em vez de falhar em silêncio.
+- **Google provider habilitado**, com Client ID e Secret, para o "Entrar com
+  Google" da Seção 7.11. Enquanto não estiver configurado, o botão retorna erro
+  do provedor; o login por e-mail e senha funciona normalmente.
 
 ### Primeiro administrador da plataforma
 

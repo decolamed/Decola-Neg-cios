@@ -1,0 +1,125 @@
+/**
+ * Repositório de empresa e vínculo — Seções 5.1, 5.3, 6.6, 7.10, 7.12.
+ */
+import type {
+  Assinatura,
+  Empresa,
+  EmpresaUsuario,
+  MapaPermissoes,
+  ResultadoCriacaoEmpresa,
+} from '@decola/types';
+import { supabase } from '@/lib/supabase';
+import { exigirConexao } from '@/lib/conectividade';
+import { mensagemDeErro } from '@/lib/erros';
+
+/**
+ * Estado completo da conta do usuário logado.
+ *
+ * `empresa` e `assinatura` são legíveis mesmo com a conta suspensa ou em modo
+ * limitado (decisão da Fase 1): é assim que o app consegue explicar ao usuário
+ * POR QUE está bloqueado, em vez de mostrar uma tela vazia.
+ */
+export type ContextoDaConta = {
+  vinculo: EmpresaUsuario;
+  empresa: Empresa;
+  assinatura: Assinatura | null;
+  permissoes: MapaPermissoes;
+  ehGestor: boolean;
+};
+
+/**
+ * Seção 7.10 — a Splash e o Login usam este resultado para decidir o destino.
+ * `null` significa "sem empresa ativa vinculada", que leva ao Login com a
+ * mensagem explicativa e encerramento da sessão.
+ */
+export async function carregarContextoDaConta(): Promise<ContextoDaConta | null> {
+  const { data: vinculo, error: erroVinculo } = await supabase
+    .from('empresa_usuarios')
+    .select('*')
+    .eq('status', 'ativo')
+    .maybeSingle();
+
+  if (erroVinculo) throw new Error(mensagemDeErro(erroVinculo));
+  if (!vinculo) return null;
+
+  const [respostaEmpresa, respostaAssinatura] = await Promise.all([
+    supabase.from('empresas').select('*').eq('id', vinculo.empresa_id).maybeSingle(),
+    supabase
+      .from('assinaturas')
+      .select('*')
+      .eq('empresa_id', vinculo.empresa_id)
+      .neq('status', 'cancelada')
+      .maybeSingle(),
+  ]);
+
+  if (respostaEmpresa.error) throw new Error(mensagemDeErro(respostaEmpresa.error));
+  if (!respostaEmpresa.data) return null;
+
+  const ehGestor = vinculo.papel === 'gestor' || vinculo.papel === 'gestor_principal';
+
+  return {
+    vinculo,
+    empresa: respostaEmpresa.data,
+    assinatura: respostaAssinatura.data ?? null,
+    // O Gestor possui todas as permissões por definição do papel (Seção 5.3);
+    // o jsonb é espelho para a interface. Quem decide de fato é o banco.
+    permissoes: (vinculo.permissoes ?? {}) as MapaPermissoes,
+    ehGestor,
+  };
+}
+
+/**
+ * Seção 7.12, botão "Criar conta" — passos 3 a 5.
+ *
+ * Uma única chamada: a RPC cria empresa, vínculo de Gestor Principal e
+ * assinatura na mesma transação, revalidando tudo no servidor (aceite dos
+ * termos, plano ativo, regra de uma empresa por usuário).
+ */
+export async function criarEmpresaEAssinatura(params: {
+  nomeEmpresa: string;
+  planoId: string;
+  nomeUsuario: string;
+  aceitouTermos: boolean;
+}): Promise<ResultadoCriacaoEmpresa> {
+  await exigirConexao('cadastro');
+
+  const { data, error } = await supabase.rpc('criar_empresa_e_assinatura', {
+    p_nome_empresa: params.nomeEmpresa,
+    p_plano_id: params.planoId,
+    p_nome_usuario: params.nomeUsuario,
+    p_aceitou_termos: params.aceitouTermos,
+  });
+
+  if (error) throw new Error(mensagemDeErro(error));
+  return data as unknown as ResultadoCriacaoEmpresa;
+}
+
+/**
+ * Seções 3.3 e 5.4 — o vínculo e a assinatura são observados em tempo real:
+ * uma mudança de permissão revoga acesso sem exigir novo login, e a virada da
+ * assinatura para `ativa` após o pagamento navega sozinha (Seção 7.12).
+ */
+export function observarContextoDaConta(empresaId: string, aoMudar: () => void) {
+  const canal = supabase
+    .channel(`conta:${empresaId}`)
+    .on(
+      'postgres_changes',
+      { event: '*', schema: 'public', table: 'empresa_usuarios', filter: `empresa_id=eq.${empresaId}` },
+      aoMudar,
+    )
+    .on(
+      'postgres_changes',
+      { event: '*', schema: 'public', table: 'assinaturas', filter: `empresa_id=eq.${empresaId}` },
+      aoMudar,
+    )
+    .on(
+      'postgres_changes',
+      { event: '*', schema: 'public', table: 'empresas', filter: `id=eq.${empresaId}` },
+      aoMudar,
+    )
+    .subscribe();
+
+  return () => {
+    supabase.removeChannel(canal);
+  };
+}

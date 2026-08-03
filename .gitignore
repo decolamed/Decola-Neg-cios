@@ -7,3 +7,6 @@ web-build/
 .env.local
 .DS_Store
 *.tsbuildinfo
+
+# Export local do Metro (validação de build)
+export/

@@ -84,16 +84,29 @@ export const fontes = {
   corpoSemibold: 'Montserrat-SemiBold',
 } as const;
 
+/**
+ * As fontes da Seção 2.2 exigem os arquivos .ttf em
+ * `apps/mobile/assets/fonts/`. Enquanto eles não estiverem no repositório, o
+ * app usa a fonte do sistema — os pesos e tamanhos abaixo, que são o que a
+ * especificação define, continuam valendo.
+ *
+ * Vire esta constante para `true` ao adicionar os arquivos: é a única
+ * alteração necessária para a marca aparecer.
+ */
+export const FONTES_PERSONALIZADAS_DISPONIVEIS = false;
+
+const familia = (nome: string) => (FONTES_PERSONALIZADAS_DISPONIVEIS ? nome : undefined);
+
 /** Hierarquia da tabela da Seção 2.2, um item por linha da especificação. */
 export const tipografia = {
-  h1: { fontFamily: fontes.tituloBold, fontSize: 24, fontWeight: '700' },
-  h2: { fontFamily: fontes.titulo, fontSize: 18, fontWeight: '600' },
-  corpo: { fontFamily: fontes.corpo, fontSize: 14, fontWeight: '400' },
+  h1: { fontFamily: familia(fontes.tituloBold), fontSize: 24, fontWeight: '700' },
+  h2: { fontFamily: familia(fontes.titulo), fontSize: 18, fontWeight: '600' },
+  corpo: { fontFamily: familia(fontes.corpo), fontSize: 14, fontWeight: '400' },
   /** Valores monetários e nomes de produto. */
-  corpoDestacado: { fontFamily: fontes.corpoSemibold, fontSize: 14, fontWeight: '600' },
+  corpoDestacado: { fontFamily: familia(fontes.corpoSemibold), fontSize: 14, fontWeight: '600' },
   /** Textos auxiliares e timestamps. */
-  legenda: { fontFamily: fontes.corpo, fontSize: 12, fontWeight: '400' },
-  botao: { fontFamily: fontes.corpoSemibold, fontSize: 14, fontWeight: '600' },
+  legenda: { fontFamily: familia(fontes.corpo), fontSize: 12, fontWeight: '400' },
+  botao: { fontFamily: familia(fontes.corpoSemibold), fontSize: 14, fontWeight: '600' },
 } as const;
 
 // =============================================================================
@@ -171,6 +184,7 @@ export const tema = {
   paleta,
   cores,
   fontes,
+  FONTES_PERSONALIZADAS_DISPONIVEIS,
   tipografia,
   espacamento,
   raio,

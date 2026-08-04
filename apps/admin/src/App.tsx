@@ -7,8 +7,9 @@
  * app responderia.
  */
 import { NavLink, Navigate, Route, Routes } from 'react-router-dom';
-import { Carregando } from '@/componentes/Basicos';
+import { Aviso, Carregando } from '@/componentes/Basicos';
 import { useSessaoAdmin } from '@/contexto/SessaoAdmin';
+import { CONFIGURADO } from '@/lib/supabase';
 import { Configuracoes } from '@/telas/Configuracoes';
 import { Dashboard } from '@/telas/Dashboard';
 import { EmpresaDetalhe } from '@/telas/EmpresaDetalhe';
@@ -18,6 +19,29 @@ import { Planos } from '@/telas/Planos';
 
 export function App() {
   const { carregando, administrador, sair } = useSessaoAdmin();
+
+  // Deploy sem as variáveis de ambiente: explica em vez de mostrar uma tela
+  // branca com o erro escondido no console.
+  if (!CONFIGURADO) {
+    return (
+      <div className="centralizado">
+        <h1>Painel Administrativo</h1>
+        <div className="card" style={{ maxWidth: 520, textAlign: 'left' }}>
+          <Aviso
+            mensagem={
+              'Este painel ainda não foi conectado ao Supabase. Defina VITE_SUPABASE_URL e ' +
+              'VITE_SUPABASE_ANON_KEY nas variáveis de ambiente e publique de novo.'
+            }
+            tom="alerta"
+          />
+          <p className="legenda">
+            As duas são chaves públicas — quem protege os dados é a RLS. A <code>service_role</code>{' '}
+            key não deve ser usada aqui em nenhuma hipótese.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   if (carregando) {
     return (

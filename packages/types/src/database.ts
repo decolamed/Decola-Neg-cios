@@ -432,6 +432,11 @@ export type Database = {
         Args: { p_desde: string; p_ate: string };
         Returns: Json;
       };
+      /** Seção 7.2 — os quatro cards do Dashboard e o badge do sino. */
+      resumo_dashboard: {
+        Args: Record<string, never>;
+        Returns: Json;
+      };
       /** Seção 6.7 — upgrade imediato, downgrade no próximo ciclo. */
       trocar_plano: {
         Args: { p_plano_id: string };

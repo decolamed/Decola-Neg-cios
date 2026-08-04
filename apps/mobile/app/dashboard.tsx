@@ -1,20 +1,25 @@
 /**
- * Dashboard — PLACEHOLDER.
+ * Tela Inicial / Dashboard — Seção 7.2.
  *
- * A tela completa da Seção 7.2 (cards de resumo, notificações, acessos
- * rápidos) entra a partir da Fase 3. O que existe aqui é o mínimo que a
- * Fase 2 exige: um destino válido para o roteamento da Splash e do Login, e a
- * sinalização do estado da assinatura que a Seção 7.11 diz acontecer "no
- * Dashboard após a autenticação".
+ * Quatro cards, cada um com o destino que a especificação define, e o sino de
+ * notificações com o total de avisos não lidos. Os números vêm agregados do
+ * banco (`resumo_dashboard`, migration 0029) e se atualizam em tempo real:
+ * uma venda em outro caixa muda o card sem recarregar (Seção 3.3).
+ *
+ * O estado da conta (trial, carência, modo limitado, empresa suspensa) fica no
+ * topo porque é aqui que a Seção 7.11 manda sinalizá-lo depois do login.
  */
-import { router } from 'expo-router';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useCallback, useEffect, useState } from 'react';
+import { router, useFocusEffect } from 'expo-router';
+import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import tema from '@decola/theme';
 import { Aviso } from '@/componentes/Aviso';
-import { Botao } from '@/componentes/Botao';
 import { TelaCarregando, TelaMensagem } from '@/componentes/EstadoDaTela';
+import { MenuInferior } from '@/componentes/MenuInferior';
 import { useSessao } from '@/contexto/SessaoContexto';
+import { carregarResumo, observarAvisos, type ResumoDoDashboard } from '@/dados/dashboard';
+import { moeda } from '@/lib/formato';
 
 /** Seções 6.5, 6.6 e 6.9 — cada estado que o usuário precisa entender. */
 function avisoDaConta(
@@ -54,8 +59,42 @@ function avisoDaConta(
 }
 
 export default function Dashboard() {
-  // "Sair da conta" saiu daqui: a Seção 7.14 a coloca no Perfil, com confirmação.
-  const { carregando, conta, erro, recarregar, temPermissao } = useSessao();
+  const { carregando, conta, erro, recarregar } = useSessao();
+
+  const [resumo, setResumo] = useState<ResumoDoDashboard | null>(null);
+  const [erroResumo, setErroResumo] = useState<string | null>(null);
+  const [atualizando, setAtualizando] = useState(false);
+
+  const empresaId = conta?.empresa.id;
+
+  const buscar = useCallback(async () => {
+    if (!empresaId) return;
+    try {
+      setResumo(await carregarResumo());
+      setErroResumo(null);
+    } catch (e) {
+      setErroResumo(e instanceof Error ? e.message : 'Não foi possível carregar o resumo.');
+    }
+  }, [empresaId]);
+
+  useEffect(() => {
+    void buscar();
+  }, [buscar]);
+
+  // Voltar de uma venda ou de um ajuste de estoque precisa refletir nos cards.
+  useFocusEffect(
+    useCallback(() => {
+      void buscar();
+    }, [buscar]),
+  );
+
+  // Seção 3.3 — o sino e os cards acompanham o que outros dispositivos fazem.
+  useEffect(() => {
+    if (!empresaId) return;
+    return observarAvisos(empresaId, () => {
+      void buscar();
+    });
+  }, [empresaId, buscar]);
 
   if (carregando) return <TelaCarregando />;
 
@@ -69,110 +108,154 @@ export default function Dashboard() {
   }
 
   const aviso = avisoDaConta(conta.empresa.status, conta.assinatura?.status);
+  const naoLidas = resumo?.nao_lidas ?? 0;
+
+  const atualizar = async () => {
+    setAtualizando(true);
+    await Promise.all([recarregar(), buscar()]);
+    setAtualizando(false);
+  };
 
   return (
-    <SafeAreaView style={estilos.tela}>
-      <ScrollView contentContainerStyle={estilos.conteudo}>
-        <Text style={estilos.empresa}>{conta.empresa.nome}</Text>
-        <Text style={estilos.papel}>
-          {conta.vinculo.papel === 'gestor_principal'
-            ? 'Gestor Principal'
-            : conta.vinculo.papel === 'gestor'
-              ? 'Gestor'
-              : 'Funcionário'}
-        </Text>
+    <SafeAreaView style={estilos.tela} edges={['top', 'left', 'right']}>
+      <ScrollView
+        contentContainerStyle={estilos.conteudo}
+        refreshControl={<RefreshControl refreshing={atualizando} onRefresh={atualizar} />}
+      >
+        <View style={estilos.cabecalho}>
+          <View style={{ flex: 1 }}>
+            <Text style={estilos.empresa}>{conta.empresa.nome}</Text>
+            <Text style={estilos.papel}>
+              {conta.vinculo.papel === 'gestor_principal'
+                ? 'Gestor Principal'
+                : conta.vinculo.papel === 'gestor'
+                  ? 'Gestor'
+                  : 'Funcionário'}
+            </Text>
+          </View>
+
+          {/* Sino — Seção 7.2, abre a central de notificações. */}
+          <Pressable
+            onPress={() => router.push('/notificacoes')}
+            accessibilityRole="button"
+            accessibilityLabel={
+              naoLidas > 0 ? `Notificações, ${naoLidas} não lidas` : 'Notificações'
+            }
+            style={({ pressed }) => [estilos.sino, pressed && { opacity: 0.85 }]}
+          >
+            <Text style={estilos.iconeSino}>🔔</Text>
+            {naoLidas > 0 ? (
+              <View style={estilos.badge}>
+                <Text style={estilos.textoBadge}>{naoLidas > 99 ? '99+' : naoLidas}</Text>
+              </View>
+            ) : null}
+          </Pressable>
+        </View>
 
         {aviso ? <Aviso mensagem={aviso.texto} tom={aviso.tom} /> : null}
+        {erroResumo ? <Aviso mensagem={erroResumo} tom="erro" /> : null}
 
-        {/* Acessos das Seções 7.2 e 7.9 já implementados. Os cards de resumo
-            com totais e o sino de notificações entram com o Dashboard completo. */}
-        <Botao
-          titulo="Nova venda"
-          aoPressionar={() => router.push('/vendas/nova')}
-          estilo={{ marginBottom: tema.espacamento.sm }}
-        />
-        <Botao
-          titulo="Vendas"
-          variante="secundario"
-          aoPressionar={() => router.push('/vendas')}
-          estilo={{ marginBottom: tema.espacamento.sm }}
-        />
-        <Botao
-          titulo="Estoque"
-          variante="secundario"
-          aoPressionar={() => router.push('/produtos')}
-          estilo={{ marginBottom: tema.espacamento.sm }}
-        />
-        <Botao
-          titulo="Estoque baixo"
-          variante="secundario"
-          aoPressionar={() => router.push('/estoque-baixo')}
-          estilo={{ marginBottom: tema.espacamento.sm }}
-        />
-        {temPermissao('visualizar_financeiro') ? (
-          <Botao
-            titulo="Financeiro"
-            variante="secundario"
-            aoPressionar={() => router.push('/financeiro')}
-            estilo={{ marginBottom: tema.espacamento.sm }}
+        <View style={estilos.grade}>
+          <Card
+            rotulo="Vendas hoje"
+            valor={moeda(resumo?.vendas_hoje_total ?? 0)}
+            nota={`${resumo?.vendas_hoje_quantidade ?? 0} venda(s)`}
+            // Seção 7.2 — abre o histórico filtrado pelo dia atual.
+            aoTocar={() => router.push({ pathname: '/vendas', params: { hoje: '1' } })}
           />
-        ) : null}
-        {temPermissao('exportar_relatorios') ? (
-          <Botao
-            titulo="Relatórios"
-            variante="secundario"
-            aoPressionar={() => router.push('/relatorios')}
-            estilo={{ marginBottom: tema.espacamento.sm }}
+          <Card
+            rotulo="Quantidade de vendas"
+            valor={String(resumo?.vendas_quantidade_total ?? 0)}
+            nota="Histórico completo"
+            aoTocar={() => router.push('/vendas')}
           />
-        ) : null}
-        {conta.ehGestor ? (
-          <>
-            <Botao
-              titulo="Funcionários"
-              variante="secundario"
-              aoPressionar={() => router.push('/funcionarios')}
-              estilo={{ marginBottom: tema.espacamento.sm }}
-            />
-            <Botao
-              titulo="Configurações"
-              variante="secundario"
-              aoPressionar={() => router.push('/configuracoes')}
-              estilo={{ marginBottom: tema.espacamento.md }}
-            />
-          </>
-        ) : null}
-
-        <Botao
-          titulo="Perfil"
-          variante="secundario"
-          aoPressionar={() => router.push('/perfil')}
-          estilo={{ marginBottom: tema.espacamento.md }}
-        />
-
-        <View style={estilos.placeholder}>
-          <Text style={estilos.textoPlaceholder}>
-            Os cards de resumo e o sino de notificações (Seção 7.2) entram nas próximas fases.
-          </Text>
+          <Card
+            rotulo="Produtos"
+            valor={String(resumo?.produtos_ativos ?? 0)}
+            nota="Ativos no catálogo"
+            aoTocar={() => router.push('/produtos')}
+          />
+          <Card
+            rotulo="Estoque baixo"
+            valor={String(resumo?.estoque_baixo ?? 0)}
+            nota="No alerta configurado"
+            atencao={(resumo?.estoque_baixo ?? 0) > 0}
+            aoTocar={() => router.push('/estoque-baixo')}
+          />
         </View>
       </ScrollView>
+
+      <MenuInferior />
     </SafeAreaView>
+  );
+}
+
+function Card({
+  rotulo,
+  valor,
+  nota,
+  aoTocar,
+  atencao = false,
+}: {
+  rotulo: string;
+  valor: string;
+  nota: string;
+  aoTocar: () => void;
+  atencao?: boolean;
+}) {
+  return (
+    <Pressable
+      onPress={aoTocar}
+      accessibilityRole="button"
+      accessibilityLabel={`${rotulo}: ${valor}`}
+      style={({ pressed }) => [estilos.card, pressed && { opacity: 0.85 }]}
+    >
+      <Text style={estilos.cardRotulo}>{rotulo}</Text>
+      <Text style={[estilos.cardValor, atencao && { color: tema.cores.negativo }]}>{valor}</Text>
+      <Text style={estilos.cardNota}>{nota}</Text>
+    </Pressable>
   );
 }
 
 const estilos = StyleSheet.create({
   tela: { flex: 1, backgroundColor: tema.cores.fundo },
   conteudo: { padding: tema.espacamento.lg },
-  empresa: { ...tema.tipografia.h1, color: tema.cores.texto },
-  papel: {
-    ...tema.tipografia.legenda,
-    color: tema.cores.textoSuave,
+  cabecalho: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
     marginBottom: tema.espacamento.lg,
   },
-  placeholder: {
+  empresa: { ...tema.tipografia.h1, color: tema.cores.texto },
+  papel: { ...tema.tipografia.legenda, color: tema.cores.textoSuave, marginTop: 2 },
+  sino: { padding: tema.espacamento.sm },
+  iconeSino: { fontSize: 22 },
+  badge: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    minWidth: 20,
+    paddingHorizontal: 4,
+    height: 20,
+    borderRadius: tema.raio.pill,
+    backgroundColor: tema.cores.acaoPrimaria,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  textoBadge: { ...tema.tipografia.legenda, color: tema.cores.textoInverso, fontSize: 11 },
+  grade: { flexDirection: 'row', flexWrap: 'wrap', gap: tema.espacamento.md },
+  card: {
+    flexGrow: 1,
+    flexBasis: '45%',
     backgroundColor: tema.cores.fundoCard,
     borderRadius: tema.raio.md,
     padding: tema.espacamento.lg,
-    marginBottom: tema.espacamento.md,
+    ...tema.elevacao.card,
   },
-  textoPlaceholder: { ...tema.tipografia.corpo, color: tema.cores.textoSuave },
+  cardRotulo: { ...tema.tipografia.legenda, color: tema.cores.textoSuave },
+  cardValor: {
+    ...tema.tipografia.h1,
+    color: tema.cores.primaria,
+    marginTop: tema.espacamento.xs,
+  },
+  cardNota: { ...tema.tipografia.legenda, color: tema.cores.textoSuave, marginTop: 2 },
 });

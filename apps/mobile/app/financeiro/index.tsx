@@ -17,6 +17,7 @@ import { Aviso } from '@/componentes/Aviso';
 import { Botao } from '@/componentes/Botao';
 import { TelaCarregando, TelaMensagem } from '@/componentes/EstadoDaTela';
 import { Seletor } from '@/componentes/Seletor';
+import { MenuInferior } from '@/componentes/MenuInferior';
 import { useSessao } from '@/contexto/SessaoContexto';
 import {
   carregarResumo,
@@ -86,7 +87,7 @@ export default function Financeiro() {
   if (erro) return <TelaMensagem mensagem={erro} aoTentarNovamente={carregar} />;
 
   return (
-    <SafeAreaView style={estilos.tela}>
+    <SafeAreaView style={estilos.tela} edges={['top', 'left', 'right']}>
       <FlatList
         data={movimentacoes}
         keyExtractor={(item) => item.id}
@@ -209,6 +210,8 @@ export default function Financeiro() {
           );
         }}
       />
+    
+      <MenuInferior />
     </SafeAreaView>
   );
 }

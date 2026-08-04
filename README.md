@@ -31,6 +31,7 @@ supabase/
 | 6 | Funcionários e permissões (Seções 5.2, 5.3, 7.8) | ✅ concluída |
 | 7 | Assinatura e pagamento — Asaas (Seções 6.4–6.7, 7.14) | ✅ concluída |
 | 8 | Painel Administrativo (Seções 7.15, 11) | ✅ concluída |
+| — | Auditoria final — Seções 7.1, 7.2 e correções do linter | ✅ concluída |
 
 ## Princípio de segurança que rege todo o código
 
@@ -157,6 +158,7 @@ Pontos que o documento não cobria e foram fechados durante a implementação:
 \i supabase/tests/funcionarios_fase6.sql
 \i supabase/tests/assinatura_fase7.sql
 \i supabase/tests/administrativo_fase8.sql
+\i supabase/tests/dashboard_auditoria.sql
 ```
 
 Os scripts rodam em transação e fazem `ROLLBACK` no fim — não deixam resíduo.
@@ -196,6 +198,10 @@ aceita usuário de empresa), o fechamento de `planos` e `configuracoes_plataform
 ao cliente, a auditoria das entidades de plataforma, a ativação manual com os
 três desfechos de e-mail, o status da empresa e o churn, o período de teste por
 empresa, as métricas e a exclusão definitiva com confirmação.
+
+`dashboard_auditoria.sql` cobre o resumo dos quatro cards, o badge do sino, a
+central de notificações unindo as duas tabelas com o filtro por destinatário, e
+a gravação da chave Pix — sem a qual o "Gerar Pix" da Seção 7.4 nunca funciona.
 
 **Duas armadilhas ao ler os resultados:**
 
@@ -310,6 +316,37 @@ npm run painel
 A anon key do Supabase é pública por design — quem protege os dados é a RLS.
 A chave da API do Asaas e a `service_role` key **nunca** entram no app: vivem
 apenas como secrets de Edge Function (Seções 6.4 e 9.1).
+
+## Deploy do Painel Administrativo
+
+O painel é um site estático — qualquer host serve. `apps/admin/vercel.json` já
+traz o que uma SPA precisa: o rewrite de todas as rotas para `index.html` (sem
+ele, atualizar a página em `/empresas` devolve 404) e os cabeçalhos
+`X-Robots-Tag: noindex`, `X-Frame-Options: DENY`, `nosniff` e `Referrer-Policy`.
+
+```bash
+cd apps/admin
+vercel --prod          # ou: vercel link && vercel --prod
+```
+
+Defina as duas variáveis no projeto da Vercel (Settings → Environment
+Variables), ou num `.env.production` local antes do build:
+
+| Variável | Valor |
+|---|---|
+| `VITE_SUPABASE_URL` | `https://nakqafnchwydfogcozvc.supabase.co` |
+| `VITE_SUPABASE_ANON_KEY` | a anon key do projeto (Supabase → Settings → API) |
+| `VITE_URL_CADASTRO` | opcional — base do link direto de plano (Seção 6.3) |
+
+Sem elas o painel **não** quebra em tela branca: mostra uma tela explicando o
+que falta configurar.
+
+A `service_role` key nunca entra aqui. Qualquer variável `VITE_` é embutida no
+bundle e servida ao navegador — a anon key pode, porque quem protege os dados é
+a RLS; a service key ignoraria a RLS inteira.
+
+O app cliente (`apps/mobile`) **não** vai para a Vercel: é React Native, e sai
+por EAS Build / lojas.
 
 ## Design
 

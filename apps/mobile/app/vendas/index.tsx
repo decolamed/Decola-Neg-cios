@@ -11,6 +11,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import tema from '@decola/theme';
 import { Botao } from '@/componentes/Botao';
 import { TelaCarregando, TelaMensagem } from '@/componentes/EstadoDaTela';
+import { MenuInferior } from '@/componentes/MenuInferior';
 import { useSessao } from '@/contexto/SessaoContexto';
 import {
   listarSolicitacoesPendentes,
@@ -83,7 +84,7 @@ export default function HistoricoDeVendas() {
     .reduce((soma, venda) => soma + venda.total, 0);
 
   return (
-    <SafeAreaView style={estilos.tela}>
+    <SafeAreaView style={estilos.tela} edges={['top', 'left', 'right']}>
       <FlatList
         data={vendas}
         keyExtractor={(item) => item.id}
@@ -161,6 +162,8 @@ export default function HistoricoDeVendas() {
           </Pressable>
         )}
       />
+    
+      <MenuInferior />
     </SafeAreaView>
   );
 }

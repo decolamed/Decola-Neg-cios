@@ -58,7 +58,8 @@ export default function Configuracoes() {
     {
       titulo: 'Dados da empresa e chave Pix',
       descricao: 'Nome, CNPJ, endereço, telefone e chave Pix para recebimentos.',
-      disponivel: false,
+      destino: '/configuracoes/empresa',
+      disponivel: true,
     },
     {
       titulo: 'Funcionários e permissões',

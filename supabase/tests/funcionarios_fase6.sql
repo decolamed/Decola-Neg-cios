@@ -24,6 +24,18 @@ language sql as $$
   select p_rotulo, case when p_condicao then 'OK' else 'FALHA' end;
 $$;
 
+-- Um convite pendente NÃO é legível pelo próprio convidado: a política
+-- `empresa_usuarios_leitura` casa por `usuario_id` ou por empresa, e quem
+-- ainda não aceitou não tem nenhum dos dois. Sem este resolvedor elevado, as
+-- chamadas feitas sob a identidade do convidado receberiam NULL e falhariam
+-- com "Convite não encontrado" — escondendo o que o teste queria medir.
+-- No app quem faz esse papel é a própria RPC `aceitar_convite`, também
+-- SECURITY DEFINER, que recebe o id pelo link do e-mail.
+create or replace function pg_temp.vinculo(p_email text)
+returns uuid language sql security definer as $$
+  select id from public.empresa_usuarios where email_convite = p_email;
+$$;
+
 -- Plano com limite de 2 funcionários, para exercitar a Seção 6.8.
 insert into public.planos (id, nome, valor_mensal, limites, slug)
 values ('eeeeeeee-0000-0000-0000-000000000001','Teste F6',49.90,'{"max_funcionarios":2}','teste-f6');
@@ -67,8 +79,7 @@ set local role authenticated;
 set local request.jwt.claims = '{"sub":"f6000000-0000-0000-0000-000000000002","role":"authenticated"}';
 
 select * from pg_temp.tentar('Aceitar convite expirado',
-  'select public.aceitar_convite(
-     (select id from public.empresa_usuarios where email_convite = ''f6.func@teste.local''))');
+  'select public.aceitar_convite(pg_temp.vinculo(''f6.func@teste.local''))');
 
 -- O Gestor reenvia e o prazo volta a valer.
 set local request.jwt.claims = '{"sub":"f6000000-0000-0000-0000-000000000001","role":"authenticated"}';
@@ -83,22 +94,19 @@ select * from pg_temp.esperar('Reenvio gera novo prazo de 7 dias',
 -- 2. Aceite (Seção 5.2, item 4)
 -- =============================================================================
 set local request.jwt.claims = '{"sub":"f6000000-0000-0000-0000-000000000002","role":"authenticated"}';
-select public.aceitar_convite(
-  (select id from public.empresa_usuarios where email_convite = 'f6.func@teste.local'));
+select public.aceitar_convite(pg_temp.vinculo('f6.func@teste.local'));
 
 select * from pg_temp.esperar('Vínculo virou ativo, com usuario_id e aceito_em',
   (select status = 'ativo' and usuario_id = auth.uid() and aceito_em is not null
    from public.empresa_usuarios where email_convite = 'f6.func@teste.local'))
 union all
 select * from pg_temp.tentar('Aceitar o mesmo convite duas vezes',
-  'select public.aceitar_convite(
-     (select id from public.empresa_usuarios where email_convite = ''f6.func@teste.local''))');
+  'select public.aceitar_convite(pg_temp.vinculo(''f6.func@teste.local''))');
 
 -- Seção 5.1 — uma conta não aceita convite estando vinculada a outra empresa.
 set local request.jwt.claims = '{"sub":"f6000000-0000-0000-0000-000000000001","role":"authenticated"}';
 select * from pg_temp.tentar('Gestor Principal aceita convite de outra empresa',
-  'select public.aceitar_convite(
-     (select id from public.empresa_usuarios where email_convite = ''f6.func@teste.local''))');
+  'select public.aceitar_convite(pg_temp.vinculo(''f6.func@teste.local''))');
 
 -- =============================================================================
 -- 3. Papel e permissões (Seções 5.3 e 7.8)

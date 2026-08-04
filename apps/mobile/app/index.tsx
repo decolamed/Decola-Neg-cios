@@ -19,7 +19,7 @@ import { Marca } from '@/componentes/Marca';
 import { TelaMensagem } from '@/componentes/EstadoDaTela';
 import { estaConectado, MENSAGENS_SEM_CONEXAO } from '@/lib/conectividade';
 import { AVISO_SEM_EMPRESA, sair, sessaoAtual } from '@/dados/autenticacao';
-import { carregarContextoDaConta } from '@/dados/empresa';
+import { carregarContextoDaConta, destinoDaConta } from '@/dados/empresa';
 
 const ERRO_INICIAR = 'Não foi possível iniciar o app.';
 
@@ -57,7 +57,7 @@ export default function Splash() {
         return;
       }
 
-      router.replace('/dashboard');
+      router.replace(destinoDaConta(conta));
     } catch {
       setEstado('erro');
     }

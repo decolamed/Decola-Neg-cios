@@ -7,6 +7,7 @@ import type {
   EmpresaUsuario,
   MapaPermissoes,
   ResultadoCriacaoEmpresa,
+  Usuario,
 } from '@decola/types';
 import { supabase } from '@/lib/supabase';
 import { exigirConexao } from '@/lib/conectividade';
@@ -21,6 +22,8 @@ import { mensagemDeErro } from '@/lib/erros';
  */
 export type ContextoDaConta = {
   vinculo: EmpresaUsuario;
+  /** Conta do próprio usuário (Seção 7.14 — nome exibido no Perfil). */
+  usuario: Usuario | null;
   empresa: Empresa;
   assinatura: Assinatura | null;
   permissoes: MapaPermissoes;
@@ -33,14 +36,18 @@ export type ContextoDaConta = {
  * mensagem explicativa e encerramento da sessão.
  */
 export async function carregarContextoDaConta(): Promise<ContextoDaConta | null> {
-  const { data: vinculo, error: erroVinculo } = await supabase
+  const { data: linhaVinculo, error: erroVinculo } = await supabase
     .from('empresa_usuarios')
-    .select('*')
+    .select('*, usuarios(*)')
     .eq('status', 'ativo')
     .maybeSingle();
 
   if (erroVinculo) throw new Error(mensagemDeErro(erroVinculo));
-  if (!vinculo) return null;
+  if (!linhaVinculo) return null;
+
+  const { usuarios, ...vinculo } = linhaVinculo as unknown as EmpresaUsuario & {
+    usuarios: Usuario | null;
+  };
 
   const [respostaEmpresa, respostaAssinatura] = await Promise.all([
     supabase.from('empresas').select('*').eq('id', vinculo.empresa_id).maybeSingle(),
@@ -59,6 +66,7 @@ export async function carregarContextoDaConta(): Promise<ContextoDaConta | null>
 
   return {
     vinculo,
+    usuario: usuarios,
     empresa: respostaEmpresa.data,
     assinatura: respostaAssinatura.data ?? null,
     // O Gestor possui todas as permissões por definição do papel (Seção 5.3);
@@ -66,6 +74,22 @@ export async function carregarContextoDaConta(): Promise<ContextoDaConta | null>
     permissoes: (vinculo.permissoes ?? {}) as MapaPermissoes,
     ehGestor,
   };
+}
+
+/**
+ * Destino após autenticar — Seções 7.10 e 7.12.
+ *
+ * A tabela da Seção 7.10 só considera o vínculo, e manda ir ao Dashboard.
+ * Mas a Seção 7.12 diz que `pendente_pagamento` fica "sem acesso ao conteúdo
+ * do app até a confirmação do pagamento": quem fechou o app antes de pagar
+ * precisa voltar para o pagamento, não para um Dashboard que não pode usar.
+ *
+ * Os demais estados bloqueados (`modo_limitado`, empresa suspensa) SEGUEM
+ * para o Dashboard de propósito: neles a consulta continua liberada
+ * (Seção 6.6) e é lá que o app explica o bloqueio.
+ */
+export function destinoDaConta(conta: ContextoDaConta): '/dashboard' | '/pagamento' {
+  return conta.assinatura?.status === 'pendente_pagamento' ? '/pagamento' : '/dashboard';
 }
 
 /**

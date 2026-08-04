@@ -68,8 +68,9 @@ export default function Configuracoes() {
     },
     {
       titulo: 'Plano e assinatura',
-      descricao: 'Veja seu plano atual e o status da assinatura.',
-      disponivel: false,
+      descricao: 'Veja seu plano atual, o status da assinatura e troque de plano.',
+      destino: '/perfil/plano',
+      disponivel: true,
     },
   ];
 

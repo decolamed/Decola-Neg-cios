@@ -54,7 +54,8 @@ function avisoDaConta(
 }
 
 export default function Dashboard() {
-  const { carregando, conta, erro, recarregar, sair, temPermissao } = useSessao();
+  // "Sair da conta" saiu daqui: a Seção 7.14 a coloca no Perfil, com confirmação.
+  const { carregando, conta, erro, recarregar, temPermissao } = useSessao();
 
   if (carregando) return <TelaCarregando />;
 
@@ -141,20 +142,18 @@ export default function Dashboard() {
           </>
         ) : null}
 
+        <Botao
+          titulo="Perfil"
+          variante="secundario"
+          aoPressionar={() => router.push('/perfil')}
+          estilo={{ marginBottom: tema.espacamento.md }}
+        />
+
         <View style={estilos.placeholder}>
           <Text style={estilos.textoPlaceholder}>
             Os cards de resumo e o sino de notificações (Seção 7.2) entram nas próximas fases.
           </Text>
         </View>
-
-        <Botao
-          titulo="Sair da conta"
-          variante="texto"
-          aoPressionar={async () => {
-            await sair();
-            router.replace('/login');
-          }}
-        />
       </ScrollView>
     </SafeAreaView>
   );

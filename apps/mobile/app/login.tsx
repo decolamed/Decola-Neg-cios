@@ -23,7 +23,7 @@ import {
   entrarComSenha,
   sair,
 } from '@/dados/autenticacao';
-import { carregarContextoDaConta } from '@/dados/empresa';
+import { carregarContextoDaConta, destinoDaConta } from '@/dados/empresa';
 import { assinarMudancaDeConexao, MENSAGENS_SEM_CONEXAO } from '@/lib/conectividade';
 
 export default function Login() {
@@ -55,7 +55,7 @@ export default function Login() {
     const conta = await carregarContextoDaConta();
 
     if (conta) {
-      router.replace('/dashboard');
+      router.replace(destinoDaConta(conta));
       return;
     }
 

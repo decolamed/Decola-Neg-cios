@@ -14,7 +14,7 @@ apps/admin/         Painel Administrativo SaaS (Seção 7.15) — Fase 8
 packages/theme/     Design tokens centralizados (Seções 2.1–2.3)
 supabase/
   migrations/       Schema, RLS, triggers e RPCs
-  functions/        Edge Functions (geração de PDF/Excel, Seção 10.3)
+  functions/        Edge Functions (Asaas, convite por e-mail, PDF/Excel)
   tests/            Testes de RLS e regras de negócio
   scripts/          Seeds manuais (não replayados automaticamente)
 ```
@@ -29,7 +29,7 @@ supabase/
 | 4 | Vendas (Seções 7.3, 7.4, 8.1, 8.2, 8.5) | ✅ concluída |
 | 5 | Financeiro e relatórios (Seções 8.6, 10.2) | ✅ concluída |
 | 6 | Funcionários e permissões (Seções 5.2, 5.3, 7.8) | ✅ concluída |
-| 7 | Assinatura e pagamento — Asaas (Seções 6.4–6.7, 7.14) | pendente |
+| 7 | Assinatura e pagamento — Asaas (Seções 6.4–6.7, 7.14) | ✅ concluída |
 | 8 | Painel Administrativo (Seções 7.15, 11) | pendente |
 
 ## Princípio de segurança que rege todo o código
@@ -103,6 +103,29 @@ Pontos que o documento não cobria e foram fechados durante a implementação:
   chaves técnicas (Seção 4.12.1) e o documento não define rótulos comerciais. A
   tela humaniza a chave (`relatorios_avancados` → "Relatorios avancados") em vez
   de inventar nomes.
+- **Troca agendada em `assinaturas`.** A Seção 6.7 exige que o downgrade só
+  valha no próximo ciclo, mas a Seção 4.12.2 não modelou onde guardar a troca
+  pendente. Foram criadas `plano_agendado_id`, `troca_agendada_para` e
+  `valor_agendado`, com CHECK que impede agendamento pela metade. O valor fica
+  congelado no momento da solicitação, pelo mesmo princípio da Seção 7.15.
+- **`pendente_pagamento` volta para o pagamento, não para o Dashboard.** A
+  tabela da Seção 7.10 só olha o vínculo e manda ao Dashboard; a Seção 7.12 diz
+  que esse estado fica "sem acesso ao conteúdo do app até a confirmação". Quem
+  fechou o app antes de pagar volta para `/pagamento`. Os demais estados
+  bloqueados (`modo_limitado`, empresa suspensa) seguem para o Dashboard de
+  propósito: neles a consulta continua liberada (Seção 6.6) e é lá que o app
+  explica o bloqueio.
+- **Selo de trial some no modo troca.** A Seção 7.13 mostra "N dias grátis"
+  quando o trial está ligado, e reutiliza a mesma tela para troca de plano.
+  Quem já assina não recomeça um teste, então o selo não aparece nesse modo.
+- **Alterar senha reautentica antes.** A Seção 7.14 oferece "senha atual +
+  nova". O Supabase troca a senha sem pedir a atual, então o app confere a
+  atual com um `signInWithPassword` antes do `updateUser` — sem isso, um
+  aparelho desbloqueado trocaria a senha da conta sem prova de identidade.
+- **Preferência de notificação controla o push, não o registro.** A Seção 7.14
+  define o push como "complementar/best-effort" e o registro no banco como "a
+  fonte confiável". Desligar uma categoria para de enviar push; o alerta
+  continua sendo gravado e aparece no sino do Dashboard.
 
 ### Rodando os testes
 
@@ -113,6 +136,7 @@ Pontos que o documento não cobria e foram fechados durante a implementação:
 \i supabase/tests/estoque_fase3.sql
 \i supabase/tests/vendas_fase4.sql
 \i supabase/tests/funcionarios_fase6.sql
+\i supabase/tests/assinatura_fase7.sql
 ```
 
 Os scripts rodam em transação e fazem `ROLLBACK` no fim — não deixam resíduo.
@@ -141,11 +165,29 @@ promoção e o rebaixamento, as permissões individuais, a imutabilidade do Gest
 Principal, o limite de funcionários do plano e a remoção que preserva o
 histórico.
 
-**Ao ler os resultados:** dentro de um mesmo statement, todas as ramificações de
-um `UNION ALL` enxergam o snapshot do início do statement. Verificações de
-efeito colateral (auditoria, estoque final) precisam ficar em statements
-separados das ações que as produzem — caso contrário parecem falhar sem estarem
-falhando.
+`assinatura_fase7.sql` cobre o fechamento da escrita direta em `assinaturas`, a
+exclusividade de `gerenciar_assinatura`, as guardas da troca de plano, o
+downgrade recusado com a lista literal do excesso, o upgrade imediato, o
+downgrade agendado e desfeito, o job diário de expirações (trial, carência e
+downgrade vencido) com idempotência, e as regras de escrita do modo limitado.
+
+**Duas armadilhas ao ler os resultados:**
+
+1. Dentro de um mesmo statement, todas as ramificações de um `UNION ALL`
+   enxergam o snapshot do início do statement. Verificações de efeito colateral
+   (auditoria, estoque final) precisam ficar em statements separados das ações
+   que as produzem — caso contrário parecem falhar sem estarem falhando.
+2. A RLS barra `UPDATE` e `DELETE` **em silêncio**: 0 linhas afetadas, sem
+   exceção. Um teste que só pergunta "deu erro?" dá falso negativo. O helper
+   `bloqueado_em_silencio()` da Fase 7 confere o `row_count`, que é o que
+   realmente prova o bloqueio.
+
+Um detalhe do modelo que aparece nos testes: **um convite pendente não é
+legível pelo próprio convidado** — a política `empresa_usuarios_leitura` casa
+por `usuario_id` ou por empresa, e quem ainda não aceitou não tem nenhum dos
+dois. No app isso não é problema: o aceite passa pela RPC `aceitar_convite`
+(SECURITY DEFINER), que recebe o id pelo link do e-mail. Nos testes, o
+resolvedor `pg_temp.vinculo()` faz esse papel.
 
 ### Secrets das Edge Functions
 
@@ -158,6 +200,45 @@ convite continua criado no banco e pode ser reenviado depois:
 - `URL_CONVITE_BASE` — base do link de aceite. Sem ela cai no esquema do app
   (`decolanegocios://convite/<id>`), que funciona no dispositivo mas é
   bloqueado por vários webmails. O ideal é uma página web que redirecione.
+
+### Integração com o Asaas (Seções 6.4 e 7.12)
+
+Duas Edge Functions, e nenhuma delas roda no app:
+
+| Função | `verify_jwt` | Papel |
+|---|---|---|
+| `asaas-checkout` | `true` | Cria cliente e cobrança no Asaas e devolve a URL do checkout hospedado. |
+| `asaas-webhook` | `false` | **Única porta** que marca `assinaturas.status = 'ativa'`. |
+
+Secrets do projeto:
+
+- `ASAAS_API_KEY` — chave da API. Vive só aqui; nunca no app (Seções 6.4 e 9.1).
+- `ASAAS_AMBIENTE` — `sandbox` (padrão) ou `producao`.
+- `ASAAS_WEBHOOK_TOKEN` — segredo compartilhado com o painel do Asaas. O
+  webhook compara com o cabeçalho `asaas-access-token` em tempo constante e
+  responde 401 sem ele.
+
+No painel do Asaas, cadastre a URL do webhook e o mesmo token:
+
+```
+https://nakqafnchwydfogcozvc.supabase.co/functions/v1/asaas-webhook
+```
+
+Eventos tratados: `PAYMENT_CONFIRMED` e `PAYMENT_RECEIVED` (ativa e restaura o
+acesso, inclusive saindo do modo limitado), `PAYMENT_OVERDUE` (entra em
+carência com `configuracoes_plataforma.carencia_dias`) e os de estorno. O
+upsert por `asaas_payment_id` torna o reprocessamento inofensivo — o Asaas
+reenvia eventos.
+
+`verify_jwt` fica desligado no webhook porque quem chama é o Asaas, não um
+usuário: a autenticação é o token do cabeçalho.
+
+### Job diário de assinaturas
+
+`processar_assinaturas()` roda às 03:00 UTC via pg_cron (migration 0026) e
+aplica trial vencido, carência vencida e downgrade agendado, além dos avisos.
+É idempotente e está revogada de `anon` e `authenticated` — só o `service_role`
+executa. Nenhuma dessas transições pode depender de o app estar aberto.
 
 ### Configuração necessária no Supabase Auth
 

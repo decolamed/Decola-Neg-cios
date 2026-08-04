@@ -120,6 +120,10 @@ export type Assinatura = {
   proximo_vencimento: string | null;
   ativada_manualmente: boolean;
   ativada_por: string | null;
+  /** Downgrade solicitado, a aplicar no próximo vencimento (Seção 6.7). */
+  plano_agendado_id: string | null;
+  troca_agendada_para: string | null;
+  valor_agendado: number | null;
   criado_em: string;
   atualizado_em: string;
 };
@@ -426,6 +430,15 @@ export type Database = {
         Args: { p_desde: string; p_ate: string };
         Returns: Json;
       };
+      /** Seção 6.7 — upgrade imediato, downgrade no próximo ciclo. */
+      trocar_plano: {
+        Args: { p_plano_id: string };
+        Returns: Json;
+      };
+      cancelar_troca_de_plano: {
+        Args: Record<string, never>;
+        Returns: undefined;
+      };
     };
     Enums: Enums;
     CompositeTypes: Record<never, never>;
@@ -437,4 +450,15 @@ export type ResultadoCriacaoEmpresa = {
   empresa_id: string;
   assinatura_status: Enums['assinatura_status'];
   trial_expira_em: string | null;
+};
+
+/** Retorno da RPC de troca de plano (Seção 6.7). */
+export type ResultadoTrocaDePlano = {
+  /** `true` no upgrade (imediato); `false` no downgrade (próximo ciclo). */
+  aplicado: boolean;
+  tipo: 'upgrade' | 'downgrade';
+  plano_id: string;
+  /** Data em que o downgrade passa a valer. Ausente no upgrade. */
+  a_partir_de?: string;
+  mensagem: string;
 };

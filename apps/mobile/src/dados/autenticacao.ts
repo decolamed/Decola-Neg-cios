@@ -160,6 +160,30 @@ export async function enviarLinkDeRecuperacao(email: string): Promise<void> {
   }
 }
 
+/**
+ * Seção 7.14 — Alterar senha ("senha atual + nova"). A Seção 5.5 não exige
+ * complexidade: só não pode ser vazia.
+ *
+ * O Supabase troca a senha sem pedir a atual, então conferimos a atual
+ * reautenticando antes. Sem isso, um aparelho desbloqueado com a sessão aberta
+ * trocaria a senha da conta sem nenhuma prova de identidade.
+ */
+export async function alterarSenha(senhaAtual: string, novaSenha: string): Promise<void> {
+  await exigirConexao();
+
+  const { data: sessao } = await supabase.auth.getSession();
+  const email = sessao.session?.user.email;
+  if (!email) throw new ErroAutenticacao('Sessão expirada. Entre novamente.');
+
+  const conferencia = await supabase.auth.signInWithPassword({ email, password: senhaAtual });
+  if (conferencia.error) throw new ErroAutenticacao('A senha atual está incorreta.');
+
+  const { error } = await supabase.auth.updateUser({ password: novaSenha });
+  if (error) {
+    throw new ErroAutenticacao('Não foi possível alterar sua senha. Tente novamente.');
+  }
+}
+
 export async function sair(): Promise<void> {
   await supabase.auth.signOut();
 }

@@ -1,0 +1,397 @@
+/*
+ * Estilos do Painel Administrativo.
+ *
+ * Todo valor visual vem das variáveis geradas em `src/lib/tokens.ts` a partir
+ * de `packages/theme`. Não escreva hex, px de espaçamento ou tamanho de fonte
+ * aqui: o refino visual posterior precisa continuar sendo uma edição de um
+ * arquivo só.
+ */
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--cor-fundo);
+  color: var(--cor-texto);
+  font-family: var(--familia-corpo);
+  font-size: var(--fonte-corpo-tamanho);
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--familia-titulo);
+  margin: 0;
+}
+
+h1 {
+  font-size: var(--fonte-h1-tamanho);
+  font-weight: var(--fonte-h1-peso);
+}
+
+h2 {
+  font-size: var(--fonte-h2-tamanho);
+  font-weight: var(--fonte-h2-peso);
+}
+
+a {
+  color: var(--cor-primaria);
+}
+
+/* ---------------------------------------------------------------- layout -- */
+
+.painel {
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  min-height: 100vh;
+}
+
+.barra-lateral {
+  background: var(--cor-primaria);
+  color: var(--cor-textoInverso);
+  padding: var(--espaco-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--espaco-xs);
+}
+
+.barra-lateral .marca {
+  font-family: var(--familia-titulo);
+  font-size: var(--fonte-h2-tamanho);
+  font-weight: var(--fonte-h2-peso);
+  margin-bottom: var(--espaco-lg);
+}
+
+.barra-lateral a {
+  color: var(--cor-textoInverso);
+  text-decoration: none;
+  padding: var(--espaco-sm) var(--espaco-md);
+  border-radius: var(--raio-sm);
+  opacity: 0.85;
+}
+
+.barra-lateral a:hover {
+  opacity: 1;
+}
+
+.barra-lateral a.ativo {
+  background: rgba(255, 255, 255, 0.15);
+  opacity: 1;
+  font-weight: var(--fonte-corpoDestacado-peso);
+}
+
+.barra-lateral .rodape {
+  margin-top: auto;
+  font-size: var(--fonte-legenda-tamanho);
+  opacity: 0.85;
+}
+
+.conteudo {
+  padding: var(--espaco-xl);
+  max-width: 1100px;
+}
+
+.cabecalho {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--espaco-md);
+  margin-bottom: var(--espaco-lg);
+  flex-wrap: wrap;
+}
+
+.centralizado {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--espaco-md);
+  padding: var(--espaco-lg);
+  text-align: center;
+}
+
+/* ----------------------------------------------------------------- card --- */
+
+.card {
+  background: var(--cor-fundoCard);
+  border-radius: var(--raio-md);
+  padding: var(--espaco-lg);
+  box-shadow: var(--sombra-card);
+  margin-bottom: var(--espaco-md);
+}
+
+.grade-metricas {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: var(--espaco-md);
+  margin-bottom: var(--espaco-lg);
+}
+
+.metrica {
+  background: var(--cor-fundoCard);
+  border-radius: var(--raio-md);
+  padding: var(--espaco-lg);
+  box-shadow: var(--sombra-card);
+}
+
+.metrica .rotulo {
+  font-size: var(--fonte-legenda-tamanho);
+  color: var(--cor-textoSuave);
+  display: block;
+}
+
+.metrica .valor {
+  font-family: var(--familia-titulo);
+  font-size: var(--fonte-h1-tamanho);
+  font-weight: var(--fonte-h1-peso);
+  color: var(--cor-primaria);
+  display: block;
+  margin-top: var(--espaco-xs);
+}
+
+.metrica .nota {
+  font-size: var(--fonte-legenda-tamanho);
+  color: var(--cor-textoSuave);
+}
+
+.metrica.atencao .valor {
+  color: var(--cor-erro);
+}
+
+/* --------------------------------------------------------------- tabela --- */
+
+.tabela {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--cor-fundoCard);
+  border-radius: var(--raio-md);
+  overflow: hidden;
+  box-shadow: var(--sombra-card);
+}
+
+.tabela th,
+.tabela td {
+  text-align: left;
+  padding: var(--espaco-md);
+  border-bottom: 1px solid var(--cor-borda);
+}
+
+.tabela th {
+  font-size: var(--fonte-legenda-tamanho);
+  color: var(--cor-textoSuave);
+  font-weight: var(--fonte-corpoDestacado-peso);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.tabela tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.tabela tbody tr.clicavel {
+  cursor: pointer;
+}
+
+.tabela tbody tr.clicavel:hover {
+  background: var(--cor-fundo);
+}
+
+/* --------------------------------------------------------------- badges --- */
+
+.badge {
+  display: inline-block;
+  padding: 2px var(--espaco-sm);
+  border-radius: var(--raio-pill);
+  font-size: var(--fonte-legenda-tamanho);
+  font-weight: var(--fonte-corpoDestacado-peso);
+  background: var(--cor-fundo);
+  color: var(--cor-textoSuave);
+  white-space: nowrap;
+}
+
+.badge.positivo {
+  background: var(--cor-positivo);
+  color: var(--cor-textoInverso);
+}
+
+.badge.alerta {
+  background: var(--cor-alerta);
+  color: var(--cor-texto);
+}
+
+.badge.negativo {
+  background: var(--cor-negativo);
+  color: var(--cor-textoInverso);
+}
+
+/* ------------------------------------------------------------ controles --- */
+
+.botao {
+  font-family: var(--familia-corpo);
+  font-size: var(--fonte-botao-tamanho);
+  font-weight: var(--fonte-botao-peso);
+  border: none;
+  border-radius: var(--raio-sm);
+  padding: var(--espaco-sm) var(--espaco-md);
+  cursor: pointer;
+  background: var(--cor-acaoPrimaria);
+  color: var(--cor-textoInverso);
+}
+
+.botao:hover:not(:disabled) {
+  background: var(--cor-acao-pressionada);
+}
+
+.botao.secundario {
+  background: var(--cor-primaria);
+}
+
+.botao.secundario:hover:not(:disabled) {
+  background: var(--cor-primaria-pressionada);
+}
+
+.botao.discreto {
+  background: transparent;
+  color: var(--cor-primaria);
+  border: 1px solid var(--cor-borda);
+}
+
+.botao.discreto:hover:not(:disabled) {
+  background: var(--cor-fundo);
+}
+
+.botao:disabled {
+  opacity: var(--opacidade-desabilitado);
+  cursor: not-allowed;
+}
+
+.acoes {
+  display: flex;
+  gap: var(--espaco-sm);
+  flex-wrap: wrap;
+}
+
+.campo {
+  display: block;
+  margin-bottom: var(--espaco-md);
+}
+
+.campo > span {
+  display: block;
+  font-size: var(--fonte-legenda-tamanho);
+  color: var(--cor-textoSuave);
+  margin-bottom: var(--espaco-xs);
+}
+
+.campo input,
+.campo select,
+.campo textarea {
+  width: 100%;
+  font-family: var(--familia-corpo);
+  font-size: var(--fonte-corpo-tamanho);
+  color: var(--cor-texto);
+  background: var(--cor-superficie);
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio-sm);
+  padding: var(--espaco-sm) var(--espaco-md);
+}
+
+.campo input:focus,
+.campo select:focus {
+  outline: 2px solid var(--cor-secundaria);
+  outline-offset: -1px;
+}
+
+.campo.com-erro input,
+.campo.com-erro select {
+  border-color: var(--cor-bordaErro);
+}
+
+.linha-campos {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: var(--espaco-md);
+}
+
+.filtros {
+  display: flex;
+  gap: var(--espaco-md);
+  flex-wrap: wrap;
+  align-items: flex-end;
+  margin-bottom: var(--espaco-md);
+}
+
+.filtros .campo {
+  margin-bottom: 0;
+  min-width: 200px;
+}
+
+/* ---------------------------------------------------------------- aviso --- */
+
+.aviso {
+  border-radius: var(--raio-sm);
+  padding: var(--espaco-md);
+  margin-bottom: var(--espaco-md);
+  font-size: var(--fonte-corpo-tamanho);
+}
+
+.aviso.erro {
+  background: #fbe9e9;
+  color: var(--cor-erro);
+}
+
+.aviso.sucesso {
+  background: #e8f5fc;
+  color: var(--cor-primaria);
+}
+
+.aviso.alerta {
+  background: #fdf4e0;
+  color: #8a6412;
+}
+
+.vazio {
+  color: var(--cor-textoSuave);
+  padding: var(--espaco-lg);
+  text-align: center;
+}
+
+.legenda {
+  font-size: var(--fonte-legenda-tamanho);
+  color: var(--cor-textoSuave);
+}
+
+.destaque {
+  font-weight: var(--fonte-corpoDestacado-peso);
+}
+
+/* ---------------------------------------------------------------- modal --- */
+
+.fundo-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--espaco-md);
+  z-index: 10;
+}
+
+.modal {
+  background: var(--cor-fundoCard);
+  border-radius: var(--raio-md);
+  padding: var(--espaco-lg);
+  width: 100%;
+  max-width: 520px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: var(--sombra-card);
+}
+
+.modal h2 {
+  margin-bottom: var(--espaco-md);
+}

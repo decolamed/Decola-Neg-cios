@@ -8,6 +8,8 @@
     "packages/*"
   ],
   "scripts": {
-    "mobile": "npm run start --workspace @decola/mobile"
+    "mobile": "npm run start --workspace @decola/mobile",
+    "painel": "npm run dev --workspace @decola/admin",
+    "painel:build": "npm run build --workspace @decola/admin"
   }
 }

@@ -10,7 +10,7 @@ produto e arquitetura já está tomada lá; este repositório implementa.
 
 ```
 apps/mobile/        App cliente — React Native + Expo (Seção 3.1)
-apps/admin/         Painel Administrativo SaaS (Seção 7.15) — Fase 8
+apps/admin/         Painel Administrativo SaaS — Vite + React (Seção 7.15)
 packages/theme/     Design tokens centralizados (Seções 2.1–2.3)
 supabase/
   migrations/       Schema, RLS, triggers e RPCs
@@ -30,7 +30,7 @@ supabase/
 | 5 | Financeiro e relatórios (Seções 8.6, 10.2) | ✅ concluída |
 | 6 | Funcionários e permissões (Seções 5.2, 5.3, 7.8) | ✅ concluída |
 | 7 | Assinatura e pagamento — Asaas (Seções 6.4–6.7, 7.14) | ✅ concluída |
-| 8 | Painel Administrativo (Seções 7.15, 11) | pendente |
+| 8 | Painel Administrativo (Seções 7.15, 11) | ✅ concluída |
 
 ## Princípio de segurança que rege todo o código
 
@@ -126,6 +126,25 @@ Pontos que o documento não cobria e foram fechados durante a implementação:
   define o push como "complementar/best-effort" e o registro no banco como "a
   fonte confiável". Desligar uma categoria para de enviar push; o alerta
   continua sendo gravado e aparece no sino do Dashboard.
+- **`empresas.encerrada_em`.** A Seção 7.15 A pede a taxa de cancelamento do
+  mês, e a Seção 6.9 define `inativa` como o status "para empresas encerradas",
+  mas não havia onde guardar QUANDO isso aconteceu. Sem a coluna, o churn teria
+  de adivinhar a partir de `atualizado_em`, que muda por qualquer edição.
+  Preenchida ao encerrar e limpa ao reativar.
+- **Painel administrativo em Vite + React.** A Seção 11.1 diz "provavelmente
+  web" sem fechar a stack. É um app estático, fora do Expo, consumindo os
+  mesmos tokens de `packages/theme` convertidos em variáveis CSS.
+- **Troca de plano pelo painel não agenda nem bloqueia.** A Seção 6.7 rege o
+  autoatendimento do Gestor (downgrade no próximo ciclo, recusado se exceder
+  limites). A Seção 7.15 B dá ao administrador uma ação diferente — "troca o
+  plano da empresa diretamente, fora do fluxo de autoatendimento" — então
+  `admin_alterar_plano_empresa` aplica na hora e aceita um valor combinado.
+  Continua sem desativar nada sozinho.
+- **Auditoria de plataforma com `empresa_id` nulo.** Editar um plano ou as
+  configurações do SaaS não pertence a nenhuma empresa. A coluna já era
+  anulável para isso; o registro da exclusão definitiva também nasce nulo de
+  propósito, porque `logs_auditoria` cascateia a partir de `empresas` e um log
+  amarrado à empresa desapareceria junto com ela.
 
 ### Rodando os testes
 
@@ -137,6 +156,7 @@ Pontos que o documento não cobria e foram fechados durante a implementação:
 \i supabase/tests/vendas_fase4.sql
 \i supabase/tests/funcionarios_fase6.sql
 \i supabase/tests/assinatura_fase7.sql
+\i supabase/tests/administrativo_fase8.sql
 ```
 
 Os scripts rodam em transação e fazem `ROLLBACK` no fim — não deixam resíduo.
@@ -171,6 +191,12 @@ downgrade recusado com a lista literal do excesso, o upgrade imediato, o
 downgrade agendado e desfeito, o job diário de expirações (trial, carência e
 downgrade vencido) com idempotência, e as regras de escrita do modo limitado.
 
+`administrativo_fase8.sql` cobre o isolamento do painel (nenhuma RPC `admin_*`
+aceita usuário de empresa), o fechamento de `planos` e `configuracoes_plataforma`
+ao cliente, a auditoria das entidades de plataforma, a ativação manual com os
+três desfechos de e-mail, o status da empresa e o churn, o período de teste por
+empresa, as métricas e a exclusão definitiva com confirmação.
+
 **Duas armadilhas ao ler os resultados:**
 
 1. Dentro de um mesmo statement, todas as ramificações de um `UNION ALL`
@@ -188,6 +214,16 @@ por `usuario_id` ou por empresa, e quem ainda não aceitou não tem nenhum dos
 dois. No app isso não é problema: o aceite passa pela RPC `aceitar_convite`
 (SECURITY DEFINER), que recebe o id pelo link do e-mail. Nos testes, o
 resolvedor `pg_temp.vinculo()` faz esse papel.
+
+### Edge Functions do painel
+
+`admin-criar-empresa` (`verify_jwt=true`) faz a ativação manual da Seção 6.9.
+Existe por um motivo só: criar a conta do responsável quando o e-mail ainda não
+existe exige a Admin API do Auth, e portanto a service key — que nunca pode
+viver no navegador. A parte transacional continua sendo da RPC
+`admin_criar_empresa`, que revalida a autorização sob a identidade de quem
+chamou. Secret opcional: `URL_PAINEL_BASE`, destino do link de definição de
+senha enviado ao responsável.
 
 ### Secrets das Edge Functions
 
@@ -257,12 +293,18 @@ Dois ajustes no painel do projeto, sem os quais a Fase 2 não funciona:
 Ver `supabase/scripts/criar_administrador.sql` — criação manual, nunca por
 autoatendimento (Seção 7.15).
 
-## App
+## Apps
 
 ```bash
 npm install
+
+# App cliente (React Native + Expo)
 cp apps/mobile/.env.example apps/mobile/.env   # preencher URL e anon key
 npm run mobile
+
+# Painel Administrativo (Vite + React)
+cp apps/admin/.env.example apps/admin/.env     # preencher URL e anon key
+npm run painel
 ```
 
 A anon key do Supabase é pública por design — quem protege os dados é a RLS.

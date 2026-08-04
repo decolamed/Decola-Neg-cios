@@ -68,6 +68,8 @@ export type Empresa = {
   chave_pix: string | null;
   status: Enums['empresa_status'];
   alerta_estoque_percentual: number;
+  /** Quando a empresa passou a `inativa` (encerrada). Base do churn (7.15 A). */
+  encerrada_em: string | null;
   criado_em: string;
   atualizado_em: string;
 };
@@ -437,6 +439,41 @@ export type Database = {
       };
       cancelar_troca_de_plano: {
         Args: Record<string, never>;
+        Returns: undefined;
+      };
+      /** Seção 7.15 A — métricas da plataforma, só para administrador. */
+      admin_metricas: {
+        Args: Record<string, never>;
+        Returns: Json;
+      };
+      /** Seções 6.9 e 7.15 B — ativação manual de conta. */
+      admin_criar_empresa: {
+        Args: {
+          p_usuario_id: string;
+          p_nome_empresa: string;
+          p_plano_id: string;
+          p_status?: Enums['empresa_status'];
+        };
+        Returns: Json;
+      };
+      admin_definir_status_empresa: {
+        Args: { p_empresa_id: string; p_status: Enums['empresa_status'] };
+        Returns: undefined;
+      };
+      admin_alterar_plano_empresa: {
+        Args: { p_empresa_id: string; p_plano_id: string; p_valor?: number };
+        Returns: undefined;
+      };
+      admin_ativar_assinatura: {
+        Args: { p_empresa_id: string };
+        Returns: undefined;
+      };
+      admin_definir_trial: {
+        Args: { p_empresa_id: string; p_expira_em: string };
+        Returns: undefined;
+      };
+      admin_excluir_empresa: {
+        Args: { p_empresa_id: string; p_confirmacao: string };
         Returns: undefined;
       };
     };

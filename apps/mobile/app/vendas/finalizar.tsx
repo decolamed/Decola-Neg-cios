@@ -8,25 +8,25 @@
  */
 import { useCallback, useMemo, useState } from 'react';
 import { router } from 'expo-router';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import QRCode from 'react-native-qrcode-svg';
 import tema from '@decola/theme';
 import { Aviso } from '@/componentes/Aviso';
 import { Botao } from '@/componentes/Botao';
 import { TelaMensagem } from '@/componentes/EstadoDaTela';
-import { Seletor } from '@/componentes/Seletor';
+import { Icone, type NomeDeIcone } from '@/componentes/Icone';
 import { useCarrinho } from '@/contexto/CarrinhoContexto';
 import { useSessao } from '@/contexto/SessaoContexto';
 import { registrarVenda, type FormaPagamento } from '@/dados/vendas';
 import { moeda } from '@/lib/formato';
 import { gerarPayloadPix } from '@/lib/pix';
 
-const FORMAS: { valor: FormaPagamento; rotulo: string }[] = [
-  { valor: 'dinheiro', rotulo: 'Dinheiro' },
-  { valor: 'pix', rotulo: 'Pix' },
-  { valor: 'cartao', rotulo: 'Cartão' },
-  { valor: 'outros', rotulo: 'Outros' },
+const FORMAS: { valor: FormaPagamento; rotulo: string; icone: NomeDeIcone }[] = [
+  { valor: 'dinheiro', rotulo: 'Dinheiro', icone: 'dinheiro' },
+  { valor: 'pix', rotulo: 'Pix', icone: 'pix' },
+  { valor: 'cartao', rotulo: 'Cartão', icone: 'cartao' },
+  { valor: 'outros', rotulo: 'Outros', icone: 'outros' },
 ];
 
 export default function FinalizarVenda() {
@@ -142,16 +142,40 @@ export default function FinalizarVenda() {
           </View>
         </View>
 
-        <Seletor
-          rotulo="Forma de pagamento"
-          opcoes={FORMAS.map((f) => ({ valor: f.valor, rotulo: f.rotulo }))}
-          selecionado={forma}
-          aoSelecionar={(valor) => {
-            setForma((valor as FormaPagamento) ?? 'dinheiro');
-            setPixGerado(null);
-            setErroPix(null);
-          }}
-        />
+        {/* Forma de pagamento — mesmas quatro opções da Seção 7.4, com ícone
+            para reconhecimento imediato no balcão. */}
+        <Text style={estilos.rotuloSecao}>Forma de pagamento</Text>
+        <View style={estilos.formas}>
+          {FORMAS.map((f) => {
+            const ativa = forma === f.valor;
+            return (
+              <Pressable
+                key={f.valor}
+                onPress={() => {
+                  setForma(f.valor);
+                  setPixGerado(null);
+                  setErroPix(null);
+                }}
+                accessibilityRole="button"
+                accessibilityState={{ selected: ativa }}
+                style={({ pressed }) => [
+                  estilos.formaCartao,
+                  ativa && estilos.formaAtiva,
+                  pressed && { opacity: 0.85 },
+                ]}
+              >
+                <Icone
+                  nome={f.icone}
+                  cor={ativa ? tema.cores.primaria : tema.cores.textoSuave}
+                  tamanho={24}
+                />
+                <Text style={[estilos.formaRotulo, ativa && estilos.formaRotuloAtivo]}>
+                  {f.rotulo}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
 
         {/* Seção 7.4 — geração de cobrança Pix. NÃO há confirmação automática:
             o QR Code é só para o cliente pagar; quem confirma a venda é o
@@ -202,12 +226,40 @@ const estilos = StyleSheet.create({
   titulo: { ...tema.tipografia.h1, color: tema.cores.texto, marginBottom: tema.espacamento.md },
   card: {
     backgroundColor: tema.cores.fundoCard,
-    borderRadius: tema.raio.md,
+    borderRadius: tema.raio.lg,
     padding: tema.espacamento.md,
     marginBottom: tema.espacamento.md,
     ...tema.elevacao.card,
   },
   tituloCard: { ...tema.tipografia.h2, color: tema.cores.texto, marginBottom: tema.espacamento.sm },
+  rotuloSecao: {
+    ...tema.tipografia.rotulo,
+    color: tema.cores.texto,
+    marginBottom: tema.espacamento.sm,
+  },
+  formas: {
+    flexDirection: 'row',
+    gap: tema.espacamento.sm,
+    marginBottom: tema.espacamento.md,
+  },
+  formaCartao: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: tema.espacamento.xs,
+    paddingVertical: tema.espacamento.md,
+    borderRadius: tema.raio.md,
+    borderWidth: 1,
+    borderColor: tema.cores.bordaSuave,
+    backgroundColor: tema.cores.fundoCard,
+  },
+  formaAtiva: {
+    borderColor: tema.cores.secundaria,
+    borderWidth: 1.5,
+    backgroundColor: tema.tons.secundaria,
+  },
+  formaRotulo: { ...tema.tipografia.legenda, color: tema.cores.textoSuave },
+  formaRotuloAtivo: { ...tema.tipografia.rotulo, color: tema.cores.primaria },
   linhaItem: {
     flexDirection: 'row',
     justifyContent: 'space-between',

@@ -31,6 +31,8 @@ import { Botao } from '@/componentes/Botao';
 import { CampoTexto } from '@/componentes/CampoTexto';
 import { Checkbox } from '@/componentes/Checkbox';
 import { TelaCarregando, TelaMensagem } from '@/componentes/EstadoDaTela';
+import { Icone, LadrilhoDeIcone } from '@/componentes/Icone';
+import { Marca, AssinaturaDecola } from '@/componentes/Marca';
 import {
   cadastrarComSenha,
   emailValido,
@@ -216,11 +218,16 @@ export default function Cadastro() {
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <ScrollView contentContainerStyle={estilos.conteudo} keyboardShouldPersistTaps="handled">
+          <Marca escura comTagline={false} />
+
           <Text style={estilos.titulo}>Criar conta</Text>
+          <Text style={estilos.subtitulo}>Comece a organizar suas vendas hoje</Text>
 
           {/* Indicador do plano selecionado. A opção de trocar não aparece no
               fluxo de link direto, onde o plano vem fixo (Seção 6.3). */}
           <View style={estilos.cardPlano}>
+            <LadrilhoDeIcone nome="plano" cor={tema.cores.secundaria} tamanho={40} />
+
             <View style={estilos.infoPlano}>
               <Text style={estilos.rotuloPlano}>Plano selecionado</Text>
               <Text style={estilos.nomePlano}>{plano.plano.nome}</Text>
@@ -271,6 +278,7 @@ export default function Cadastro() {
             </>
           ) : (
             <View style={estilos.contaGoogle}>
+              <Icone nome="perfil" cor={tema.cores.secundaria} tamanho={20} />
               <Text style={estilos.textoContaGoogle}>Conectado como {email}</Text>
             </View>
           )}
@@ -310,6 +318,8 @@ export default function Cadastro() {
               Faça login
             </Link>
           </View>
+
+          <AssinaturaDecola escura />
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -317,37 +327,57 @@ export default function Cadastro() {
 }
 
 const estilos = StyleSheet.create({
-  tela: { flex: 1, backgroundColor: tema.cores.fundo },
-  conteudo: { flexGrow: 1, padding: tema.espacamento.lg },
-  titulo: { ...tema.tipografia.h1, color: tema.cores.texto, marginBottom: tema.espacamento.md },
+  tela: { flex: 1, backgroundColor: tema.cores.superficie },
+  conteudo: {
+    flexGrow: 1,
+    padding: tema.espacamento.xl,
+    paddingTop: tema.espacamento.lg,
+  },
+  titulo: {
+    ...tema.tipografia.h1,
+    color: tema.cores.texto,
+    marginTop: tema.espacamento.xl,
+  },
+  subtitulo: {
+    ...tema.tipografia.corpo,
+    color: tema.cores.textoSuave,
+    marginTop: tema.espacamento.xs,
+    marginBottom: tema.espacamento.lg,
+  },
   cardPlano: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    gap: tema.espacamento.md,
     backgroundColor: tema.cores.fundoCard,
-    borderRadius: tema.raio.md,
+    borderRadius: tema.raio.lg,
+    borderWidth: 1,
+    borderColor: tema.cores.secundaria,
     padding: tema.espacamento.md,
     marginBottom: tema.espacamento.lg,
     ...tema.elevacao.card,
   },
   infoPlano: { flex: 1 },
-  rotuloPlano: { ...tema.tipografia.legenda, color: tema.cores.textoSuave },
+  rotuloPlano: { ...tema.tipografia.rotulo, color: tema.cores.textoSuave },
   nomePlano: { ...tema.tipografia.h2, color: tema.cores.texto, marginTop: 2 },
   valorPlano: { ...tema.tipografia.corpoDestacado, color: tema.cores.primaria, marginTop: 2 },
   contaGoogle: {
-    backgroundColor: tema.cores.fundoCard,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: tema.espacamento.sm,
+    backgroundColor: tema.tons.secundaria,
     borderRadius: tema.raio.md,
     padding: tema.espacamento.md,
     marginBottom: tema.espacamento.md,
   },
-  textoContaGoogle: { ...tema.tipografia.corpo, color: tema.cores.textoSuave },
+  textoContaGoogle: { ...tema.tipografia.corpoDestacado, color: tema.cores.primaria, flex: 1 },
   textoTermos: { ...tema.tipografia.corpo, color: tema.cores.texto },
-  link: { ...tema.tipografia.corpoDestacado, color: tema.cores.primaria },
+  link: { ...tema.tipografia.corpoDestacado, color: tema.cores.destrutiva },
   rodape: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: tema.espacamento.lg,
+    marginTop: tema.espacamento.xl,
+    marginBottom: tema.espacamento.lg,
     flexWrap: 'wrap',
   },
   textoRodape: { ...tema.tipografia.corpo, color: tema.cores.textoSuave },

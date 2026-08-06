@@ -132,7 +132,7 @@ const estilos = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: tema.cores.fundoCard,
-    borderRadius: tema.raio.md,
+    borderRadius: tema.raio.lg,
     padding: tema.espacamento.md,
     marginBottom: tema.espacamento.sm,
     ...tema.elevacao.card,

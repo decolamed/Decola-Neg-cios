@@ -15,6 +15,7 @@ import tema from '@decola/theme';
 import { Aviso } from '@/componentes/Aviso';
 import { Botao } from '@/componentes/Botao';
 import { TelaCarregando, TelaMensagem } from '@/componentes/EstadoDaTela';
+import { Icone } from '@/componentes/Icone';
 import { useSessao } from '@/contexto/SessaoContexto';
 import {
   listarFuncionarios,
@@ -128,10 +129,18 @@ export default function Funcionarios() {
   );
 }
 
+function iniciais(nome: string): string {
+  const partes = nome.trim().split(/\s+/).filter(Boolean);
+  if (partes.length === 0) return '?';
+  if (partes.length === 1) return partes[0].slice(0, 1).toUpperCase();
+  return (partes[0][0] + partes[partes.length - 1][0]).toUpperCase();
+}
+
 function ItemFuncionario({ funcionario }: { funcionario: Funcionario }) {
   // O Gestor Principal não pode ser rebaixado nem removido (Seção 4.3), então
   // não abre a tela de ações.
   const imutavel = funcionario.papel === 'gestor_principal';
+  const semAcesso = funcionario.status === 'removido';
 
   return (
     <Pressable
@@ -139,6 +148,17 @@ function ItemFuncionario({ funcionario }: { funcionario: Funcionario }) {
       onPress={() => router.push(`/funcionarios/${funcionario.id}`)}
       style={({ pressed }) => [estilos.item, pressed && !imutavel && { opacity: 0.85 }]}
     >
+      <View
+        style={[
+          estilos.avatar,
+          semAcesso && { backgroundColor: tema.cores.fundo },
+        ]}
+      >
+        <Text style={[estilos.iniciais, semAcesso && { color: tema.cores.textoSuave }]}>
+          {iniciais(funcionario.nome)}
+        </Text>
+      </View>
+
       <View style={{ flex: 1 }}>
         <Text style={estilos.nome} numberOfLines={1}>
           {funcionario.nome}
@@ -163,15 +183,15 @@ function ItemFuncionario({ funcionario }: { funcionario: Funcionario }) {
         </View>
       </View>
 
-      {!imutavel ? <Text style={estilos.seta}>›</Text> : null}
+      {!imutavel ? <Icone nome="seta" cor={tema.cores.textoSuave} tamanho={18} /> : null}
     </Pressable>
   );
 }
 
 function Etiqueta({ texto, cor }: { texto: string; cor: string }) {
   return (
-    <View style={[estilos.etiqueta, { borderColor: cor }]}>
-      <Text style={[estilos.textoEtiqueta, { color: cor }]}>{texto}</Text>
+    <View style={[estilos.etiqueta, { backgroundColor: tema.clarear(cor) }]}>
+      <Text style={[estilos.textoEtiqueta, { color: tema.escurecer(cor, 0.18) }]}>{texto}</Text>
     </View>
   );
 }
@@ -195,21 +215,34 @@ const estilos = StyleSheet.create({
   item: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: tema.espacamento.md,
     backgroundColor: tema.cores.fundoCard,
-    borderRadius: tema.raio.md,
+    borderRadius: tema.raio.lg,
     padding: tema.espacamento.md,
     marginBottom: tema.espacamento.sm,
     ...tema.elevacao.card,
   },
+  avatar: {
+    width: 44,
+    height: 44,
+    borderRadius: tema.raio.pill,
+    backgroundColor: tema.cores.primaria,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  iniciais: { ...tema.tipografia.corpoDestacado, color: tema.cores.destaque },
   nome: { ...tema.tipografia.corpoDestacado, color: tema.cores.texto },
   email: { ...tema.tipografia.legenda, color: tema.cores.textoSuave, marginTop: 2 },
-  etiquetas: { flexDirection: 'row', gap: tema.espacamento.xs, marginTop: tema.espacamento.xs },
+  etiquetas: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: tema.espacamento.xs,
+    marginTop: tema.espacamento.sm,
+  },
   etiqueta: {
-    borderWidth: 1,
     borderRadius: tema.raio.pill,
     paddingHorizontal: tema.espacamento.sm,
-    paddingVertical: 1,
+    paddingVertical: 3,
   },
-  textoEtiqueta: tema.tipografia.legenda,
-  seta: { ...tema.tipografia.h2, color: tema.cores.textoSuave, marginLeft: tema.espacamento.sm },
+  textoEtiqueta: tema.tipografia.rotulo,
 });

@@ -11,11 +11,13 @@ import { usePathname, router } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import tema from '@decola/theme';
+import { Icone, type NomeDeIcone } from '@/componentes/Icone';
 import { useSessao } from '@/contexto/SessaoContexto';
 
 type Item = {
   rotulo: string;
   destino: string;
+  icone: NomeDeIcone;
   /** Prefixos de rota que deixam este item em destaque. */
   ativoEm: string[];
 };
@@ -26,17 +28,23 @@ export function MenuInferior() {
   const margens = useSafeAreaInsets();
 
   const itens: Item[] = [
-    { rotulo: 'Início', destino: '/dashboard', ativoEm: ['/dashboard'] },
-    { rotulo: 'Vendas', destino: '/vendas', ativoEm: ['/vendas'] },
+    { rotulo: 'Início', destino: '/dashboard', icone: 'inicio', ativoEm: ['/dashboard'] },
+    { rotulo: 'Vendas', destino: '/vendas', icone: 'vendas', ativoEm: ['/vendas'] },
   ];
 
   const itensDireita: Item[] = [];
   if (temPermissao('visualizar_financeiro')) {
-    itensDireita.push({ rotulo: 'Financeiro', destino: '/financeiro', ativoEm: ['/financeiro'] });
+    itensDireita.push({
+      rotulo: 'Financeiro',
+      destino: '/financeiro',
+      icone: 'financeiro',
+      ativoEm: ['/financeiro'],
+    });
   }
   itensDireita.push({
     rotulo: 'Mais',
     destino: '/mais',
+    icone: 'menu',
     ativoEm: ['/mais', '/produtos', '/funcionarios', '/configuracoes', '/perfil', '/relatorios'],
   });
 
@@ -56,7 +64,7 @@ export function MenuInferior() {
         accessibilityLabel="Nova venda"
         style={({ pressed }) => [estilos.botaoCentral, pressed && { opacity: 0.85 }]}
       >
-        <Text style={estilos.sinalMais}>+</Text>
+        <Icone nome="mais" cor={tema.cores.textoSobreAcao} tamanho={26} />
       </Pressable>
 
       {itensDireita.map((item) => (
@@ -74,6 +82,11 @@ function ItemDoMenu({ item, ativo }: { item: Item; ativo: boolean }) {
       accessibilityState={{ selected: ativo }}
       style={({ pressed }) => [estilos.item, pressed && { opacity: 0.7 }]}
     >
+      <Icone
+        nome={item.icone}
+        cor={ativo ? tema.cores.primaria : tema.cores.textoSuave}
+        tamanho={22}
+      />
       <Text style={[estilos.rotulo, ativo && estilos.rotuloAtivo]}>{item.rotulo}</Text>
     </Pressable>
   );
@@ -86,27 +99,29 @@ const estilos = StyleSheet.create({
     justifyContent: 'space-around',
     backgroundColor: tema.cores.superficie,
     borderTopWidth: 1,
-    borderTopColor: tema.cores.borda,
+    borderTopColor: tema.cores.bordaSuave,
     paddingTop: tema.espacamento.sm,
     paddingHorizontal: tema.espacamento.sm,
   },
-  item: { flex: 1, alignItems: 'center', paddingVertical: tema.espacamento.xs },
-  rotulo: { ...tema.tipografia.legenda, color: tema.cores.textoSuave },
-  rotuloAtivo: { ...tema.tipografia.botao, color: tema.cores.primaria },
+  item: {
+    flex: 1,
+    alignItems: 'center',
+    gap: 3,
+    paddingVertical: tema.espacamento.xs,
+  },
+  rotulo: { ...tema.tipografia.micro, fontWeight: '400', color: tema.cores.textoSuave },
+  rotuloAtivo: { ...tema.tipografia.micro, color: tema.cores.primaria },
   botaoCentral: {
-    width: 52,
-    height: 52,
+    width: 56,
+    height: 56,
     borderRadius: tema.raio.pill,
     backgroundColor: tema.cores.acaoPrimaria,
     alignItems: 'center',
     justifyContent: 'center',
     marginHorizontal: tema.espacamento.sm,
-    ...tema.elevacao.card,
-  },
-  sinalMais: {
-    color: tema.cores.textoInverso,
-    fontSize: 28,
-    lineHeight: 32,
-    fontWeight: '600',
+    marginTop: -22,
+    borderWidth: 4,
+    borderColor: tema.cores.superficie,
+    ...tema.elevacao.flutuante,
   },
 });

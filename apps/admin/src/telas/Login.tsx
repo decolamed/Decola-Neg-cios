@@ -63,7 +63,11 @@ export function Login() {
 
   return (
     <div className="centralizado">
-      <h1>Decola Negócios</h1>
+      <img
+        src="/marca/logo-nome-escuro.png"
+        alt="Decola Negócios"
+        style={{ width: 200, height: 'auto' }}
+      />
       <p className="legenda">Painel Administrativo</p>
 
       <form className="card" style={{ width: 380, textAlign: 'left' }} onSubmit={enviar}>
@@ -98,6 +102,12 @@ export function Login() {
         Acesso restrito à equipe da plataforma. Contas de administrador são criadas internamente —
         não há cadastro nem recuperação de senha por autoatendimento.
       </p>
+
+      <img
+        src="/marca/by-decola-escuro.png"
+        alt="by Decola"
+        style={{ width: 80, height: 'auto', opacity: 0.5 }}
+      />
     </div>
   );
 }

@@ -17,6 +17,8 @@ import { Aviso } from '@/componentes/Aviso';
 import { Botao } from '@/componentes/Botao';
 import { CampoTexto } from '@/componentes/CampoTexto';
 import { TelaCarregando, TelaMensagem } from '@/componentes/EstadoDaTela';
+import { Badge } from '@/componentes/BadgeStatus';
+import { Icone } from '@/componentes/Icone';
 import { useSessao } from '@/contexto/SessaoContexto';
 import {
   buscarVenda,
@@ -32,6 +34,14 @@ const ROTULO_PAGAMENTO: Record<string, string> = {
   pix: 'Pix',
   cartao: 'Cartão',
   outros: 'Outros',
+};
+
+/** Ícone da forma de pagamento — aparência apenas. */
+const ICONE_PAGAMENTO: Record<string, 'dinheiro' | 'pix' | 'cartao' | 'outros'> = {
+  dinheiro: 'dinheiro',
+  pix: 'pix',
+  cartao: 'cartao',
+  outros: 'outros',
 };
 
 export default function DetalhesDaVenda() {
@@ -132,10 +142,23 @@ export default function DetalhesDaVenda() {
   return (
     <SafeAreaView style={estilos.tela}>
       <ScrollView contentContainerStyle={estilos.conteudo} keyboardShouldPersistTaps="handled">
-        <Text style={estilos.titulo}>{moeda(venda.total)}</Text>
-        <Text style={estilos.subtitulo}>
-          {new Date(venda.criado_em).toLocaleString('pt-BR')}
-        </Text>
+        <View style={estilos.cabecalho}>
+          <View style={{ flex: 1 }}>
+            <Text style={estilos.rotuloTotal}>Total da venda</Text>
+            <Text style={[estilos.titulo, cancelada && estilos.tituloCancelado]}>
+              {moeda(venda.total)}
+            </Text>
+            <Text style={estilos.subtitulo}>
+              {new Date(venda.criado_em).toLocaleString('pt-BR')}
+            </Text>
+          </View>
+
+          <Icone
+            nome={ICONE_PAGAMENTO[venda.forma_pagamento] ?? 'outros'}
+            cor={cancelada ? tema.cores.textoSuave : tema.cores.secundaria}
+            tamanho={32}
+          />
+        </View>
 
         {cancelada ? (
           <Aviso
@@ -163,7 +186,14 @@ export default function DetalhesDaVenda() {
             rotulo="Pagamento"
             valor={ROTULO_PAGAMENTO[venda.forma_pagamento] ?? venda.forma_pagamento}
           />
-          <Linha rotulo="Status" valor={cancelada ? 'Cancelada' : 'Confirmada'} />
+
+          <View style={estilos.linha}>
+            <Text style={estilos.linhaRotulo}>Status</Text>
+            <Badge
+              rotulo={cancelada ? 'Cancelada' : 'Confirmada'}
+              cor={cancelada ? tema.cores.negativo : tema.cores.secundaria}
+            />
+          </View>
         </View>
 
         <Text style={estilos.secao}>Itens</Text>
@@ -207,6 +237,7 @@ export default function DetalhesDaVenda() {
 
               <Botao
                 titulo={podeCancelarDireto ? 'Confirmar cancelamento' : 'Enviar solicitação'}
+                variante={podeCancelarDireto ? 'destrutivo' : 'primario'}
                 aoPressionar={podeCancelarDireto ? confirmarCancelamento : enviarSolicitacao}
                 carregando={processando}
               />
@@ -219,7 +250,7 @@ export default function DetalhesDaVenda() {
           ) : (
             <Botao
               titulo={podeCancelarDireto ? 'Cancelar venda' : 'Solicitar cancelamento ao Gestor'}
-              variante={podeCancelarDireto ? 'primario' : 'secundario'}
+              variante={podeCancelarDireto ? 'destrutivo' : 'contorno'}
               aoPressionar={() => setPainelAberto(true)}
               desabilitado={!podeEscrever || temSolicitacaoPendente}
             />
@@ -258,17 +289,24 @@ function Linha({
 
 const estilos = StyleSheet.create({
   tela: { flex: 1, backgroundColor: tema.cores.fundo },
-  conteudo: { padding: tema.espacamento.lg },
-  titulo: { ...tema.tipografia.h1, color: tema.cores.primaria },
+  conteudo: { padding: tema.espacamento.lg, paddingBottom: tema.espacamento.xl },
+  cabecalho: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: tema.espacamento.md,
+    marginBottom: tema.espacamento.lg,
+  },
+  rotuloTotal: { ...tema.tipografia.rotulo, color: tema.cores.textoSuave },
+  titulo: { ...tema.tipografia.numero, color: tema.cores.primaria },
+  tituloCancelado: { color: tema.cores.textoSuave, textDecorationLine: 'line-through' },
   subtitulo: {
-    ...tema.tipografia.corpo,
+    ...tema.tipografia.legenda,
     color: tema.cores.textoSuave,
-    marginBottom: tema.espacamento.md,
   },
   secao: { ...tema.tipografia.h2, color: tema.cores.texto, marginBottom: tema.espacamento.sm },
   card: {
     backgroundColor: tema.cores.fundoCard,
-    borderRadius: tema.raio.md,
+    borderRadius: tema.raio.lg,
     padding: tema.espacamento.md,
     marginBottom: tema.espacamento.md,
     ...tema.elevacao.card,
@@ -284,7 +322,7 @@ const estilos = StyleSheet.create({
   linhaRotulo: { ...tema.tipografia.corpo, color: tema.cores.textoSuave },
   linhaValor: { ...tema.tipografia.corpoDestacado, color: tema.cores.texto },
   linhaRotuloDestaque: { ...tema.tipografia.h2, color: tema.cores.texto },
-  linhaValorDestaque: { ...tema.tipografia.h2, color: tema.cores.primaria },
+  linhaValorDestaque: { ...tema.tipografia.numero, color: tema.cores.primaria },
   linhaItem: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -293,5 +331,9 @@ const estilos = StyleSheet.create({
   },
   itemNome: { ...tema.tipografia.corpo, color: tema.cores.texto, flex: 1 },
   itemValor: { ...tema.tipografia.corpoDestacado, color: tema.cores.texto },
-  divisor: { height: 1, backgroundColor: tema.cores.borda, marginVertical: tema.espacamento.sm },
+  divisor: {
+    height: 1,
+    backgroundColor: tema.cores.bordaSuave,
+    marginVertical: tema.espacamento.sm,
+  },
 });

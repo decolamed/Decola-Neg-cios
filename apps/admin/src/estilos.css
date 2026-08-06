@@ -11,6 +11,30 @@
   box-sizing: border-box;
 }
 
+/*
+ * Fonte de título da marca (Glacial Indifference). Montserrat, a fonte de
+ * corpo, já vem por web font no index.html.
+ *
+ * Para ativar: copie os arquivos para `public/fonts/` e descomente o bloco.
+ * A variável --familia-titulo passa a usá-la sozinha quando
+ * FONTES_PERSONALIZADAS_DISPONIVEIS virar true em packages/theme.
+ */
+/*
+@font-face {
+  font-family: 'GlacialIndifference';
+  src: url('/fonts/GlacialIndifference-Regular.ttf') format('truetype');
+  font-weight: 400 600;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'GlacialIndifference';
+  src: url('/fonts/GlacialIndifference-Bold.ttf') format('truetype');
+  font-weight: 700;
+  font-display: swap;
+}
+*/
+
 body {
   margin: 0;
   background: var(--cor-fundo);
@@ -40,6 +64,10 @@ a {
   color: var(--cor-primaria);
 }
 
+a:hover {
+  color: var(--cor-secundaria);
+}
+
 /* ---------------------------------------------------------------- layout -- */
 
 .painel {
@@ -58,10 +86,23 @@ a {
 }
 
 .barra-lateral .marca {
-  font-family: var(--familia-titulo);
-  font-size: var(--fonte-h2-tamanho);
-  font-weight: var(--fonte-h2-peso);
-  margin-bottom: var(--espaco-lg);
+  display: block;
+  margin-bottom: var(--espaco-xl);
+}
+
+.barra-lateral .marca img {
+  display: block;
+  width: 150px;
+  height: auto;
+}
+
+.barra-lateral .marca small {
+  display: block;
+  margin-top: var(--espaco-sm);
+  font-size: var(--fonte-legenda-tamanho);
+  color: var(--cor-secundaria);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 .barra-lateral a {
@@ -69,23 +110,35 @@ a {
   text-decoration: none;
   padding: var(--espaco-sm) var(--espaco-md);
   border-radius: var(--raio-sm);
-  opacity: 0.85;
+  opacity: 0.75;
 }
 
 .barra-lateral a:hover {
   opacity: 1;
+  background: rgba(255, 255, 255, 0.08);
 }
 
 .barra-lateral a.ativo {
-  background: rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.14);
+  border-left: 3px solid var(--cor-destaque);
   opacity: 1;
   font-weight: var(--fonte-corpoDestacado-peso);
 }
 
 .barra-lateral .rodape {
   margin-top: auto;
+  padding-top: var(--espaco-lg);
+  border-top: 1px solid rgba(255, 255, 255, 0.14);
   font-size: var(--fonte-legenda-tamanho);
-  opacity: 0.85;
+  opacity: 0.9;
+}
+
+.barra-lateral .rodape .assinatura {
+  display: block;
+  width: 84px;
+  height: auto;
+  margin-top: var(--espaco-lg);
+  opacity: 0.6;
 }
 
 .conteudo {
@@ -117,7 +170,7 @@ a {
 
 .card {
   background: var(--cor-fundoCard);
-  border-radius: var(--raio-md);
+  border-radius: var(--raio-lg);
   padding: var(--espaco-lg);
   box-shadow: var(--sombra-card);
   margin-bottom: var(--espaco-md);
@@ -132,7 +185,7 @@ a {
 
 .metrica {
   background: var(--cor-fundoCard);
-  border-radius: var(--raio-md);
+  border-radius: var(--raio-lg);
   padding: var(--espaco-lg);
   box-shadow: var(--sombra-card);
 }
@@ -145,8 +198,8 @@ a {
 
 .metrica .valor {
   font-family: var(--familia-titulo);
-  font-size: var(--fonte-h1-tamanho);
-  font-weight: var(--fonte-h1-peso);
+  font-size: var(--fonte-numero-tamanho);
+  font-weight: var(--fonte-numero-peso);
   color: var(--cor-primaria);
   display: block;
   margin-top: var(--espaco-xs);
@@ -167,7 +220,7 @@ a {
   width: 100%;
   border-collapse: collapse;
   background: var(--cor-fundoCard);
-  border-radius: var(--raio-md);
+  border-radius: var(--raio-lg);
   overflow: hidden;
   box-shadow: var(--sombra-card);
 }
@@ -176,7 +229,7 @@ a {
 .tabela td {
   text-align: left;
   padding: var(--espaco-md);
-  border-bottom: 1px solid var(--cor-borda);
+  border-bottom: 1px solid var(--cor-bordaSuave);
 }
 
 .tabela th {
@@ -203,7 +256,7 @@ a {
 
 .badge {
   display: inline-block;
-  padding: 2px var(--espaco-sm);
+  padding: 4px var(--espaco-md);
   border-radius: var(--raio-pill);
   font-size: var(--fonte-legenda-tamanho);
   font-weight: var(--fonte-corpoDestacado-peso);
@@ -213,18 +266,18 @@ a {
 }
 
 .badge.positivo {
-  background: var(--cor-positivo);
-  color: var(--cor-textoInverso);
+  background: var(--tom-secundaria);
+  color: var(--cor-primaria);
 }
 
 .badge.alerta {
-  background: var(--cor-alerta);
-  color: var(--cor-texto);
+  background: var(--tom-destaque);
+  color: var(--cor-textoAlerta);
 }
 
 .badge.negativo {
-  background: var(--cor-negativo);
-  color: var(--cor-textoInverso);
+  background: var(--tom-negativo);
+  color: var(--cor-erro);
 }
 
 /* ------------------------------------------------------------ controles --- */
@@ -234,11 +287,12 @@ a {
   font-size: var(--fonte-botao-tamanho);
   font-weight: var(--fonte-botao-peso);
   border: none;
-  border-radius: var(--raio-sm);
-  padding: var(--espaco-sm) var(--espaco-md);
+  border-radius: var(--raio-md);
+  padding: var(--espaco-sm) var(--espaco-lg);
+  min-height: 40px;
   cursor: pointer;
   background: var(--cor-acaoPrimaria);
-  color: var(--cor-textoInverso);
+  color: var(--cor-textoSobreAcao);
 }
 
 .botao:hover:not(:disabled) {
@@ -247,6 +301,7 @@ a {
 
 .botao.secundario {
   background: var(--cor-primaria);
+  color: var(--cor-textoInverso);
 }
 
 .botao.secundario:hover:not(:disabled) {
@@ -281,9 +336,10 @@ a {
 
 .campo > span {
   display: block;
-  font-size: var(--fonte-legenda-tamanho);
-  color: var(--cor-textoSuave);
-  margin-bottom: var(--espaco-xs);
+  font-size: var(--fonte-rotulo-tamanho);
+  font-weight: var(--fonte-rotulo-peso);
+  color: var(--cor-texto);
+  margin-bottom: var(--espaco-sm);
 }
 
 .campo input,
@@ -293,10 +349,11 @@ a {
   font-family: var(--familia-corpo);
   font-size: var(--fonte-corpo-tamanho);
   color: var(--cor-texto);
-  background: var(--cor-superficie);
+  background: var(--cor-fundoCampo);
   border: 1px solid var(--cor-borda);
-  border-radius: var(--raio-sm);
+  border-radius: var(--raio-md);
   padding: var(--espaco-sm) var(--espaco-md);
+  min-height: 42px;
 }
 
 .campo input:focus,
@@ -332,25 +389,29 @@ a {
 /* ---------------------------------------------------------------- aviso --- */
 
 .aviso {
-  border-radius: var(--raio-sm);
+  border-radius: var(--raio-md);
+  border-left: 3px solid transparent;
   padding: var(--espaco-md);
   margin-bottom: var(--espaco-md);
   font-size: var(--fonte-corpo-tamanho);
 }
 
 .aviso.erro {
-  background: #fbe9e9;
+  background: var(--tom-negativo);
+  border-left-color: var(--cor-erro);
   color: var(--cor-erro);
 }
 
 .aviso.sucesso {
-  background: #e8f5fc;
+  background: var(--tom-secundaria);
+  border-left-color: var(--cor-secundaria);
   color: var(--cor-primaria);
 }
 
 .aviso.alerta {
-  background: #fdf4e0;
-  color: #8a6412;
+  background: var(--tom-destaque);
+  border-left-color: var(--cor-alerta);
+  color: var(--cor-textoAlerta);
 }
 
 .vazio {
@@ -383,7 +444,7 @@ a {
 
 .modal {
   background: var(--cor-fundoCard);
-  border-radius: var(--raio-md);
+  border-radius: var(--raio-lg);
   padding: var(--espaco-lg);
   width: 100%;
   max-width: 520px;

@@ -6,11 +6,18 @@
  * Disabled: opacidade ~40% e sem resposta a toque.
  * Loading: substitui o conteúdo por um indicador MANTENDO as dimensões do
  *          componente, para não haver "pulo" de layout.
+ *
+ * Variantes (aparência apenas — nenhuma muda comportamento):
+ *   primario ...... CTA de largura total: amarelo da marca, texto azul-marinho
+ *   secundario .... ação de apoio sólida em azul-marinho
+ *   contorno ...... ação de apoio sobre fundo claro, com borda
+ *   texto ......... ação terciária, sem fundo
+ *   destrutivo .... ação destrutiva, em vermelho sólido
  */
 import { ActivityIndicator, Pressable, StyleSheet, Text, ViewStyle } from 'react-native';
 import tema from '@decola/theme';
 
-type Variante = 'primario' | 'secundario' | 'texto';
+type Variante = 'primario' | 'secundario' | 'contorno' | 'texto' | 'destrutivo';
 
 type Props = {
   titulo: string;
@@ -24,13 +31,17 @@ type Props = {
 const FUNDO: Record<Variante, string> = {
   primario: tema.cores.acaoPrimaria,
   secundario: tema.cores.primaria,
+  contorno: tema.cores.superficie,
   texto: 'transparent',
+  destrutivo: tema.cores.destrutiva,
 };
 
 const COR_TEXTO: Record<Variante, string> = {
-  primario: tema.cores.textoInverso,
+  primario: tema.cores.textoSobreAcao,
   secundario: tema.cores.textoInverso,
+  contorno: tema.cores.primaria,
   texto: tema.cores.primaria,
+  destrutivo: tema.cores.textoInverso,
 };
 
 export function Botao({
@@ -53,9 +64,15 @@ export function Botao({
       disabled={inativo}
       style={({ pressed }) => [
         estilos.base,
+        variante === 'primario' && estilos.comSombra,
+        variante === 'destrutivo' && estilos.comSombra,
+        variante === 'contorno' && estilos.comBorda,
         variante === 'texto' && estilos.semFundo,
         { backgroundColor: FUNDO[variante] },
-        pressed && !inativo && { backgroundColor: tema.escurecer(FUNDO[variante]) },
+        pressed && !inativo && variante !== 'texto'
+          ? { backgroundColor: tema.escurecer(FUNDO[variante]) }
+          : null,
+        pressed && !inativo && variante === 'texto' ? { opacity: 0.6 } : null,
         desabilitado && { opacity: tema.estados.disabledOpacidade },
         estilo,
       ]}
@@ -73,12 +90,14 @@ const estilos = StyleSheet.create({
   base: {
     // Altura fixa: com o indicador de carregamento no lugar do texto, o
     // componente mantém exatamente as mesmas dimensões (Seção 2.3).
-    height: 48,
+    height: tema.alturas.botao,
     borderRadius: tema.raio.md,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: tema.espacamento.md,
+    paddingHorizontal: tema.espacamento.lg,
   },
+  comSombra: tema.elevacao.card,
+  comBorda: { borderWidth: 1, borderColor: tema.cores.borda },
   semFundo: {
     height: 'auto',
     paddingVertical: tema.espacamento.sm,

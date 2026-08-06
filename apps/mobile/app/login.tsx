@@ -15,7 +15,7 @@ import tema from '@decola/theme';
 import { Aviso } from '@/componentes/Aviso';
 import { Botao } from '@/componentes/Botao';
 import { CampoTexto } from '@/componentes/CampoTexto';
-import { Marca } from '@/componentes/Marca';
+import { Marca, AssinaturaDecola } from '@/componentes/Marca';
 import {
   AVISO_SEM_EMPRESA,
   emailValido,
@@ -130,8 +130,11 @@ export default function Login() {
       >
         <ScrollView contentContainerStyle={estilos.conteudo} keyboardShouldPersistTaps="handled">
           <View style={estilos.cabecalho}>
-            <Marca escura />
+            <Marca escura comTagline={false} tamanho="lg" />
           </View>
+
+          <Text style={estilos.saudacao}>Bem-vindo de volta!</Text>
+          <Text style={estilos.subtitulo}>Faça login para continuar</Text>
 
           {mensagem ? <Aviso mensagem={mensagem} /> : null}
 
@@ -167,7 +170,7 @@ export default function Login() {
             aoPressionar={aoEntrar}
             carregando={entrando}
             desabilitado={!podeEntrar}
-            estilo={{ marginTop: tema.espacamento.md }}
+            estilo={{ marginTop: tema.espacamento.sm }}
           />
 
           <View style={estilos.divisor}>
@@ -179,17 +182,19 @@ export default function Login() {
           <Botao
             titulo="Entrar com Google"
             aoPressionar={aoEntrarComGoogle}
-            variante="secundario"
+            variante="contorno"
             carregando={entrandoComGoogle}
             desabilitado={!conectado || entrando}
           />
 
           <View style={estilos.rodape}>
             <Text style={estilos.textoRodape}>Ainda não tem uma conta? </Text>
-            <Link href="/planos" style={estilos.link}>
+            <Link href="/planos" style={estilos.linkDestaque}>
               Cadastre-se
             </Link>
           </View>
+
+          <AssinaturaDecola escura />
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -197,35 +202,44 @@ export default function Login() {
 }
 
 const estilos = StyleSheet.create({
-  tela: { flex: 1, backgroundColor: tema.cores.fundo },
+  tela: { flex: 1, backgroundColor: tema.cores.superficie },
   conteudo: {
     flexGrow: 1,
     justifyContent: 'center',
-    padding: tema.espacamento.lg,
+    padding: tema.espacamento.xl,
   },
   cabecalho: { alignItems: 'center', marginBottom: tema.espacamento.xl },
-  link: {
-    ...tema.tipografia.corpoDestacado,
-    color: tema.cores.primaria,
-    alignSelf: 'flex-start',
-    marginBottom: tema.espacamento.sm,
+  saudacao: { ...tema.tipografia.h1, color: tema.cores.texto },
+  subtitulo: {
+    ...tema.tipografia.corpo,
+    color: tema.cores.textoSuave,
+    marginTop: tema.espacamento.xs,
+    marginBottom: tema.espacamento.lg,
   },
+  link: {
+    ...tema.tipografia.rotulo,
+    color: tema.cores.secundaria,
+    alignSelf: 'flex-start',
+    marginBottom: tema.espacamento.md,
+  },
+  linkDestaque: { ...tema.tipografia.corpoDestacado, color: tema.cores.destrutiva },
   divisor: {
     flexDirection: 'row',
     alignItems: 'center',
     marginVertical: tema.espacamento.lg,
   },
-  linhaDivisor: { flex: 1, height: 1, backgroundColor: tema.cores.borda },
+  linhaDivisor: { flex: 1, height: 1, backgroundColor: tema.cores.bordaSuave },
   textoDivisor: {
     ...tema.tipografia.legenda,
     color: tema.cores.textoSuave,
-    marginHorizontal: tema.espacamento.sm,
+    marginHorizontal: tema.espacamento.md,
   },
   rodape: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
     marginTop: tema.espacamento.xl,
+    marginBottom: tema.espacamento.lg,
     flexWrap: 'wrap',
   },
   textoRodape: { ...tema.tipografia.corpo, color: tema.cores.textoSuave },

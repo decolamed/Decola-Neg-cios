@@ -103,22 +103,22 @@ function Chip({
 const estilos = StyleSheet.create({
   container: { marginBottom: tema.espacamento.md },
   rotulo: {
-    ...tema.tipografia.legenda,
+    ...tema.tipografia.rotulo,
     color: tema.cores.texto,
-    marginBottom: tema.espacamento.xs,
+    marginBottom: tema.espacamento.sm,
   },
   lista: { flexDirection: 'row', flexWrap: 'wrap', gap: tema.espacamento.sm },
   listaHorizontal: { flexWrap: 'nowrap' },
   chip: {
     borderWidth: 1,
-    borderColor: tema.cores.borda,
+    borderColor: tema.cores.bordaSuave,
     borderRadius: tema.raio.pill,
     paddingHorizontal: tema.espacamento.md,
-    paddingVertical: tema.espacamento.sm,
-    backgroundColor: tema.cores.superficie,
+    paddingVertical: 9,
+    backgroundColor: tema.cores.fundoCampo,
   },
   chipAtivo: { backgroundColor: tema.cores.primaria, borderColor: tema.cores.primaria },
-  chipTexto: { ...tema.tipografia.legenda, color: tema.cores.texto },
+  chipTexto: { ...tema.tipografia.rotulo, color: tema.cores.textoSuave },
   chipTextoAtivo: { color: tema.cores.textoInverso },
   erro: { ...tema.tipografia.legenda, color: tema.cores.erro, marginTop: tema.espacamento.xs },
 });

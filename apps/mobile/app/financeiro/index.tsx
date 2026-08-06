@@ -16,6 +16,7 @@ import tema from '@decola/theme';
 import { Aviso } from '@/componentes/Aviso';
 import { Botao } from '@/componentes/Botao';
 import { TelaCarregando, TelaMensagem } from '@/componentes/EstadoDaTela';
+import { LadrilhoDeIcone } from '@/componentes/Icone';
 import { Seletor } from '@/componentes/Seletor';
 import { MenuInferior } from '@/componentes/MenuInferior';
 import { useSessao } from '@/contexto/SessaoContexto';
@@ -132,13 +133,19 @@ export default function Financeiro() {
               </Text>
 
               <View style={estilos.linhaFluxo}>
-                <View>
-                  <Text style={estilos.rotuloFluxo}>Entradas</Text>
-                  <Text style={estilos.entradas}>{moeda(resumo?.entradas ?? 0)}</Text>
+                <View style={estilos.fluxo}>
+                  <LadrilhoDeIcone nome="entrada" cor={tema.cores.secundaria} tamanho={36} />
+                  <View>
+                    <Text style={estilos.rotuloFluxo}>Entradas</Text>
+                    <Text style={estilos.entradas}>{moeda(resumo?.entradas ?? 0)}</Text>
+                  </View>
                 </View>
-                <View style={estilos.alinhadoDireita}>
-                  <Text style={estilos.rotuloFluxo}>Saídas</Text>
-                  <Text style={estilos.saidas}>{moeda(resumo?.saidas ?? 0)}</Text>
+                <View style={estilos.fluxo}>
+                  <LadrilhoDeIcone nome="saida" cor={tema.cores.negativo} tamanho={36} />
+                  <View>
+                    <Text style={estilos.rotuloFluxo}>Saídas</Text>
+                    <Text style={estilos.saidas}>{moeda(resumo?.saidas ?? 0)}</Text>
+                  </View>
                 </View>
               </View>
             </View>
@@ -192,6 +199,12 @@ export default function Financeiro() {
               onPress={() => router.push(`/financeiro/lancamento?id=${item.id}`)}
               style={({ pressed }) => [estilos.item, pressed && editavel && { opacity: 0.85 }]}
             >
+              <LadrilhoDeIcone
+                nome={entrada ? 'entrada' : 'saida'}
+                cor={entrada ? tema.cores.secundaria : tema.cores.negativo}
+                tamanho={38}
+              />
+
               <View style={{ flex: 1 }}>
                 <Text style={estilos.itemDescricao} numberOfLines={1}>
                   {item.descricao || ROTULO_ORIGEM[item.origem]}
@@ -242,17 +255,34 @@ const estilos = StyleSheet.create({
     ...tema.elevacao.card,
   },
   rotuloSaldo: { ...tema.tipografia.legenda, color: tema.cores.textoSuave },
-  saldo: { ...tema.tipografia.h1, fontSize: 32, marginBottom: tema.espacamento.md },
-  linhaFluxo: { flexDirection: 'row', justifyContent: 'space-between' },
+  saldo: { ...tema.tipografia.numero, color: tema.cores.primaria, marginBottom: tema.espacamento.md },
+  linhaFluxo: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: tema.espacamento.md,
+    paddingTop: tema.espacamento.md,
+    borderTopWidth: 1,
+    borderTopColor: tema.cores.bordaSuave,
+  },
+  fluxo: { flexDirection: 'row', alignItems: 'center', gap: tema.espacamento.sm },
   alinhadoDireita: { alignItems: 'flex-end' },
   rotuloFluxo: { ...tema.tipografia.legenda, color: tema.cores.textoSuave },
   entradas: { ...tema.tipografia.corpoDestacado, color: tema.cores.secundaria },
   saidas: { ...tema.tipografia.corpoDestacado, color: tema.cores.negativo },
-  grade: { flexDirection: 'row', gap: tema.espacamento.sm, marginBottom: tema.espacamento.md },
+  /* Três indicadores lado a lado ficavam estreitos demais para valores em
+     reais ("R$ 11.905,00" quebrava em várias linhas). Com duas colunas o
+     valor cabe em uma linha e o terceiro cartão ocupa a largura restante. */
+  grade: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: tema.espacamento.sm,
+    marginBottom: tema.espacamento.md,
+  },
   indicador: {
-    flex: 1,
+    flexGrow: 1,
+    flexBasis: '47%',
     backgroundColor: tema.cores.fundoCard,
-    borderRadius: tema.raio.md,
+    borderRadius: tema.raio.lg,
     padding: tema.espacamento.md,
     ...tema.elevacao.card,
   },
@@ -264,7 +294,7 @@ const estilos = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: tema.cores.fundoCard,
-    borderRadius: tema.raio.md,
+    borderRadius: tema.raio.lg,
     padding: tema.espacamento.md,
     marginBottom: tema.espacamento.sm,
     gap: tema.espacamento.sm,
@@ -272,5 +302,5 @@ const estilos = StyleSheet.create({
   },
   itemDescricao: { ...tema.tipografia.corpoDestacado, color: tema.cores.texto },
   itemDetalhe: { ...tema.tipografia.legenda, color: tema.cores.textoSuave, marginTop: 2 },
-  itemValor: { ...tema.tipografia.corpoDestacado },
+  itemValor: { ...tema.tipografia.corpoDestacado, textAlign: 'right' },
 });

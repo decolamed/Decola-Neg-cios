@@ -56,7 +56,10 @@ export function App() {
   return (
     <div className="painel">
       <nav className="barra-lateral">
-        <span className="marca">Decola Negócios</span>
+        <span className="marca">
+          <img src="/marca/logo-nome-claro.png" alt="Decola Negócios" />
+          <small>Painel Administrativo</small>
+        </span>
 
         <NavLink to="/" end className={({ isActive }) => (isActive ? 'ativo' : '')}>
           Visão geral
@@ -72,7 +75,7 @@ export function App() {
         </NavLink>
 
         <div className="rodape">
-          <div>{administrador.nome}</div>
+          <div className="destaque">{administrador.nome}</div>
           <div style={{ opacity: 0.75 }}>{administrador.email}</div>
           <button
             type="button"
@@ -82,6 +85,8 @@ export function App() {
           >
             Sair
           </button>
+
+          <img className="assinatura" src="/marca/by-decola-claro.png" alt="by Decola" />
         </div>
       </nav>
 

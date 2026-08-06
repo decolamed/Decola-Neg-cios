@@ -15,7 +15,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { router } from 'expo-router';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import tema from '@decola/theme';
-import { Marca } from '@/componentes/Marca';
+import { Marca, AssinaturaDecola } from '@/componentes/Marca';
 import { TelaMensagem } from '@/componentes/EstadoDaTela';
 import { estaConectado, MENSAGENS_SEM_CONEXAO } from '@/lib/conectividade';
 import { AVISO_SEM_EMPRESA, sair, sessaoAtual } from '@/dados/autenticacao';
@@ -84,12 +84,16 @@ export default function Splash() {
   // Estado "Carregando": indicador visual, sem interação possível.
   return (
     <View style={estilos.tela}>
-      <Marca />
-      <ActivityIndicator
-        size="large"
-        color={tema.cores.destaque}
-        style={{ marginTop: tema.espacamento.xl }}
-      />
+      <View style={estilos.miolo}>
+        <Marca escura comSimbolo tamanho="lg" />
+        <ActivityIndicator
+          size="large"
+          color={tema.cores.primaria}
+          style={{ marginTop: tema.espacamento.xl }}
+        />
+      </View>
+
+      <AssinaturaDecola escura />
     </View>
   );
 }
@@ -97,8 +101,9 @@ export default function Splash() {
 const estilos = StyleSheet.create({
   tela: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: tema.cores.primaria,
+    paddingVertical: tema.espacamento.xxl,
+    paddingHorizontal: tema.espacamento.lg,
+    backgroundColor: tema.cores.destaque,
   },
+  miolo: { flex: 1, alignItems: 'center', justifyContent: 'center' },
 });

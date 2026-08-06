@@ -19,6 +19,7 @@ import { BadgeStatus } from '@/componentes/BadgeStatus';
 import { Botao } from '@/componentes/Botao';
 import { CampoTexto } from '@/componentes/CampoTexto';
 import { TelaCarregando, TelaMensagem } from '@/componentes/EstadoDaTela';
+import { LadrilhoDeIcone } from '@/componentes/Icone';
 import { useSessao } from '@/contexto/SessaoContexto';
 import { ajustarEstoque, listarProdutos, observarProdutos, type ProdutoComStatus } from '@/dados/produtos';
 
@@ -113,6 +114,14 @@ export default function EstoqueBaixo() {
         renderItem={({ item }) => (
           <View style={estilos.item}>
             <View style={estilos.itemTopo}>
+              <LadrilhoDeIcone
+                nome="alerta"
+                cor={
+                  item.status_estoque === 'esgotado' ? tema.cores.negativo : tema.cores.alerta
+                }
+                tamanho={38}
+              />
+
               <View style={estilos.itemInfo}>
                 <Text style={estilos.itemNome} numberOfLines={1}>
                   {item.nome}
@@ -185,7 +194,7 @@ export default function EstoqueBaixo() {
 
 const estilos = StyleSheet.create({
   tela: { flex: 1, backgroundColor: tema.cores.fundo },
-  conteudo: { padding: tema.espacamento.lg },
+  conteudo: { padding: tema.espacamento.lg, paddingBottom: tema.espacamento.xl },
   titulo: { ...tema.tipografia.h1, color: tema.cores.texto },
   descricao: {
     ...tema.tipografia.legenda,
@@ -201,13 +210,13 @@ const estilos = StyleSheet.create({
   },
   item: {
     backgroundColor: tema.cores.fundoCard,
-    borderRadius: tema.raio.md,
+    borderRadius: tema.raio.lg,
     padding: tema.espacamento.md,
     marginBottom: tema.espacamento.sm,
     ...tema.elevacao.card,
   },
-  itemTopo: { flexDirection: 'row', alignItems: 'flex-start' },
-  itemInfo: { flex: 1, marginRight: tema.espacamento.sm },
+  itemTopo: { flexDirection: 'row', alignItems: 'flex-start', gap: tema.espacamento.md },
+  itemInfo: { flex: 1 },
   itemNome: { ...tema.tipografia.corpoDestacado, color: tema.cores.texto },
   itemDetalhe: { ...tema.tipografia.legenda, color: tema.cores.textoSuave, marginTop: 2 },
   itemBadge: { flexDirection: 'row', marginTop: tema.espacamento.xs },

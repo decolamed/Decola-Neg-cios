@@ -5,6 +5,9 @@
  * toda tela, sempre com mensagem clara e, quando aplicável, "Tentar
  * novamente". Centralizar aqui evita que uma tela esqueça um deles ou invente
  * um texto diferente.
+ *
+ * Sobre a marca (Splash e afins) o fundo é o amarelo da marca, com o logo em
+ * azul-marinho — a mesma composição da abertura do app.
  */
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import tema from '@decola/theme';
@@ -13,11 +16,11 @@ import { Marca } from './Marca';
 
 export function TelaCarregando({ comMarca = false }: { comMarca?: boolean }) {
   return (
-    <View style={[estilos.centro, comMarca && { backgroundColor: tema.cores.primaria }]}>
-      {comMarca ? <Marca /> : null}
+    <View style={[estilos.centro, comMarca && estilos.sobreMarca]}>
+      {comMarca ? <Marca escura comSimbolo tamanho="lg" /> : null}
       <ActivityIndicator
         size="large"
-        color={comMarca ? tema.cores.destaque : tema.cores.primaria}
+        color={tema.cores.primaria}
         style={{ marginTop: tema.espacamento.lg }}
       />
     </View>
@@ -39,25 +42,19 @@ export function TelaMensagem({
   sobreMarca = false,
 }: MensagemProps) {
   return (
-    <View style={[estilos.centro, sobreMarca && { backgroundColor: tema.cores.primaria }]}>
-      {sobreMarca ? <Marca /> : null}
+    <View style={[estilos.centro, sobreMarca && estilos.sobreMarca]}>
+      {sobreMarca ? <Marca escura comSimbolo tamanho="lg" /> : null}
 
-      <Text style={[estilos.mensagem, sobreMarca && { color: tema.cores.textoInverso }]}>
-        {mensagem}
-      </Text>
+      <Text style={estilos.mensagem}>{mensagem}</Text>
 
-      {complemento ? (
-        <Text style={[estilos.complemento, sobreMarca && { color: tema.cores.textoInverso }]}>
-          {complemento}
-        </Text>
-      ) : null}
+      {complemento ? <Text style={estilos.complemento}>{complemento}</Text> : null}
 
       {aoTentarNovamente ? (
         <Botao
           titulo="Tentar novamente"
           aoPressionar={aoTentarNovamente}
-          variante={sobreMarca ? 'primario' : 'secundario'}
-          estilo={{ marginTop: tema.espacamento.lg, minWidth: 200 }}
+          variante={sobreMarca ? 'secundario' : 'primario'}
+          estilo={{ marginTop: tema.espacamento.lg, minWidth: 220 }}
         />
       ) : null}
     </View>
@@ -69,9 +66,10 @@ const estilos = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    padding: tema.espacamento.lg,
+    padding: tema.espacamento.xl,
     backgroundColor: tema.cores.fundo,
   },
+  sobreMarca: { backgroundColor: tema.cores.destaque },
   mensagem: {
     ...tema.tipografia.corpo,
     color: tema.cores.texto,

@@ -43,7 +43,7 @@ const estilos = StyleSheet.create({
   caixa: {
     width: 22,
     height: 22,
-    borderRadius: tema.raio.sm,
+    borderRadius: 6,
     borderWidth: 1.5,
     borderColor: tema.cores.borda,
     backgroundColor: tema.cores.superficie,
@@ -56,8 +56,8 @@ const estilos = StyleSheet.create({
     borderColor: tema.cores.primaria,
   },
   marca: {
+    ...tema.tipografia.corpoDestacado,
     color: tema.cores.textoInverso,
-    fontSize: 14,
     lineHeight: 16,
   },
   conteudo: { flex: 1 },

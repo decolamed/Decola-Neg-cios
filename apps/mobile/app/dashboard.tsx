@@ -16,6 +16,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import tema from '@decola/theme';
 import { Aviso } from '@/componentes/Aviso';
 import { TelaCarregando, TelaMensagem } from '@/componentes/EstadoDaTela';
+import { Icone, LadrilhoDeIcone, type NomeDeIcone } from '@/componentes/Icone';
 import { MenuInferior } from '@/componentes/MenuInferior';
 import { useSessao } from '@/contexto/SessaoContexto';
 import { carregarResumo, observarAvisos, type ResumoDoDashboard } from '@/dados/dashboard';
@@ -143,7 +144,7 @@ export default function Dashboard() {
             }
             style={({ pressed }) => [estilos.sino, pressed && { opacity: 0.85 }]}
           >
-            <Text style={estilos.iconeSino}>🔔</Text>
+            <Icone nome="sino" cor={tema.cores.primaria} tamanho={24} />
             {naoLidas > 0 ? (
               <View style={estilos.badge}>
                 <Text style={estilos.textoBadge}>{naoLidas > 99 ? '99+' : naoLidas}</Text>
@@ -160,6 +161,8 @@ export default function Dashboard() {
             rotulo="Vendas hoje"
             valor={moeda(resumo?.vendas_hoje_total ?? 0)}
             nota={`${resumo?.vendas_hoje_quantidade ?? 0} venda(s)`}
+            icone="vendas"
+            destaque
             // Seção 7.2 — abre o histórico filtrado pelo dia atual.
             aoTocar={() => router.push({ pathname: '/vendas', params: { hoje: '1' } })}
           />
@@ -167,18 +170,24 @@ export default function Dashboard() {
             rotulo="Quantidade de vendas"
             valor={String(resumo?.vendas_quantidade_total ?? 0)}
             nota="Histórico completo"
+            icone="relatorios"
+            cor={tema.cores.secundaria}
             aoTocar={() => router.push('/vendas')}
           />
           <Card
             rotulo="Produtos"
             valor={String(resumo?.produtos_ativos ?? 0)}
             nota="Ativos no catálogo"
+            icone="produtos"
+            cor={tema.cores.apoio}
             aoTocar={() => router.push('/produtos')}
           />
           <Card
             rotulo="Estoque baixo"
             valor={String(resumo?.estoque_baixo ?? 0)}
             nota="No alerta configurado"
+            icone="alerta"
+            cor={tema.cores.negativo}
             atencao={(resumo?.estoque_baixo ?? 0) > 0}
             aoTocar={() => router.push('/estoque-baixo')}
           />
@@ -195,14 +204,38 @@ function Card({
   valor,
   nota,
   aoTocar,
+  icone,
+  cor = tema.cores.destaque,
+  destaque = false,
   atencao = false,
 }: {
   rotulo: string;
   valor: string;
   nota: string;
   aoTocar: () => void;
+  icone: NomeDeIcone;
+  cor?: string;
+  destaque?: boolean;
   atencao?: boolean;
 }) {
+  if (destaque) {
+    return (
+      <Pressable
+        onPress={aoTocar}
+        accessibilityRole="button"
+        accessibilityLabel={`${rotulo}: ${valor}`}
+        style={({ pressed }) => [estilos.cardDestaque, pressed && { opacity: 0.9 }]}
+      >
+        <View style={estilos.linhaDestaque}>
+          <Text style={estilos.destaqueRotulo}>{rotulo}</Text>
+          <LadrilhoDeIcone nome={icone} cor={tema.cores.destaque} solido tamanho={38} />
+        </View>
+        <Text style={estilos.destaqueValor}>{valor}</Text>
+        <Text style={estilos.destaqueNota}>{nota}</Text>
+      </Pressable>
+    );
+  }
+
   return (
     <Pressable
       onPress={aoTocar}
@@ -210,8 +243,9 @@ function Card({
       accessibilityLabel={`${rotulo}: ${valor}`}
       style={({ pressed }) => [estilos.card, pressed && { opacity: 0.85 }]}
     >
-      <Text style={estilos.cardRotulo}>{rotulo}</Text>
+      <LadrilhoDeIcone nome={icone} cor={cor} tamanho={38} />
       <Text style={[estilos.cardValor, atencao && { color: tema.cores.negativo }]}>{valor}</Text>
+      <Text style={estilos.cardRotulo}>{rotulo}</Text>
       <Text style={estilos.cardNota}>{nota}</Text>
     </Pressable>
   );
@@ -219,43 +253,65 @@ function Card({
 
 const estilos = StyleSheet.create({
   tela: { flex: 1, backgroundColor: tema.cores.fundo },
-  conteudo: { padding: tema.espacamento.lg },
+  conteudo: { padding: tema.espacamento.lg, paddingBottom: tema.espacamento.xl },
   cabecalho: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    alignItems: 'center',
     marginBottom: tema.espacamento.lg,
   },
   empresa: { ...tema.tipografia.h1, color: tema.cores.texto },
   papel: { ...tema.tipografia.legenda, color: tema.cores.textoSuave, marginTop: 2 },
-  sino: { padding: tema.espacamento.sm },
-  iconeSino: { fontSize: 22 },
+  sino: {
+    width: 44,
+    height: 44,
+    borderRadius: tema.raio.md,
+    backgroundColor: tema.cores.superficie,
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...tema.elevacao.card,
+  },
   badge: {
     position: 'absolute',
-    top: 0,
-    right: 0,
-    minWidth: 20,
+    top: 4,
+    right: 4,
+    minWidth: 18,
     paddingHorizontal: 4,
-    height: 20,
+    height: 18,
     borderRadius: tema.raio.pill,
-    backgroundColor: tema.cores.acaoPrimaria,
+    backgroundColor: tema.cores.destrutiva,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  textoBadge: { ...tema.tipografia.legenda, color: tema.cores.textoInverso, fontSize: 11 },
+  textoBadge: { ...tema.tipografia.micro, color: tema.cores.textoInverso },
   grade: { flexDirection: 'row', flexWrap: 'wrap', gap: tema.espacamento.md },
-  card: {
-    flexGrow: 1,
-    flexBasis: '45%',
-    backgroundColor: tema.cores.fundoCard,
-    borderRadius: tema.raio.md,
+  cardDestaque: {
+    flexBasis: '100%',
+    backgroundColor: tema.cores.primaria,
+    borderRadius: tema.raio.lg,
     padding: tema.espacamento.lg,
     ...tema.elevacao.card,
   },
-  cardRotulo: { ...tema.tipografia.legenda, color: tema.cores.textoSuave },
+  linhaDestaque: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  destaqueRotulo: { ...tema.tipografia.rotulo, color: tema.cores.secundaria },
+  destaqueValor: {
+    ...tema.tipografia.numero,
+    color: tema.cores.textoInverso,
+    marginTop: tema.espacamento.sm,
+  },
+  destaqueNota: { ...tema.tipografia.legenda, color: tema.cores.secundaria, marginTop: 2 },
+  card: {
+    flexGrow: 1,
+    flexBasis: '44%',
+    backgroundColor: tema.cores.fundoCard,
+    borderRadius: tema.raio.lg,
+    padding: tema.espacamento.md,
+    ...tema.elevacao.card,
+  },
+  cardRotulo: { ...tema.tipografia.corpoDestacado, color: tema.cores.texto },
   cardValor: {
     ...tema.tipografia.h1,
     color: tema.cores.primaria,
-    marginTop: tema.espacamento.xs,
+    marginTop: tema.espacamento.md,
   },
   cardNota: { ...tema.tipografia.legenda, color: tema.cores.textoSuave, marginTop: 2 },
 });

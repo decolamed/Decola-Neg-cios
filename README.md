@@ -351,6 +351,45 @@ por EAS Build / lojas.
 ## Design
 
 Todos os tokens visuais estão em `packages/theme/src/index.ts` — cores,
-tipografia, espaçamento e estados de componente. Nenhum valor visual deve
-aparecer hardcoded em tela ou componente: o refino de layout posterior precisa
-ser aplicável editando só esse arquivo.
+tipografia, espaçamento, raios, sombras e estados de componente. Nenhum valor
+visual deve aparecer hardcoded em tela ou componente: qualquer ajuste de marca
+se resolve editando só esse arquivo.
+
+### Identidade visual
+
+Os arquivos da marca ficam em `apps/mobile/assets/marca/` (e uma cópia do
+logo nome e da assinatura em `apps/admin/public/marca/`):
+
+| Arquivo | Uso |
+|---|---|
+| `simbolo.png` | símbolo isolado — base do ícone do app e da splash |
+| `logo-nome-claro.png` / `-escuro.png` | logo nome, para fundo escuro / claro |
+| `by-decola-claro.png` / `-escuro.png` | assinatura "by Decola" |
+
+O componente `Marca` (`src/componentes/Marca.tsx`) monta as combinações
+(símbolo, logo nome, tagline, assinatura) e `AssinaturaDecola` isola a
+assinatura para rodapés. `assets/icone.png`, `icone-adaptativo.png`,
+`splash.png` e `favicon.png` são derivados desses arquivos e já estão
+referenciados no `app.json`.
+
+### Fontes da marca (Seção 2.2)
+
+Glacial Indifference nos títulos, Montserrat no corpo. O carregamento já está
+implementado — só faltam os arquivos. Três passos:
+
+1. Copie os `.ttf` para `apps/mobile/assets/fonts/` com os nomes listados no
+   `README.md` daquela pasta.
+2. Descomente as quatro linhas de `MAPA_DE_FONTES` em
+   `apps/mobile/src/lib/fontes.ts`.
+3. Mude `FONTES_PERSONALIZADAS_DISPONIVEIS` para `true` em
+   `packages/theme/src/index.ts`.
+
+Enquanto isso não acontecer, o app usa a fonte do sistema nos mesmos pesos e
+tamanhos, e `conferirConsistenciaDasFontes()` avisa no console se os passos 2 e
+3 saírem de sincronia. O `_layout.tsx` espera as fontes carregarem antes da
+primeira tela, para não haver troca de tipografia à vista do usuário.
+
+No painel administrativo, Montserrat vem por web font (`apps/admin/index.html`)
+e o `@font-face` da fonte de título está pronto e comentado em
+`apps/admin/src/estilos.css` — basta copiar os arquivos para
+`apps/admin/public/fonts/` e descomentar.

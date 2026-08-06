@@ -17,6 +17,7 @@ import { BadgeArquivado, BadgeStatus } from '@/componentes/BadgeStatus';
 import { Botao } from '@/componentes/Botao';
 import { CampoTexto } from '@/componentes/CampoTexto';
 import { TelaCarregando, TelaMensagem } from '@/componentes/EstadoDaTela';
+import { LadrilhoDeIcone } from '@/componentes/Icone';
 import { Seletor } from '@/componentes/Seletor';
 import { useSessao } from '@/contexto/SessaoContexto';
 import { listarCamposAtivos, type CampoConfigurado } from '@/dados/camposProduto';
@@ -206,12 +207,22 @@ function ItemDeProduto({
   produto: ProdutoComStatus;
   aoTocar: () => void;
 }) {
+  // Sem foto de produto na V1: o ladrilho colorido faz o papel da miniatura.
+  // A cor é estável por produto, só para a lista não ficar monocromática.
+  const cor =
+    tema.acentos[
+      Array.from(produto.id).reduce((soma, letra) => soma + letra.charCodeAt(0), 0) %
+        tema.acentos.length
+    ];
+
   return (
     <Pressable
       onPress={aoTocar}
       style={({ pressed }) => [estilos.item, pressed && { opacity: 0.85 }]}
       accessibilityRole="button"
     >
+      <LadrilhoDeIcone nome="produtos" cor={cor} tamanho={46} />
+
       <View style={estilos.itemInfo}>
         <Text style={estilos.itemNome} numberOfLines={1}>
           {produto.nome}
@@ -240,7 +251,7 @@ function ItemDeProduto({
 
 const estilos = StyleSheet.create({
   tela: { flex: 1, backgroundColor: tema.cores.fundo },
-  conteudo: { padding: tema.espacamento.lg },
+  conteudo: { padding: tema.espacamento.lg, paddingBottom: tema.espacamento.xl },
   titulo: { ...tema.tipografia.h1, color: tema.cores.texto, marginBottom: tema.espacamento.md },
   vazio: {
     ...tema.tipografia.corpo,
@@ -252,12 +263,12 @@ const estilos = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: tema.cores.fundoCard,
-    borderRadius: tema.raio.md,
+    borderRadius: tema.raio.lg,
     padding: tema.espacamento.md,
     marginBottom: tema.espacamento.sm,
     ...tema.elevacao.card,
   },
-  itemInfo: { flex: 1, marginRight: tema.espacamento.sm },
+  itemInfo: { flex: 1, marginHorizontal: tema.espacamento.md },
   itemNome: { ...tema.tipografia.corpoDestacado, color: tema.cores.texto },
   itemDetalhe: {
     ...tema.tipografia.legenda,

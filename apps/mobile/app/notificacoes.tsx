@@ -16,6 +16,7 @@ import tema from '@decola/theme';
 import { Aviso } from '@/componentes/Aviso';
 import { Botao } from '@/componentes/Botao';
 import { TelaCarregando, TelaMensagem } from '@/componentes/EstadoDaTela';
+import { LadrilhoDeIcone, type NomeDeIcone } from '@/componentes/Icone';
 import { useSessao } from '@/contexto/SessaoContexto';
 import {
   listarAvisos,
@@ -35,6 +36,13 @@ const ROTULO_CATEGORIA: Record<CategoriaDoAviso, string> = {
   estoque: 'Estoque',
   assinatura: 'Assinatura',
   administrativo: 'Administrativo',
+};
+
+/** Ícone e cor por categoria — só aparência; a categoria vem do banco. */
+const APARENCIA_CATEGORIA: Record<CategoriaDoAviso, { icone: NomeDeIcone; cor: string }> = {
+  estoque: { icone: 'alerta', cor: tema.cores.alerta },
+  assinatura: { icone: 'plano', cor: tema.cores.secundaria },
+  administrativo: { icone: 'sino', cor: tema.cores.apoio },
 };
 
 function quando(iso: string): string {
@@ -156,15 +164,23 @@ export default function Notificacoes() {
               pressed && { opacity: 0.85 },
             ]}
           >
-            <View style={estilos.linhaTopo}>
-              <Text style={estilos.categoria}>{ROTULO_CATEGORIA[item.categoria]}</Text>
-              <Text style={estilos.quando}>{quando(item.criado_em)}</Text>
+            <LadrilhoDeIcone
+              nome={APARENCIA_CATEGORIA[item.categoria].icone}
+              cor={APARENCIA_CATEGORIA[item.categoria].cor}
+              tamanho={38}
+            />
+
+            <View style={estilos.corpoAviso}>
+              <View style={estilos.linhaTopo}>
+                <Text style={estilos.categoria}>{ROTULO_CATEGORIA[item.categoria]}</Text>
+                <Text style={estilos.quando}>{quando(item.criado_em)}</Text>
+              </View>
+
+              <Text style={estilos.tituloAviso}>{item.titulo}</Text>
+              <Text style={estilos.mensagem}>{item.mensagem}</Text>
+
+              {item.destino ? <Text style={estilos.acao}>Toque para abrir</Text> : null}
             </View>
-
-            <Text style={estilos.tituloAviso}>{item.titulo}</Text>
-            <Text style={estilos.mensagem}>{item.mensagem}</Text>
-
-            {item.destino ? <Text style={estilos.acao}>Toque para abrir ›</Text> : null}
           </Pressable>
         )}
       />
@@ -185,18 +201,22 @@ const estilos = StyleSheet.create({
   margemLateral: { paddingHorizontal: tema.espacamento.lg },
   lista: { padding: tema.espacamento.lg },
   item: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: tema.espacamento.md,
     backgroundColor: tema.cores.fundoCard,
-    borderRadius: tema.raio.md,
+    borderRadius: tema.raio.lg,
     padding: tema.espacamento.md,
     marginBottom: tema.espacamento.sm,
     ...tema.elevacao.card,
   },
+  corpoAviso: { flex: 1 },
   itemNaoLido: {
     borderLeftWidth: 3,
-    borderLeftColor: tema.cores.acaoPrimaria,
+    borderLeftColor: tema.cores.secundaria,
   },
-  linhaTopo: { flexDirection: 'row', justifyContent: 'space-between' },
-  categoria: { ...tema.tipografia.legenda, color: tema.cores.primaria },
+  linhaTopo: { flexDirection: 'row', justifyContent: 'space-between', gap: tema.espacamento.sm },
+  categoria: { ...tema.tipografia.rotulo, color: tema.cores.primaria },
   quando: { ...tema.tipografia.legenda, color: tema.cores.textoSuave },
   tituloAviso: {
     ...tema.tipografia.corpoDestacado,
@@ -205,8 +225,8 @@ const estilos = StyleSheet.create({
   },
   mensagem: { ...tema.tipografia.corpo, color: tema.cores.textoSuave, marginTop: 2 },
   acao: {
-    ...tema.tipografia.legenda,
-    color: tema.cores.primaria,
+    ...tema.tipografia.rotulo,
+    color: tema.cores.secundaria,
     marginTop: tema.espacamento.sm,
   },
   vazio: {

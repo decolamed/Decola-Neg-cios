@@ -78,7 +78,7 @@ export function GraficoDeEvolucao({
               y={altura - alturaBarra - 1}
               width={larguraBarra}
               height={alturaBarra}
-              rx={2}
+              rx={4}
               fill={tema.cores.secundaria}
             />
           );
@@ -179,7 +179,7 @@ export function ComparacaoDePeriodos({
 const estilos = StyleSheet.create({
   cartao: {
     backgroundColor: tema.cores.fundoCard,
-    borderRadius: tema.raio.md,
+    borderRadius: tema.raio.lg,
     padding: tema.espacamento.md,
     marginBottom: tema.espacamento.md,
     ...tema.elevacao.card,
@@ -198,16 +198,16 @@ const estilos = StyleSheet.create({
   rotuloRanking: { ...tema.tipografia.corpo, color: tema.cores.texto, flex: 1 },
   valorRanking: { ...tema.tipografia.legenda, color: tema.cores.textoSuave },
   trilho: {
-    height: 8,
-    borderRadius: 4,
+    height: 10,
+    borderRadius: 5,
     backgroundColor: tema.cores.fundo,
     overflow: 'hidden',
   },
-  preenchimento: { height: 8, borderRadius: 4 },
+  preenchimento: { height: 10, borderRadius: 5 },
   comparacao: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
   alinhadoDireita: { alignItems: 'flex-end' },
   rotuloComparacao: { ...tema.tipografia.legenda, color: tema.cores.textoSuave },
-  valorComparacao: { ...tema.tipografia.h1, color: tema.cores.primaria },
+  valorComparacao: { ...tema.tipografia.numero, color: tema.cores.primaria },
   valorAnterior: { ...tema.tipografia.corpoDestacado, color: tema.cores.texto },
-  variacao: { ...tema.tipografia.legenda, marginTop: 2 },
+  variacao: { ...tema.tipografia.rotulo, marginTop: 2 },
 });

@@ -202,7 +202,7 @@ function CardDePlano({
   aoEscolher: () => void;
 }) {
   return (
-    <View style={estilos.card}>
+    <View style={[estilos.card, ehAtual && estilos.cardAtual]}>
       {/* Selo de trial, exibido apenas quando o trial está ligado
           globalmente; a duração vem de configuracoes_plataforma. */}
       {trialAtivo ? (
@@ -229,9 +229,10 @@ function CardDePlano({
       ) : null}
 
       {item.funcionalidades.map((funcionalidade) => (
-        <Text key={funcionalidade} style={estilos.funcionalidade}>
-          • {rotuloDeFuncionalidade(funcionalidade)}
-        </Text>
+        <View key={funcionalidade} style={estilos.linhaFuncionalidade}>
+          <Text style={estilos.marcador}>✓</Text>
+          <Text style={estilos.funcionalidade}>{rotuloDeFuncionalidade(funcionalidade)}</Text>
+        </View>
       ))}
 
       {ehAtual ? (
@@ -262,41 +263,51 @@ const estilos = StyleSheet.create({
   card: {
     backgroundColor: tema.cores.fundoCard,
     borderRadius: tema.raio.lg,
+    borderWidth: 1,
+    borderColor: tema.cores.bordaSuave,
     padding: tema.espacamento.lg,
     marginBottom: tema.espacamento.md,
     ...tema.elevacao.card,
   },
+  cardAtual: { borderWidth: 2, borderColor: tema.cores.secundaria },
   selo: {
     alignSelf: 'flex-start',
     backgroundColor: tema.cores.destaque,
     borderRadius: tema.raio.pill,
-    paddingHorizontal: tema.espacamento.sm,
-    paddingVertical: tema.espacamento.xs,
+    paddingHorizontal: tema.espacamento.md,
+    paddingVertical: 5,
     marginBottom: tema.espacamento.sm,
   },
-  textoSelo: { ...tema.tipografia.legenda, color: tema.cores.texto },
+  textoSelo: { ...tema.tipografia.rotulo, color: tema.cores.textoSobreAcao },
   seloAtual: {
     alignSelf: 'flex-start',
     backgroundColor: tema.cores.primaria,
     borderRadius: tema.raio.pill,
-    paddingHorizontal: tema.espacamento.sm,
-    paddingVertical: tema.espacamento.xs,
+    paddingHorizontal: tema.espacamento.md,
+    paddingVertical: 5,
     marginBottom: tema.espacamento.sm,
   },
-  textoSeloAtual: { ...tema.tipografia.legenda, color: tema.cores.textoInverso },
+  textoSeloAtual: { ...tema.tipografia.rotulo, color: tema.cores.textoInverso },
   nomePlano: { ...tema.tipografia.h2, color: tema.cores.texto },
   linhaValor: { flexDirection: 'row', alignItems: 'baseline', marginTop: tema.espacamento.xs },
-  valor: { ...tema.tipografia.h1, color: tema.cores.primaria },
+  valor: { ...tema.tipografia.numero, color: tema.cores.primaria },
   periodo: { ...tema.tipografia.corpo, color: tema.cores.textoSuave, marginLeft: 4 },
   limite: {
     ...tema.tipografia.corpoDestacado,
     color: tema.cores.texto,
+    marginTop: tema.espacamento.md,
+  },
+  linhaFuncionalidade: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: tema.espacamento.sm,
     marginTop: tema.espacamento.sm,
   },
+  marcador: { ...tema.tipografia.corpoDestacado, color: tema.cores.secundaria },
   funcionalidade: {
     ...tema.tipografia.corpo,
     color: tema.cores.textoSuave,
-    marginTop: tema.espacamento.xs,
+    flex: 1,
   },
   observacao: {
     ...tema.tipografia.legenda,
@@ -304,9 +315,9 @@ const estilos = StyleSheet.create({
     marginTop: tema.espacamento.md,
   },
   suporte: {
-    ...tema.tipografia.legenda,
+    ...tema.tipografia.rotulo,
     color: tema.cores.primaria,
     textAlign: 'center',
-    marginTop: tema.espacamento.md,
+    marginTop: tema.espacamento.lg,
   },
 });

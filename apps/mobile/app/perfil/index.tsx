@@ -13,6 +13,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import tema from '@decola/theme';
 import { Aviso } from '@/componentes/Aviso';
 import { TelaCarregando, TelaMensagem } from '@/componentes/EstadoDaTela';
+import { Icone, LadrilhoDeIcone, type NomeDeIcone } from '@/componentes/Icone';
+import { AssinaturaDecola } from '@/componentes/Marca';
 import { useSessao } from '@/contexto/SessaoContexto';
 import { ROTULO_PAPEL } from '@/dados/funcionarios';
 import { EMAIL_SUPORTE } from '@/dados/planos';
@@ -21,6 +23,10 @@ type Item = {
   titulo: string;
   descricao: string;
   aoTocar: () => void;
+  icone: NomeDeIcone;
+  cor: string;
+  /** Destaca a ação como destrutiva (apenas aparência). */
+  destrutiva?: boolean;
 };
 
 /** Iniciais para o avatar: a Seção 7.14 pede "avatar/inicial". */
@@ -86,26 +92,37 @@ export default function Perfil() {
       titulo: 'Meu plano',
       descricao: 'Plano atual, status da assinatura e cobranças.',
       aoTocar: () => router.push('/perfil/plano'),
+      icone: 'plano',
+      cor: tema.cores.secundaria,
     },
     {
       titulo: 'Notificações',
       descricao: 'Escolha sobre o que você quer ser avisado.',
       aoTocar: () => router.push('/perfil/notificacoes'),
+      icone: 'sino',
+      cor: tema.cores.apoio,
     },
     {
       titulo: 'Ajuda e suporte',
       descricao: `Fale com a gente por e-mail: ${EMAIL_SUPORTE}`,
       aoTocar: abrirSuporte,
+      icone: 'perfil',
+      cor: tema.cores.primaria,
     },
     {
       titulo: 'Alterar senha',
       descricao: 'Trocar a senha de acesso da sua conta.',
       aoTocar: () => router.push('/perfil/alterar-senha'),
+      icone: 'senha',
+      cor: tema.cores.destaque,
     },
     {
       titulo: 'Sair da conta',
       descricao: 'Encerra a sessão neste aparelho.',
       aoTocar: confirmarSaida,
+      icone: 'sair',
+      cor: tema.cores.destrutiva,
+      destrutiva: true,
     },
   ];
 
@@ -131,13 +148,20 @@ export default function Perfil() {
             onPress={item.aoTocar}
             style={({ pressed }) => [estilos.item, pressed && { opacity: 0.85 }]}
           >
+            <LadrilhoDeIcone nome={item.icone} cor={item.cor} />
             <View style={estilos.itemTexto}>
-              <Text style={estilos.itemTitulo}>{item.titulo}</Text>
+              <Text style={[estilos.itemTitulo, item.destrutiva && estilos.itemTituloDestrutivo]}>
+                {item.titulo}
+              </Text>
               <Text style={estilos.itemDescricao}>{item.descricao}</Text>
             </View>
-            <Text style={estilos.seta}>›</Text>
+            <Icone nome="seta" cor={tema.cores.textoSuave} tamanho={18} />
           </Pressable>
         ))}
+
+        <View style={estilos.rodape}>
+          <AssinaturaDecola escura />
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -145,31 +169,38 @@ export default function Perfil() {
 
 const estilos = StyleSheet.create({
   tela: { flex: 1, backgroundColor: tema.cores.fundo },
-  conteudo: { padding: tema.espacamento.lg },
-  cabecalho: { alignItems: 'center', marginBottom: tema.espacamento.lg },
+  conteudo: { padding: tema.espacamento.lg, paddingBottom: tema.espacamento.xl },
+  cabecalho: {
+    alignItems: 'center',
+    marginBottom: tema.espacamento.lg,
+    paddingVertical: tema.espacamento.lg,
+  },
   avatar: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
+    width: 80,
+    height: 80,
+    borderRadius: 40,
     backgroundColor: tema.cores.primaria,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: tema.espacamento.sm,
+    marginBottom: tema.espacamento.md,
+    ...tema.elevacao.card,
   },
-  iniciais: { ...tema.tipografia.h1, color: tema.cores.textoInverso },
+  iniciais: { ...tema.tipografia.h1, color: tema.cores.destaque },
   nome: { ...tema.tipografia.h2, color: tema.cores.texto },
   detalhe: { ...tema.tipografia.legenda, color: tema.cores.textoSuave, marginTop: 2 },
   item: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: tema.espacamento.md,
     backgroundColor: tema.cores.fundoCard,
-    borderRadius: tema.raio.md,
+    borderRadius: tema.raio.lg,
     padding: tema.espacamento.md,
     marginBottom: tema.espacamento.sm,
     ...tema.elevacao.card,
   },
   itemTexto: { flex: 1 },
   itemTitulo: { ...tema.tipografia.corpoDestacado, color: tema.cores.texto },
+  itemTituloDestrutivo: { color: tema.cores.destrutiva },
   itemDescricao: { ...tema.tipografia.legenda, color: tema.cores.textoSuave, marginTop: 2 },
-  seta: { ...tema.tipografia.h2, color: tema.cores.textoSuave, marginLeft: tema.espacamento.sm },
+  rodape: { marginTop: tema.espacamento.xl },
 });

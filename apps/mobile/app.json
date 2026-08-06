@@ -6,16 +6,22 @@
     "orientation": "portrait",
     "scheme": "decolanegocios",
     "userInterfaceStyle": "light",
+    "icon": "./assets/icone.png",
     "splash": {
+      "image": "./assets/splash.png",
       "resizeMode": "contain",
-      "backgroundColor": "#01395E"
+      "backgroundColor": "#F2B532"
     },
     "assetBundlePatterns": ["**/*"],
     "ios": { "supportsTablet": true, "bundleIdentifier": "br.com.decolanegocios.app" },
     "android": {
       "package": "br.com.decolanegocios.app",
-      "adaptiveIcon": { "backgroundColor": "#01395E" }
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/icone-adaptativo.png",
+        "backgroundColor": "#F2B532"
+      }
     },
+    "web": { "favicon": "./assets/favicon.png" },
     "plugins": ["expo-router"],
     "experiments": { "typedRoutes": false }
   }

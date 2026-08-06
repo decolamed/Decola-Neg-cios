@@ -17,6 +17,7 @@ import { Aviso } from '@/componentes/Aviso';
 import { Botao } from '@/componentes/Botao';
 import { CampoTexto } from '@/componentes/CampoTexto';
 import { TelaCarregando, TelaMensagem } from '@/componentes/EstadoDaTela';
+import { LadrilhoDeIcone, type NomeDeIcone } from '@/componentes/Icone';
 import {
   CartaoDeGrafico,
   ComparacaoDePeriodos,
@@ -159,6 +160,7 @@ export default function Relatorios() {
     <SafeAreaView style={estilos.tela}>
       <ScrollView contentContainerStyle={estilos.conteudo} keyboardShouldPersistTaps="handled">
         <Text style={estilos.titulo}>Relatórios</Text>
+        <Text style={estilos.periodo}>{descreverPeriodo(periodo)}</Text>
 
         {/* Seção 10.2 — dia, semana, mês ou período personalizado. */}
         <Seletor
@@ -193,11 +195,13 @@ export default function Relatorios() {
               erro={erroPeriodo}
               placeholder="AAAA-MM-DD"
             />
-            <Botao titulo="Aplicar período" variante="secundario" aoPressionar={aplicarPersonalizado} />
+            <Botao
+              titulo="Aplicar período"
+              variante="contorno"
+              aoPressionar={aplicarPersonalizado}
+            />
           </View>
         ) : null}
-
-        <Text style={estilos.periodo}>{descreverPeriodo(periodo)}</Text>
 
         {mensagem ? <Aviso mensagem={mensagem} tom="informacao" /> : null}
 
@@ -209,11 +213,23 @@ export default function Relatorios() {
         </CartaoDeGrafico>
 
         <View style={estilos.grade}>
-          <Indicador rotulo="Vendas" valor={String(relatorio.totais.quantidade_vendas)} />
-          <Indicador rotulo="Ticket médio" valor={moeda(Number(relatorio.totais.ticket_medio))} />
+          <Indicador
+            rotulo="Vendas"
+            valor={String(relatorio.totais.quantidade_vendas)}
+            icone="vendas"
+            cor={tema.cores.secundaria}
+          />
+          <Indicador
+            rotulo="Ticket médio"
+            valor={moeda(Number(relatorio.totais.ticket_medio))}
+            icone="financeiro"
+            cor={tema.cores.apoio}
+          />
           <Indicador
             rotulo="Descontos"
             valor={moeda(Number(relatorio.totais.desconto_concedido))}
+            icone="saida"
+            cor={tema.cores.negativo}
           />
         </View>
 
@@ -308,30 +324,44 @@ export default function Relatorios() {
           />
         </View>
 
-        <Botao
-          titulo="Exportar PDF"
-          aoPressionar={() => void exportar('pdf')}
-          carregando={exportando === 'pdf'}
-          desabilitado={exportando !== null}
-          estilo={{ marginBottom: tema.espacamento.sm }}
-        />
-        <Botao
-          titulo="Exportar planilha (Excel)"
-          variante="secundario"
-          aoPressionar={() => void exportar('csv')}
-          carregando={exportando === 'csv'}
-          desabilitado={exportando !== null}
-        />
+        <View style={estilos.exportacao}>
+          <Text style={estilos.tituloCartao}>Exportar</Text>
+          <Botao
+            titulo="Exportar PDF"
+            aoPressionar={() => void exportar('pdf')}
+            carregando={exportando === 'pdf'}
+            desabilitado={exportando !== null}
+            estilo={{ marginBottom: tema.espacamento.sm }}
+          />
+          <Botao
+            titulo="Exportar planilha (Excel)"
+            variante="contorno"
+            aoPressionar={() => void exportar('csv')}
+            carregando={exportando === 'csv'}
+            desabilitado={exportando !== null}
+          />
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
 }
 
-function Indicador({ rotulo, valor }: { rotulo: string; valor: string }) {
+function Indicador({
+  rotulo,
+  valor,
+  icone,
+  cor,
+}: {
+  rotulo: string;
+  valor: string;
+  icone: NomeDeIcone;
+  cor: string;
+}) {
   return (
     <View style={estilos.indicador}>
-      <Text style={estilos.rotuloIndicador}>{rotulo}</Text>
+      <LadrilhoDeIcone nome={icone} cor={cor} tamanho={32} />
       <Text style={estilos.valorIndicador}>{valor}</Text>
+      <Text style={estilos.rotuloIndicador}>{rotulo}</Text>
     </View>
   );
 }
@@ -352,6 +382,7 @@ function Alternador({
         value={valor}
         onValueChange={aoMudar}
         trackColor={{ true: tema.cores.secundaria, false: tema.cores.borda }}
+        thumbColor={tema.cores.superficie}
       />
     </View>
   );
@@ -359,16 +390,17 @@ function Alternador({
 
 const estilos = StyleSheet.create({
   tela: { flex: 1, backgroundColor: tema.cores.fundo },
-  conteudo: { padding: tema.espacamento.lg },
-  titulo: { ...tema.tipografia.h1, color: tema.cores.texto, marginBottom: tema.espacamento.md },
+  conteudo: { padding: tema.espacamento.lg, paddingBottom: tema.espacamento.xl },
+  titulo: { ...tema.tipografia.h1, color: tema.cores.texto },
   periodo: {
     ...tema.tipografia.legenda,
     color: tema.cores.textoSuave,
+    marginTop: 2,
     marginBottom: tema.espacamento.md,
   },
   cartao: {
     backgroundColor: tema.cores.fundoCard,
-    borderRadius: tema.raio.md,
+    borderRadius: tema.raio.lg,
     padding: tema.espacamento.md,
     marginBottom: tema.espacamento.md,
     ...tema.elevacao.card,
@@ -382,12 +414,22 @@ const estilos = StyleSheet.create({
   indicador: {
     flex: 1,
     backgroundColor: tema.cores.fundoCard,
-    borderRadius: tema.raio.md,
+    borderRadius: tema.raio.lg,
     padding: tema.espacamento.md,
     ...tema.elevacao.card,
   },
   rotuloIndicador: { ...tema.tipografia.legenda, color: tema.cores.textoSuave },
-  valorIndicador: { ...tema.tipografia.corpoDestacado, color: tema.cores.texto, marginTop: 2 },
+  valorIndicador: {
+    ...tema.tipografia.corpoDestacado,
+    color: tema.cores.texto,
+    marginTop: tema.espacamento.sm,
+  },
+  exportacao: {
+    backgroundColor: tema.cores.fundoCard,
+    borderRadius: tema.raio.lg,
+    padding: tema.espacamento.md,
+    ...tema.elevacao.card,
+  },
   linhaAlternador: {
     flexDirection: 'row',
     alignItems: 'center',

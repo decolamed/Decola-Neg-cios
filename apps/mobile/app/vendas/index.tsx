@@ -11,6 +11,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import tema from '@decola/theme';
 import { Botao } from '@/componentes/Botao';
 import { TelaCarregando, TelaMensagem } from '@/componentes/EstadoDaTela';
+import { Icone, LadrilhoDeIcone } from '@/componentes/Icone';
 import { MenuInferior } from '@/componentes/MenuInferior';
 import { useSessao } from '@/contexto/SessaoContexto';
 import {
@@ -26,6 +27,14 @@ const ROTULO_PAGAMENTO: Record<string, string> = {
   pix: 'Pix',
   cartao: 'Cartão',
   outros: 'Outros',
+};
+
+/** Ícone da forma de pagamento — só aparência; o valor vem do banco. */
+const ICONE_PAGAMENTO: Record<string, 'dinheiro' | 'pix' | 'cartao' | 'outros'> = {
+  dinheiro: 'dinheiro',
+  pix: 'pix',
+  cartao: 'cartao',
+  outros: 'outros',
 };
 
 export default function HistoricoDeVendas() {
@@ -112,6 +121,7 @@ export default function HistoricoDeVendas() {
                 onPress={() => router.push('/vendas/solicitacoes')}
                 style={({ pressed }) => [estilos.alertaPendentes, pressed && { opacity: 0.85 }]}
               >
+                <Icone nome="alerta" cor={tema.cores.textoAlerta} tamanho={20} />
                 <Text style={estilos.textoPendentes}>
                   {pendentes} solicitação(ões) de cancelamento aguardando sua decisão
                 </Text>
@@ -135,6 +145,12 @@ export default function HistoricoDeVendas() {
             onPress={() => router.push(`/vendas/${item.id}`)}
             style={({ pressed }) => [estilos.item, pressed && { opacity: 0.85 }]}
           >
+            <LadrilhoDeIcone
+              nome={ICONE_PAGAMENTO[item.forma_pagamento] ?? 'outros'}
+              cor={item.status === 'cancelada' ? tema.cores.negativo : tema.cores.secundaria}
+              tamanho={38}
+            />
+
             <View style={{ flex: 1 }}>
               <Text style={estilos.itemData}>
                 {new Date(item.criado_em).toLocaleString('pt-BR', {
@@ -170,7 +186,7 @@ export default function HistoricoDeVendas() {
 
 const estilos = StyleSheet.create({
   tela: { flex: 1, backgroundColor: tema.cores.fundo },
-  conteudo: { padding: tema.espacamento.lg },
+  conteudo: { padding: tema.espacamento.lg, paddingBottom: tema.espacamento.xl },
   titulo: { ...tema.tipografia.h1, color: tema.cores.texto },
   resumo: {
     ...tema.tipografia.corpo,
@@ -179,12 +195,17 @@ const estilos = StyleSheet.create({
     marginBottom: tema.espacamento.md,
   },
   alertaPendentes: {
-    backgroundColor: '#FDF4E0',
-    borderRadius: tema.raio.sm,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: tema.espacamento.sm,
+    backgroundColor: tema.tons.destaque,
+    borderRadius: tema.raio.md,
+    borderLeftWidth: 3,
+    borderLeftColor: tema.cores.alerta,
     padding: tema.espacamento.md,
     marginBottom: tema.espacamento.md,
   },
-  textoPendentes: { ...tema.tipografia.corpoDestacado, color: '#8A6412' },
+  textoPendentes: { ...tema.tipografia.corpoDestacado, color: tema.cores.textoAlerta, flex: 1 },
   vazio: {
     ...tema.tipografia.corpo,
     color: tema.cores.textoSuave,
@@ -194,8 +215,9 @@ const estilos = StyleSheet.create({
   item: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: tema.espacamento.md,
     backgroundColor: tema.cores.fundoCard,
-    borderRadius: tema.raio.md,
+    borderRadius: tema.raio.lg,
     padding: tema.espacamento.md,
     marginBottom: tema.espacamento.sm,
     ...tema.elevacao.card,
@@ -206,5 +228,5 @@ const estilos = StyleSheet.create({
   itemDireita: { alignItems: 'flex-end' },
   itemTotal: { ...tema.tipografia.corpoDestacado, color: tema.cores.primaria },
   cancelado: { color: tema.cores.textoSuave, textDecorationLine: 'line-through' },
-  badgeCancelada: { ...tema.tipografia.legenda, color: tema.cores.negativo, marginTop: 2 },
+  badgeCancelada: { ...tema.tipografia.rotulo, color: tema.cores.negativo, marginTop: 2 },
 });

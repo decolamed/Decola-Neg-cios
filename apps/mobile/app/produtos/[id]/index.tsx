@@ -376,7 +376,7 @@ const estilos = StyleSheet.create({
   badges: { flexDirection: 'row', marginTop: tema.espacamento.sm, marginBottom: tema.espacamento.md },
   card: {
     backgroundColor: tema.cores.fundoCard,
-    borderRadius: tema.raio.md,
+    borderRadius: tema.raio.lg,
     padding: tema.espacamento.md,
     marginBottom: tema.espacamento.md,
     ...tema.elevacao.card,

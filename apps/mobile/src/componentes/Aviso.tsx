@@ -8,17 +8,20 @@ import tema from '@decola/theme';
 
 type Tom = 'erro' | 'alerta' | 'sucesso' | 'informacao';
 
-const CORES: Record<Tom, { fundo: string; texto: string }> = {
-  erro: { fundo: '#FBE9E9', texto: tema.cores.erro },
-  alerta: { fundo: '#FDF4E0', texto: '#8A6412' },
-  sucesso: { fundo: '#E8F5FC', texto: tema.cores.primaria },
-  informacao: { fundo: tema.cores.fundo, texto: tema.cores.texto },
+const CORES: Record<Tom, { fundo: string; texto: string; barra: string }> = {
+  erro: { fundo: tema.tons.negativo, texto: tema.cores.erro, barra: tema.cores.erro },
+  alerta: { fundo: tema.tons.destaque, texto: tema.cores.textoAlerta, barra: tema.cores.alerta },
+  sucesso: { fundo: tema.tons.secundaria, texto: tema.cores.primaria, barra: tema.cores.secundaria },
+  informacao: { fundo: tema.cores.fundo, texto: tema.cores.texto, barra: tema.cores.borda },
 };
 
 export function Aviso({ mensagem, tom = 'erro' }: { mensagem: string; tom?: Tom }) {
   const cor = CORES[tom];
   return (
-    <View style={[estilos.caixa, { backgroundColor: cor.fundo }]} accessibilityRole="alert">
+    <View
+      style={[estilos.caixa, { backgroundColor: cor.fundo, borderLeftColor: cor.barra }]}
+      accessibilityRole="alert"
+    >
       <Text style={[estilos.texto, { color: cor.texto }]}>{mensagem}</Text>
     </View>
   );
@@ -26,7 +29,8 @@ export function Aviso({ mensagem, tom = 'erro' }: { mensagem: string; tom?: Tom 
 
 const estilos = StyleSheet.create({
   caixa: {
-    borderRadius: tema.raio.sm,
+    borderRadius: tema.raio.md,
+    borderLeftWidth: 3,
     padding: tema.espacamento.md,
     marginBottom: tema.espacamento.md,
   },

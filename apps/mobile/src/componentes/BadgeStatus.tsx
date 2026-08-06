@@ -15,17 +15,25 @@ const APARENCIA: Record<StatusEstoque, { rotulo: string; cor: string }> = {
 
 export function BadgeStatus({ status }: { status: StatusEstoque }) {
   const { rotulo, cor } = APARENCIA[status];
+  return <Badge rotulo={rotulo} cor={cor} />;
+}
+
+/**
+ * Badge genérico com a mesma aparência — para status que não vêm de
+ * `StatusEstoque` (ex.: situação da venda). Só rótulo e cor: nenhuma regra.
+ */
+export function Badge({ rotulo, cor }: { rotulo: string; cor: string }) {
   return (
-    <View style={[estilos.badge, { borderColor: cor }]}>
+    <View style={[estilos.badge, { backgroundColor: tema.clarear(cor) }]}>
       <View style={[estilos.bolinha, { backgroundColor: cor }]} />
-      <Text style={[estilos.texto, { color: cor }]}>{rotulo}</Text>
+      <Text style={[estilos.texto, { color: tema.escurecer(cor, 0.18) }]}>{rotulo}</Text>
     </View>
   );
 }
 
 export function BadgeArquivado() {
   return (
-    <View style={[estilos.badge, { borderColor: tema.cores.textoSuave }]}>
+    <View style={[estilos.badge, { backgroundColor: tema.cores.fundo }]}>
       <Text style={[estilos.texto, { color: tema.cores.textoSuave }]}>Arquivado</Text>
     </View>
   );
@@ -36,11 +44,10 @@ const estilos = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     alignSelf: 'flex-start',
-    borderWidth: 1,
     borderRadius: tema.raio.pill,
-    paddingHorizontal: tema.espacamento.sm,
-    paddingVertical: 2,
+    paddingHorizontal: tema.espacamento.sm + 2,
+    paddingVertical: 4,
   },
-  bolinha: { width: 6, height: 6, borderRadius: 3, marginRight: 5 },
-  texto: tema.tipografia.legenda,
+  bolinha: { width: 6, height: 6, borderRadius: 3, marginRight: 6 },
+  texto: tema.tipografia.rotulo,
 });

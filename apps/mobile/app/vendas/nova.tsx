@@ -21,6 +21,7 @@ import tema from '@decola/theme';
 import { Aviso } from '@/componentes/Aviso';
 import { Botao } from '@/componentes/Botao';
 import { CampoTexto } from '@/componentes/CampoTexto';
+import { LadrilhoDeIcone } from '@/componentes/Icone';
 import { PainelDeDesconto } from '@/componentes/PainelDeDesconto';
 import { PainelDeDivergencia } from '@/componentes/PainelDeDivergencia';
 import { TelaMensagem } from '@/componentes/EstadoDaTela';
@@ -140,7 +141,7 @@ export default function NovaVenda() {
           </View>
         ) : null}
 
-        <View style={estilos.linhaTotal}>
+        <View style={[estilos.linhaTotal, estilos.linhaTotalDestaque]}>
           <Text style={estilos.rotuloTotalDestaque}>Total</Text>
           <Text style={estilos.valorTotal}>{moeda(carrinho.total)}</Text>
         </View>
@@ -319,6 +320,8 @@ function ItemCarrinho({
   return (
     <View style={estilos.item}>
       <View style={estilos.itemTopo}>
+        <LadrilhoDeIcone nome="vendas" cor={tema.cores.secundaria} tamanho={38} />
+
         <View style={{ flex: 1 }}>
           <Text style={estilos.itemNome}>{item.nome}</Text>
           {item.codigo ? <Text style={estilos.itemCodigo}>{item.codigo}</Text> : null}
@@ -338,6 +341,8 @@ function ItemCarrinho({
 
         <CampoTexto
           rotulo=""
+          estilo={estilos.campoQuantidade}
+          centralizado
           valor={String(item.quantidade)}
           aoMudar={(texto) => {
             const numero = Number(texto.replace(/[^0-9]/g, ''));
@@ -361,14 +366,14 @@ function ItemCarrinho({
 
 const estilos = StyleSheet.create({
   tela: { flex: 1, backgroundColor: tema.cores.fundo },
-  conteudo: { padding: tema.espacamento.lg },
+  conteudo: { padding: tema.espacamento.lg, paddingBottom: tema.espacamento.xl },
   titulo: { ...tema.tipografia.h1, color: tema.cores.texto, marginBottom: tema.espacamento.md },
   linhaBusca: { flexDirection: 'row', alignItems: 'flex-end', gap: tema.espacamento.sm },
   campoBusca: { flex: 1 },
   botaoScanner: { marginBottom: tema.espacamento.md, paddingHorizontal: tema.espacamento.md },
   sugestoes: {
     backgroundColor: tema.cores.fundoCard,
-    borderRadius: tema.raio.md,
+    borderRadius: tema.raio.lg,
     marginBottom: tema.espacamento.md,
     ...tema.elevacao.card,
   },
@@ -377,14 +382,14 @@ const estilos = StyleSheet.create({
     alignItems: 'center',
     padding: tema.espacamento.md,
     borderBottomWidth: 1,
-    borderBottomColor: tema.cores.borda,
+    borderBottomColor: tema.cores.bordaSuave,
   },
   sugestaoNome: { ...tema.tipografia.corpoDestacado, color: tema.cores.texto },
   sugestaoDetalhe: { ...tema.tipografia.legenda, color: tema.cores.textoSuave, marginTop: 2 },
   sugestaoPreco: { ...tema.tipografia.corpoDestacado, color: tema.cores.primaria },
   naoCadastrado: {
     backgroundColor: tema.cores.fundoCard,
-    borderRadius: tema.raio.md,
+    borderRadius: tema.raio.lg,
     padding: tema.espacamento.md,
     marginBottom: tema.espacamento.md,
     ...tema.elevacao.card,
@@ -404,31 +409,40 @@ const estilos = StyleSheet.create({
   },
   item: {
     backgroundColor: tema.cores.fundoCard,
-    borderRadius: tema.raio.md,
+    borderRadius: tema.raio.lg,
     padding: tema.espacamento.md,
     marginBottom: tema.espacamento.sm,
     ...tema.elevacao.card,
   },
-  itemTopo: { flexDirection: 'row', alignItems: 'flex-start' },
+  itemTopo: { flexDirection: 'row', alignItems: 'flex-start', gap: tema.espacamento.md },
   itemNome: { ...tema.tipografia.corpoDestacado, color: tema.cores.texto },
   itemCodigo: { ...tema.tipografia.legenda, color: tema.cores.textoSuave, marginTop: 2 },
   itemPreco: { ...tema.tipografia.legenda, color: tema.cores.textoSuave },
   itemSubtotal: { ...tema.tipografia.corpoDestacado, color: tema.cores.primaria },
-  controles: { flexDirection: 'row', alignItems: 'center', gap: tema.espacamento.sm },
+  controles: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: tema.espacamento.sm,
+    marginTop: tema.espacamento.md,
+    paddingTop: tema.espacamento.md,
+    borderTopWidth: 1,
+    borderTopColor: tema.cores.bordaSuave,
+  },
   botaoQuantidade: {
-    width: 40,
-    height: 40,
-    borderRadius: tema.raio.sm,
+    width: 44,
+    height: 44,
+    borderRadius: tema.raio.md,
     borderWidth: 1,
-    borderColor: tema.cores.borda,
+    borderColor: tema.cores.bordaSuave,
+    backgroundColor: tema.cores.fundoCampo,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: tema.espacamento.md,
   },
+  campoQuantidade: { width: 72, marginBottom: 0 },
   simbolo: { ...tema.tipografia.h2, color: tema.cores.primaria },
   rodape: {
     backgroundColor: tema.cores.fundoCard,
-    borderRadius: tema.raio.md,
+    borderRadius: tema.raio.lg,
     padding: tema.espacamento.md,
     marginTop: tema.espacamento.md,
     ...tema.elevacao.card,
@@ -436,11 +450,18 @@ const estilos = StyleSheet.create({
   linhaTotal: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    alignItems: 'center',
     marginBottom: tema.espacamento.xs,
+  },
+  linhaTotalDestaque: {
+    marginTop: tema.espacamento.sm,
+    paddingTop: tema.espacamento.sm,
+    borderTopWidth: 1,
+    borderTopColor: tema.cores.bordaSuave,
   },
   rotuloTotal: { ...tema.tipografia.corpo, color: tema.cores.textoSuave },
   rotuloTotalDestaque: { ...tema.tipografia.h2, color: tema.cores.texto },
   valorSubtotal: { ...tema.tipografia.corpo, color: tema.cores.texto },
   valorDesconto: { ...tema.tipografia.corpo, color: tema.cores.negativo },
-  valorTotal: { ...tema.tipografia.h2, color: tema.cores.primaria },
+  valorTotal: { ...tema.tipografia.numero, color: tema.cores.primaria },
 });

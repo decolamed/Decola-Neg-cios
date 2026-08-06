@@ -8,6 +8,12 @@
  *
  * Compartilhado entre o app cliente (apps/mobile) e o Painel Administrativo
  * (apps/admin) para que a marca não divirja entre os dois.
+ *
+ * Refino visual (esta passada): os valores foram calibrados contra os mockups
+ * de referência da marca — CTA em amarelo com texto azul-marinho, cards mais
+ * arredondados e com sombra mais suave, ladrilhos de ícone coloridos e
+ * hierarquia tipográfica mais alta. Nenhuma estrutura ou papel semântico foi
+ * removido: só os valores mudaram.
  */
 
 // =============================================================================
@@ -35,6 +41,8 @@ export const paleta = {
 export const cores = {
   /** Headers, textos de destaque, navegação. */
   primaria: paleta.azulMarinho,
+  /** Azul-marinho mais profundo — fundo de painéis e faixas de destaque. */
+  primariaEscura: '#012A46',
   /** Destaques, gráficos, ícones. */
   secundaria: paleta.azulClaro,
   /** Cor de destaque/CTA (splash). */
@@ -43,10 +51,13 @@ export const cores = {
   apoio: paleta.laranja,
 
   /**
-   * Botões primários de largura total (Seção 2.3) e ações destrutivas usam o
-   * mesmo vermelho — é o que a especificação define para ambos.
+   * Botões primários de largura total: amarelo da marca com texto
+   * azul-marinho, como na referência visual. O vermelho segue reservado para
+   * ações destrutivas e indicadores negativos.
    */
-  acaoPrimaria: paleta.vermelho,
+  acaoPrimaria: paleta.amarelo,
+  /** Texto/ícone sobre `acaoPrimaria`. */
+  textoSobreAcao: paleta.azulMarinho,
   destrutiva: paleta.vermelho,
 
   /** Indicadores de estado. */
@@ -62,14 +73,44 @@ export const cores = {
   fundo: paleta.cinzaClaro,
   fundoCard: paleta.branco,
   superficie: paleta.branco,
+  /** Fundo de campos de formulário e trilhas de segmento. */
+  fundoCampo: '#F7F8FA',
 
   texto: paleta.azulMarinho,
   textoSuave: '#5A6B78',
   textoInverso: paleta.branco,
+  /** Texto sobre fundo tonal amarelo (avisos de atenção). */
+  textoAlerta: '#8A6412',
 
   borda: '#E1E5E8',
+  bordaSuave: '#EDF0F2',
   bordaErro: paleta.vermelho,
 } as const;
+
+/**
+ * Fundos tonais — a mesma cor da marca a 12% sobre branco. Usados nos
+ * ladrilhos de ícone, badges preenchidos e faixas de aviso, para que nenhum
+ * tom pastel novo precise ser inventado numa tela.
+ */
+export const tons = {
+  primaria: '#E6EBEF',
+  secundaria: '#E8F5FC',
+  destaque: '#FDF4E0',
+  apoio: '#FEF0E4',
+  negativo: '#FBE9E9',
+} as const;
+
+/**
+ * Cores de ladrilho de ícone, na ordem em que devem ser distribuídas em
+ * grades de atalho e listas (Acesso rápido, Onboarding, menu Mais).
+ */
+export const acentos = [
+  paleta.laranja,
+  paleta.azulClaro,
+  paleta.azulMarinho,
+  paleta.amarelo,
+  paleta.vermelho,
+] as const;
 
 // =============================================================================
 // Seção 2.2 — Tipografia
@@ -90,8 +131,11 @@ export const fontes = {
  * app usa a fonte do sistema — os pesos e tamanhos abaixo, que são o que a
  * especificação define, continuam valendo.
  *
- * Vire esta constante para `true` ao adicionar os arquivos: é a única
- * alteração necessária para a marca aparecer.
+ * Vire esta constante para `true` quando as fontes estiverem disponíveis. O
+ * carregamento no app cliente já está implementado: ver as instruções em
+ * `apps/mobile/src/lib/fontes.ts` (três passos, um deles é este). O painel
+ * administrativo já usa Montserrat via web font e passa a usar a fonte de
+ * título quando o @font-face em `apps/admin/src/estilos.css` for habilitado.
  */
 export const FONTES_PERSONALIZADAS_DISPONIVEIS = false;
 
@@ -99,14 +143,60 @@ const familia = (nome: string) => (FONTES_PERSONALIZADAS_DISPONIVEIS ? nome : un
 
 /** Hierarquia da tabela da Seção 2.2, um item por linha da especificação. */
 export const tipografia = {
-  h1: { fontFamily: familia(fontes.tituloBold), fontSize: 24, fontWeight: '700' },
-  h2: { fontFamily: familia(fontes.titulo), fontSize: 18, fontWeight: '600' },
-  corpo: { fontFamily: familia(fontes.corpo), fontSize: 14, fontWeight: '400' },
+  /** Títulos de tela e saudação. */
+  h1: {
+    fontFamily: familia(fontes.tituloBold),
+    fontSize: 24,
+    fontWeight: '700',
+    letterSpacing: -0.3,
+    lineHeight: 30,
+  },
+  h2: {
+    fontFamily: familia(fontes.titulo),
+    fontSize: 18,
+    fontWeight: '600',
+    letterSpacing: -0.2,
+    lineHeight: 24,
+  },
+  /** Valor monetário grande (card de destaque, saldo do financeiro). */
+  numero: {
+    fontFamily: familia(fontes.tituloBold),
+    fontSize: 30,
+    fontWeight: '700',
+    letterSpacing: -0.6,
+    lineHeight: 36,
+  },
+  corpo: { fontFamily: familia(fontes.corpo), fontSize: 14, fontWeight: '400', lineHeight: 20 },
   /** Valores monetários e nomes de produto. */
-  corpoDestacado: { fontFamily: familia(fontes.corpoSemibold), fontSize: 14, fontWeight: '600' },
+  corpoDestacado: {
+    fontFamily: familia(fontes.corpoSemibold),
+    fontSize: 14,
+    fontWeight: '600',
+    lineHeight: 20,
+  },
   /** Textos auxiliares e timestamps. */
-  legenda: { fontFamily: familia(fontes.corpo), fontSize: 12, fontWeight: '400' },
-  botao: { fontFamily: familia(fontes.corpoSemibold), fontSize: 14, fontWeight: '600' },
+  legenda: { fontFamily: familia(fontes.corpo), fontSize: 12, fontWeight: '400', lineHeight: 16 },
+  /** Rótulo de campo, aba e barra de navegação. */
+  rotulo: {
+    fontFamily: familia(fontes.corpoSemibold),
+    fontSize: 12,
+    fontWeight: '600',
+    lineHeight: 16,
+  },
+  botao: {
+    fontFamily: familia(fontes.corpoSemibold),
+    fontSize: 15,
+    fontWeight: '600',
+    letterSpacing: 0.1,
+    lineHeight: 20,
+  },
+  /** Menor escala: contador de badge, rótulo da barra de navegação, iniciais. */
+  micro: {
+    fontFamily: familia(fontes.corpoSemibold),
+    fontSize: 11,
+    fontWeight: '600',
+    lineHeight: 14,
+  },
 } as const;
 
 // =============================================================================
@@ -119,26 +209,41 @@ export const espacamento = {
   xs: 4,
   sm: 8,
   md: 16,
-  lg: 24,
+  lg: 20,
   xl: 32,
   xxl: 48,
 } as const;
 
 export const raio = {
-  sm: 6,
-  md: 12,
+  sm: 8,
+  md: 14,
   lg: 20,
   pill: 999,
 } as const;
 
 export const elevacao = {
   card: {
-    shadowColor: paleta.preto,
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 2 },
+    shadowColor: '#0B2A44',
+    shadowOpacity: 0.07,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: 4 },
     elevation: 2,
   },
+  /** Elementos flutuantes: botão + do menu, painéis sobrepostos. */
+  flutuante: {
+    shadowColor: '#0B2A44',
+    shadowOpacity: 0.18,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 6,
+  },
+} as const;
+
+/** Altura padrão de botões e campos — mantém formulários alinhados. */
+export const alturas = {
+  controle: 52,
+  botao: 52,
+  ladrilho: 44,
 } as const;
 
 // =============================================================================
@@ -180,17 +285,35 @@ export function escurecer(hex: string, fracao: number = estados.pressedEscurecim
   return `#${canal(0)}${canal(2)}${canal(4)}`;
 }
 
+/**
+ * Mistura uma cor da paleta com branco — para fundos tonais derivados de uma
+ * cor recebida em runtime (ex.: badge que já traz a cor do status).
+ */
+export function clarear(hex: string, fracao = 0.88): string {
+  const limpo = hex.replace('#', '');
+  const canal = (inicio: number) => {
+    const base = parseInt(limpo.slice(inicio, inicio + 2), 16);
+    const valor = Math.round(base + (255 - base) * fracao);
+    return Math.max(0, Math.min(255, valor)).toString(16).padStart(2, '0');
+  };
+  return `#${canal(0)}${canal(2)}${canal(4)}`;
+}
+
 export const tema = {
   paleta,
   cores,
+  tons,
+  acentos,
   fontes,
   FONTES_PERSONALIZADAS_DISPONIVEIS,
   tipografia,
   espacamento,
   raio,
   elevacao,
+  alturas,
   estados,
   escurecer,
+  clarear,
 } as const;
 
 export type Tema = typeof tema;

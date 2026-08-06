@@ -324,29 +324,42 @@ traz o que uma SPA precisa: o rewrite de todas as rotas para `index.html` (sem
 ele, atualizar a página em `/empresas` devolve 404) e os cabeçalhos
 `X-Robots-Tag: noindex`, `X-Frame-Options: DENY`, `nosniff` e `Referrer-Policy`.
 
-```bash
-cd apps/admin
-vercel --prod          # ou: vercel link && vercel --prod
-```
+### Pelo painel da Vercel (recomendado)
 
-Defina as duas variáveis no projeto da Vercel (Settings → Environment
-Variables), ou num `.env.production` local antes do build:
+1. **Add New → Project** e conecte o repositório `decolamed/Decola-Neg-cios`.
+2. **Root Directory:** `apps/admin`. É o único ajuste que não vem detectado —
+   a Vercel instala as dependências a partir da raiz do monorepo (npm
+   workspaces) e constrói dentro dessa pasta.
+3. Framework `Vite`, build `vite build`, saída `dist` — já vêm do `vercel.json`.
+4. **Environment Variables:**
 
 | Variável | Valor |
 |---|---|
 | `VITE_SUPABASE_URL` | `https://nakqafnchwydfogcozvc.supabase.co` |
-| `VITE_SUPABASE_ANON_KEY` | a anon key do projeto (Supabase → Settings → API) |
+| `VITE_SUPABASE_ANON_KEY` | anon key do projeto (Supabase → Settings → API) |
 | `VITE_URL_CADASTRO` | opcional — base do link direto de plano (Seção 6.3) |
 
-Sem elas o painel **não** quebra em tela branca: mostra uma tela explicando o
-que falta configurar.
+Sem as duas primeiras o painel **não** quebra em tela branca: mostra uma tela
+explicando o que falta configurar.
 
-A `service_role` key nunca entra aqui. Qualquer variável `VITE_` é embutida no
-bundle e servida ao navegador — a anon key pode, porque quem protege os dados é
-a RLS; a service key ignoraria a RLS inteira.
+### Pela CLI
 
-O app cliente (`apps/mobile`) **não** vai para a Vercel: é React Native, e sai
-por EAS Build / lojas.
+```bash
+cd apps/admin
+vercel link      # escolha o escopo e o projeto
+vercel --prod
+```
+
+### A `service_role` key nunca entra aqui
+
+Qualquer variável `VITE_` é embutida no bundle e servida ao navegador. A anon
+key pode, porque quem protege os dados é a RLS; a service key ignoraria a RLS
+inteira.
+
+### O app cliente não vai para a Vercel
+
+`apps/mobile` é React Native — sai por EAS Build e pelas lojas, não por host
+estático.
 
 ## Design
 

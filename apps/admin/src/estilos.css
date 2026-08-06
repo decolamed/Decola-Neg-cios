@@ -12,28 +12,10 @@
 }
 
 /*
- * Fonte de título da marca (Glacial Indifference). Montserrat, a fonte de
- * corpo, já vem por web font no index.html.
- *
- * Para ativar: copie os arquivos para `public/fonts/` e descomente o bloco.
- * A variável --familia-titulo passa a usá-la sozinha quando
- * FONTES_PERSONALIZADAS_DISPONIVEIS virar true em packages/theme.
+ * Montserrat (Seção 2.2) é importada em `src/main.tsx` a partir de
+ * `@fontsource/montserrat` — empacotada com o bundle, sem CDN. A família e os
+ * pesos chegam ao CSS pelas variáveis geradas em `src/lib/tokens.ts`.
  */
-/*
-@font-face {
-  font-family: 'GlacialIndifference';
-  src: url('/fonts/GlacialIndifference-Regular.ttf') format('truetype');
-  font-weight: 400 600;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: 'GlacialIndifference';
-  src: url('/fonts/GlacialIndifference-Bold.ttf') format('truetype');
-  font-weight: 700;
-  font-display: swap;
-}
-*/
 
 body {
   margin: 0;

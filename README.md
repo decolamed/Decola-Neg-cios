@@ -374,22 +374,23 @@ referenciados no `app.json`.
 
 ### Fontes da marca (Seção 2.2)
 
-Glacial Indifference nos títulos, Montserrat no corpo. O carregamento já está
-implementado — só faltam os arquivos. Três passos:
+Montserrat nos três pesos que a hierarquia usa — 400, 600 e 700 — vinda de
+pacotes npm que trazem os arquivos junto. Não há `.ttf` solto no repositório
+nem download em tempo de execução:
 
-1. Copie os `.ttf` para `apps/mobile/assets/fonts/` com os nomes listados no
-   `README.md` daquela pasta.
-2. Descomente as quatro linhas de `MAPA_DE_FONTES` em
-   `apps/mobile/src/lib/fontes.ts`.
-3. Mude `FONTES_PERSONALIZADAS_DISPONIVEIS` para `true` em
-   `packages/theme/src/index.ts`.
+| App | Pacote | Como entra |
+|---|---|---|
+| `apps/mobile` | `@expo-google-fonts/montserrat` | `src/lib/fontes.ts`, carregado por `expo-font` antes da primeira tela |
+| `apps/admin` | `@fontsource/montserrat` | importado em `src/main.tsx`, empacotado no bundle |
 
-Enquanto isso não acontecer, o app usa a fonte do sistema nos mesmos pesos e
-tamanhos, e `conferirConsistenciaDasFontes()` avisa no console se os passos 2 e
-3 saírem de sincronia. O `_layout.tsx` espera as fontes carregarem antes da
-primeira tela, para não haver troca de tipografia à vista do usuário.
+No app cliente cada peso é importado pelo subcaminho (`/400Regular`), nunca
+pelo índice do pacote: o índice reexporta as 18 variações da família e o
+empacotador embarcaria ~6 MB de fonte para usar três.
 
-No painel administrativo, Montserrat vem por web font (`apps/admin/index.html`)
-e o `@font-face` da fonte de título está pronto e comentado em
-`apps/admin/src/estilos.css` — basta copiar os arquivos para
-`apps/admin/public/fonts/` e descomentar.
+**Glacial Indifference nos títulos** — a Seção 2.2 pede, mas ela não é livre
+nem está no Google Fonts, e os arquivos nunca chegaram. A prévia visual
+aprovada renderiza tudo em Montserrat, títulos inclusive, então Montserrat nos
+dois papéis reproduz o que foi validado em vez de aproximar com uma terceira
+fonte. Para voltar atrás: trocar `fontes.titulo`/`tituloBold` em
+`packages/theme` e registrar os arquivos em `src/lib/fontes.ts`.
+

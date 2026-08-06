@@ -116,28 +116,43 @@ export const acentos = [
 // Seção 2.2 — Tipografia
 // =============================================================================
 
+/**
+ * Nomes das famílias como o React Native as registra — um arquivo por peso.
+ * Vêm de `@expo-google-fonts/montserrat`, que traz os arquivos junto: não há
+ * `.ttf` solto no repositório nem download em tempo de execução.
+ *
+ * DECISÃO (Seção 2.2): a especificação pede Glacial Indifference nos títulos,
+ * mas ela não é livre nem está no Google Fonts, e nunca chegou como arquivo.
+ * A prévia visual aprovada no Claude Design renderiza TUDO em Montserrat —
+ * títulos inclusive —, então adotar Montserrat nos dois papéis reproduz
+ * exatamente o que foi validado, em vez de aproximar com uma terceira fonte.
+ * Para voltar à Glacial Indifference no futuro basta trocar `titulo` e
+ * `tituloBold` aqui e registrar os arquivos em `src/lib/fontes.ts`.
+ */
 export const fontes = {
   /** Títulos e logo. */
-  titulo: 'GlacialIndifference',
-  tituloBold: 'GlacialIndifference-Bold',
+  titulo: 'Montserrat_600SemiBold',
+  tituloBold: 'Montserrat_700Bold',
   /** Corpo de texto e interface. */
-  corpo: 'Montserrat-Regular',
-  corpoSemibold: 'Montserrat-SemiBold',
+  corpo: 'Montserrat_400Regular',
+  corpoSemibold: 'Montserrat_600SemiBold',
 } as const;
 
 /**
- * As fontes da Seção 2.2 exigem os arquivos .ttf em
- * `apps/mobile/assets/fonts/`. Enquanto eles não estiverem no repositório, o
- * app usa a fonte do sistema — os pesos e tamanhos abaixo, que são o que a
- * especificação define, continuam valendo.
- *
- * Vire esta constante para `true` quando as fontes estiverem disponíveis. O
- * carregamento no app cliente já está implementado: ver as instruções em
- * `apps/mobile/src/lib/fontes.ts` (três passos, um deles é este). O painel
- * administrativo já usa Montserrat via web font e passa a usar a fonte de
- * título quando o @font-face em `apps/admin/src/estilos.css` for habilitado.
+ * Família para CSS. Na web a fonte é uma só e o peso numérico escolhe o
+ * arquivo — diferente do React Native, que precisa de um nome por peso.
+ * O painel a carrega de `@fontsource/montserrat`, empacotada junto com o
+ * bundle: sem requisição a CDN, funciona offline e não vaza visita a
+ * terceiros.
  */
-export const FONTES_PERSONALIZADAS_DISPONIVEIS = false;
+export const familiaWeb = 'Montserrat';
+
+/**
+ * As fontes da marca estão disponíveis: os pacotes acima trazem os arquivos.
+ * Continua sendo o interruptor único — vire para `false` e os dois apps caem
+ * na fonte do sistema, mantendo pesos e tamanhos.
+ */
+export const FONTES_PERSONALIZADAS_DISPONIVEIS = true;
 
 const familia = (nome: string) => (FONTES_PERSONALIZADAS_DISPONIVEIS ? nome : undefined);
 
@@ -305,6 +320,7 @@ export const tema = {
   tons,
   acentos,
   fontes,
+  familiaWeb,
   FONTES_PERSONALIZADAS_DISPONIVEIS,
   tipografia,
   espacamento,

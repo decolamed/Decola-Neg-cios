@@ -6,12 +6,8 @@
     <!-- Painel interno: nunca deve ser indexado (Seção 11.1). -->
     <meta name="robots" content="noindex, nofollow" />
     <link rel="icon" type="image/png" href="/favicon.png" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap"
-      rel="stylesheet"
-    />
+    <!-- Montserrat vem empacotada (@fontsource, importada em src/main.tsx),
+         não de CDN: o painel abre offline e não expõe visita a terceiros. -->
     <title>Decola Negócios — Painel Administrativo</title>
   </head>
   <body>

@@ -326,12 +326,22 @@ ele, atualizar a página em `/empresas` devolve 404) e os cabeçalhos
 
 ### Pelo painel da Vercel (recomendado)
 
-1. **Add New → Project** e conecte o repositório `decolamed/Decola-Neg-cios`.
-2. **Root Directory:** `apps/admin`. É o único ajuste que não vem detectado —
-   a Vercel instala as dependências a partir da raiz do monorepo (npm
-   workspaces) e constrói dentro dessa pasta.
-3. Framework `Vite`, build `vite build`, saída `dist` — já vêm do `vercel.json`.
-4. **Environment Variables:**
+Um projeto só — `decolanegocios`, ligado a `decolamed/Decola-Neg-cios`. Não crie
+um segundo: o repositório é um monorepo, e o que muda entre "painel" e
+"qualquer outra coisa" é o Root Directory, não o projeto.
+
+Em **Settings** do projeto existente:
+
+1. **Git → Production Branch:** `main` (a branch padrão do repositório). Enquanto
+   apontar para a branch de trabalho, cada push na `main` não publica nada.
+2. **Build and Deployment → Root Directory:** `apps/admin`. É o único ajuste que
+   não vem detectado — a Vercel instala as dependências a partir da raiz do
+   monorepo (npm workspaces) e constrói dentro dessa pasta.
+   Deixe **"Include files outside the Root Directory"** ligado (padrão): o
+   painel importa `packages/theme`, que está fora de `apps/admin`.
+3. Framework `Vite`, build `vite build`, saída `dist` — já vêm do `vercel.json`,
+   e por isso os campos podem ficar em *Override: off*.
+4. **Environment Variables** (escopo Production, Preview e Development):
 
 | Variável | Valor |
 |---|---|
@@ -339,8 +349,17 @@ ele, atualizar a página em `/empresas` devolve 404) e os cabeçalhos
 | `VITE_SUPABASE_ANON_KEY` | anon key do projeto (Supabase → Settings → API) |
 | `VITE_URL_CADASTRO` | opcional — base do link direto de plano (Seção 6.3) |
 
+Só essas. Variável `EXPO_PUBLIC_*` aqui não tem efeito nenhum: ela é do app
+cliente, que não passa pela Vercel — se existir alguma, apague, porque ela só
+confunde a próxima leitura do painel de configurações.
+
+Depois de mexer em variável de ambiente é preciso **Redeploy**: o Vite embute os
+valores no bundle no momento do build, então o deploy antigo continua com os
+valores antigos.
+
 Sem as duas primeiras o painel **não** quebra em tela branca: mostra uma tela
-explicando o que falta configurar.
+explicando o que falta configurar. É por isso que vale abrir a URL depois do
+deploy — a tela diz se o problema é build ou variável.
 
 ### Pela CLI
 

@@ -319,28 +319,38 @@ apenas como secrets de Edge Function (Seções 6.4 e 9.1).
 
 ## Deploy do Painel Administrativo
 
-O painel é um site estático — qualquer host serve. `apps/admin/vercel.json` já
-traz o que uma SPA precisa: o rewrite de todas as rotas para `index.html` (sem
-ele, atualizar a página em `/empresas` devolve 404) e os cabeçalhos
-`X-Robots-Tag: noindex`, `X-Frame-Options: DENY`, `nosniff` e `Referrer-Policy`.
+O painel é um site estático — qualquer host serve. O `vercel.json` **da raiz do
+repositório** traz tudo: qual pasta construir, o rewrite de todas as rotas para
+`index.html` (sem ele, atualizar a página em `/empresas` devolve 404) e os
+cabeçalhos `X-Robots-Tag: noindex`, `X-Frame-Options: DENY`, `nosniff` e
+`Referrer-Policy`.
+
+**Por que na raiz, e não em `apps/admin`.** A Vercel lê o `vercel.json` que está
+no *Root Directory* do projeto, e ignora qualquer outro. Com o arquivo dentro de
+`apps/admin`, ele só valia se o Root Directory também apontasse para lá — e, se
+não apontasse, a Vercel construía sem configuração nenhuma: sem
+`outputDirectory` publicava a raiz do monorepo, e todo caminho respondia
+`404 NOT_FOUND`. Na raiz, a configuração vale com o Root Directory no padrão,
+que é o estado em que um projeto conectado ao repositório já nasce. Um arquivo
+só, no lugar onde ele sempre é lido.
 
 ### Pelo painel da Vercel (recomendado)
 
 Um projeto só — `decolanegocios`, ligado a `decolamed/Decola-Neg-cios`. Não crie
-um segundo: o repositório é um monorepo, e o que muda entre "painel" e
-"qualquer outra coisa" é o Root Directory, não o projeto.
+um segundo: o repositório é um monorepo, e o painel é uma pasta dentro dele.
 
 Em **Settings** do projeto existente:
 
 1. **Git → Production Branch:** `main` (a branch padrão do repositório). Enquanto
-   apontar para a branch de trabalho, cada push na `main` não publica nada.
-2. **Build and Deployment → Root Directory:** `apps/admin`. É o único ajuste que
-   não vem detectado — a Vercel instala as dependências a partir da raiz do
-   monorepo (npm workspaces) e constrói dentro dessa pasta.
-   Deixe **"Include files outside the Root Directory"** ligado (padrão): o
-   painel importa `packages/theme`, que está fora de `apps/admin`.
-3. Framework `Vite`, build `vite build`, saída `dist` — já vêm do `vercel.json`,
-   e por isso os campos podem ficar em *Override: off*.
+   apontar para a branch de trabalho, um push na `main` não publica nada.
+2. **Build and Deployment → Root Directory:** deixe **vazio** (a raiz do
+   repositório). Se estiver preenchido com `apps/admin`, apague: com o
+   `vercel.json` na raiz, é de lá que a build sai — `npm install` na raiz resolve
+   os workspaces e `npm run painel:build` constrói o painel.
+3. Framework, Build Command e Output Directory: deixe todos em *Override: off*.
+   Vêm do `vercel.json` (`buildCommand: npm run painel:build`,
+   `outputDirectory: apps/admin/dist`). Valor digitado na interface **vence** o
+   do arquivo — é por isso que o campo em branco é o certo aqui.
 4. **Environment Variables** (escopo Production, Preview e Development):
 
 | Variável | Valor |
@@ -363,11 +373,21 @@ deploy — a tela diz se o problema é build ou variável.
 
 ### Pela CLI
 
+Da raiz do repositório — é lá que está o `vercel.json`:
+
 ```bash
-cd apps/admin
-vercel link      # escolha o escopo e o projeto
+vercel link      # escolha o escopo e o projeto decolanegocios
 vercel --prod
 ```
+
+### Quando a URL responde 404
+
+| O que aparece | O que é |
+|---|---|
+| `Code: DEPLOYMENT_NOT_FOUND` | não há deploy servindo o domínio — o projeto nunca publicou, ou a Production Branch aponta para uma branch sem push |
+| `Code: NOT_FOUND` na raiz (`/`) | há deploy, mas a pasta publicada não tem `index.html`: Root Directory ou Output Directory sobrescritos na interface |
+| `Code: NOT_FOUND` só em rota interna (`/empresas`) | a pasta certa está publicada, mas o rewrite da SPA não foi aplicado — o `vercel.json` não está sendo lido |
+| Tela "falta configurar" | build e rewrite corretos; faltam as variáveis `VITE_` |
 
 ### A `service_role` key nunca entra aqui
 

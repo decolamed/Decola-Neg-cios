@@ -45,10 +45,77 @@ const VAZIO: DadosDoPlano = {
   max_funcionarios: null,
 };
 
+/**
+ * Painel do link direto (Seção 6.3).
+ *
+ * Sem `VITE_URL_CADASTRO` o link sai no esquema do app (`decolanegocios://`),
+ * que não é endereço de internet: só significa alguma coisa num celular com o
+ * app instalado. Não dá para torná-lo clicável no navegador — o que dá para
+ * fazer, e é o que falta quando ele parece quebrado, é dizer onde ele abre.
+ */
+function PainelDoLink({
+  plano,
+  url,
+  copiado,
+  aoFechar,
+}: {
+  plano: string;
+  url: string;
+  copiado: boolean;
+  aoFechar: () => void;
+}) {
+  const ehEnderecoWeb = url.startsWith('http://') || url.startsWith('https://');
+
+  return (
+    <div className="card">
+      <div className="cabecalho">
+        <h2>Link de contratação — {plano}</h2>
+        <button type="button" className="botao discreto" onClick={aoFechar}>
+          Fechar
+        </button>
+      </div>
+
+      {/* Somente leitura, mas selecionável: se a cópia automática falhar, dá
+          para marcar o texto e copiar à mão. */}
+      <input
+        readOnly
+        value={url}
+        onFocus={(e) => e.currentTarget.select()}
+        style={{
+          width: '100%',
+          fontFamily: 'ui-monospace, monospace',
+          padding: 'var(--espaco-sm) var(--espaco-md)',
+          border: '1px solid var(--cor-borda)',
+          borderRadius: 'var(--raio-md)',
+          background: 'var(--cor-fundoCampo)',
+          color: 'var(--cor-texto)',
+          minHeight: '42px',
+        }}
+      />
+
+      <p className="legenda" style={{ marginTop: 'var(--espaco-sm)' }}>
+        {copiado ? 'Copiado para a área de transferência. ' : ''}
+        {ehEnderecoWeb
+          ? 'Abre em qualquer navegador e leva ao cadastro com este plano já escolhido.'
+          : 'Este link abre o aplicativo num celular que já o tenha instalado — ' +
+            'colado no navegador do computador, ele não faz nada. Para virar um ' +
+            'endereço comum, configure VITE_URL_CADASTRO com o endereço do site.'}
+      </p>
+
+      {ehEnderecoWeb ? (
+        <a href={url} target="_blank" rel="noreferrer">
+          Abrir em nova aba
+        </a>
+      ) : null}
+    </div>
+  );
+}
+
 export function Planos() {
   const [estado, setEstado] = useState<Estado>({ nome: 'carregando' });
   const [editando, setEditando] = useState<{ id: string | null; dados: DadosDoPlano } | null>(null);
   const [aviso, setAviso] = useState<{ texto: string; tom: 'erro' | 'sucesso' } | null>(null);
+  const [link, setLink] = useState<{ plano: string; url: string; copiado: boolean } | null>(null);
 
   const carregar = useCallback(async () => {
     setEstado({ nome: 'carregando' });
@@ -85,21 +152,22 @@ export function Planos() {
     }
   };
 
-  const copiarLink = async (plano: Plano) => {
-    const link = linkDoPlano(plano.slug);
-    // Sem VITE_URL_CADASTRO o link sai no esquema do app, que só abre num
-    // celular com o app instalado — colado no navegador não faz nada. Dizer
-    // isso aqui evita a leitura de que o link está quebrado.
-    const nota = link.startsWith('decolanegocios://')
-      ? ' — abre no celular com o app instalado; não funciona no navegador'
-      : '';
+  /**
+   * O link fica num painel fixo, não num aviso que some: ele existe para ser
+   * lido, conferido e enviado a alguém. Num aviso temporário não dava para
+   * selecionar o texto nem clicar, e a leitura natural era a de link quebrado.
+   */
+  const mostrarLink = async (plano: Plano) => {
+    const url = linkDoPlano(plano.slug);
+    let copiado = false;
     try {
-      await navigator.clipboard.writeText(link);
-      setAviso({ texto: `Link copiado: ${link}${nota}`, tom: 'sucesso' });
+      await navigator.clipboard.writeText(url);
+      copiado = true;
     } catch {
-      // Clipboard bloqueado (contexto não seguro): mostrar o link resolve.
-      setAviso({ texto: `Link do plano: ${link}${nota}`, tom: 'sucesso' });
+      // Clipboard bloqueado (contexto não seguro): o campo abaixo resolve,
+      // porque o texto continua selecionável.
     }
+    setLink({ plano: plano.nome, url, copiado });
   };
 
   return (
@@ -112,6 +180,8 @@ export function Planos() {
       </div>
 
       {aviso ? <Aviso mensagem={aviso.texto} tom={aviso.tom} /> : null}
+
+      {link ? <PainelDoLink {...link} aoFechar={() => setLink(null)} /> : null}
 
       {estado.nome === 'carregando' ? <Carregando /> : null}
       {estado.nome === 'erro' ? (
@@ -171,7 +241,7 @@ export function Planos() {
                       <button
                         type="button"
                         className="botao discreto"
-                        onClick={() => copiarLink(plano)}
+                        onClick={() => mostrarLink(plano)}
                       >
                         Copiar link
                       </button>

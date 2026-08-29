@@ -89,11 +89,22 @@ Deno.serve(async (requisicao) => {
   const { data: { user: quemChamou } } = await chamador.auth.getUser();
   if (!quemChamou) return erro('Sessão expirada. Entre novamente.', 401);
 
-  const { data: ehAdmin } = await admin
+  const { data: ehAdmin, error: erroAdmin } = await admin
     .from('administradores_plataforma')
     .select('id')
     .eq('id', quemChamou.id)
     .maybeSingle();
+
+  // Falha de infraestrutura não é resposta sobre permissão. Descartar este
+  // erro fazia um privilégio faltando no banco chegar ao usuário como "você
+  // não é administrador" — mensagem que manda investigar o lugar errado.
+  if (erroAdmin) {
+    console.error('admin-criar-empresa: consulta de administrador falhou', erroAdmin);
+    return erro(
+      `Não foi possível verificar suas permissões: ${erroAdmin.message}`,
+      500,
+    );
+  }
 
   if (!ehAdmin) return erro('Esta ação é exclusiva do administrador da plataforma.', 403);
 

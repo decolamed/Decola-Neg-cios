@@ -84,10 +84,19 @@ export async function definirPlanoAtivo(id: string, ativo: boolean): Promise<voi
   if (error) throw new Error(error.message);
 }
 
-/** Seções 6.3 e 7.15 C — link direto de cadastro com o plano pré-selecionado. */
+/**
+ * Seções 6.3 e 7.15 C — link direto de cadastro com o plano pré-selecionado.
+ *
+ * O destino é `cadastro?plano=<slug>`, que é a rota que o app realmente tem:
+ * `apps/mobile/app/cadastro.tsx` lê o parâmetro `plano`, resolve o plano pelo
+ * slug e fixa a escolha, pulando a tela de Escolha do Plano. Não existe rota
+ * `/planos/<slug>` — `app/planos.tsx` responde só por `/planos`, sem segmento
+ * dinâmico, então um link para lá abriria o app numa rota inexistente.
+ */
 export function linkDoPlano(slug: string): string {
+  const caminho = `cadastro?plano=${encodeURIComponent(slug)}`;
   const base = import.meta.env.VITE_URL_CADASTRO?.trim();
-  return base ? `${base.replace(/\/$/, '')}/planos/${slug}` : `decolanegocios://planos/${slug}`;
+  return base ? `${base.replace(/\/$/, '')}/${caminho}` : `decolanegocios://${caminho}`;
 }
 
 // -----------------------------------------------------------------------------

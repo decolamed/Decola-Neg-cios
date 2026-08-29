@@ -87,12 +87,18 @@ export function Planos() {
 
   const copiarLink = async (plano: Plano) => {
     const link = linkDoPlano(plano.slug);
+    // Sem VITE_URL_CADASTRO o link sai no esquema do app, que só abre num
+    // celular com o app instalado — colado no navegador não faz nada. Dizer
+    // isso aqui evita a leitura de que o link está quebrado.
+    const nota = link.startsWith('decolanegocios://')
+      ? ' — abre no celular com o app instalado; não funciona no navegador'
+      : '';
     try {
       await navigator.clipboard.writeText(link);
-      setAviso({ texto: `Link copiado: ${link}`, tom: 'sucesso' });
+      setAviso({ texto: `Link copiado: ${link}${nota}`, tom: 'sucesso' });
     } catch {
       // Clipboard bloqueado (contexto não seguro): mostrar o link resolve.
-      setAviso({ texto: `Link do plano: ${link}`, tom: 'sucesso' });
+      setAviso({ texto: `Link do plano: ${link}${nota}`, tom: 'sucesso' });
     }
   };
 

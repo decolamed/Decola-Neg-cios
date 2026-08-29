@@ -26,6 +26,7 @@ import {
   definirStatus,
   definirTrial,
   excluirEmpresa,
+  reenviarAcesso,
   ROTULO_STATUS_ASSINATURA,
   ROTULO_STATUS_EMPRESA,
   type DetalheDaEmpresa,
@@ -271,6 +272,7 @@ export function EmpresaDetalhe() {
                 <th>E-mail</th>
                 <th>Papel</th>
                 <th>Situação</th>
+                <th>Acesso</th>
               </tr>
             </thead>
             <tbody>
@@ -280,6 +282,24 @@ export function EmpresaDetalhe() {
                   <td>{usuario.email_convite}</td>
                   <td>{ROTULO_PAPEL[usuario.papel] ?? usuario.papel}</td>
                   <td>{ROTULO_VINCULO[usuario.status] ?? usuario.status}</td>
+                  <td>
+                    {/* A criação manual já dispara este e-mail uma vez. O botão
+                        existe porque ele se perde — spam, link expirado, e-mail
+                        digitado errado e corrigido depois. */}
+                    <button
+                      type="button"
+                      className="botao discreto"
+                      disabled={processando || !usuario.email_convite}
+                      onClick={() =>
+                        executar(
+                          () => reenviarAcesso(usuario.email_convite as string),
+                          `Link de acesso enviado para ${usuario.email_convite}.`,
+                        )
+                      }
+                    >
+                      Enviar link de acesso
+                    </button>
+                  </td>
                 </tr>
               ))}
             </tbody>

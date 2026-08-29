@@ -18,7 +18,7 @@
  * A autorização é do banco: a RPC roda com o JWT de quem chamou e levanta
  * exceção se não for administrador da plataforma. Esta função não decide isso.
  *
- * SECRETS: SUPABASE_SERVICE_ROLE_KEY (padrão do projeto), URL_PAINEL_BASE.
+ * SECRETS: SUPABASE_SERVICE_ROLE_KEY (padrão do projeto), URL_APP_BASE (opcional).
  */
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
 
@@ -160,11 +160,17 @@ Deno.serve(async (requisicao) => {
   }
 
   // 3. Link para o responsável definir a senha. Best-effort: a empresa já
-  //    existe, e o administrador pode reenviar pelo painel do Supabase.
+  //    existe, e o painel tem "Enviar link de acesso" para reenviar.
+  //
+  //    O destino é o APP, não o painel administrativo: quem recebe este e-mail
+  //    é dono de loja, e a tela que grava a senha é `redefinir-senha` do
+  //    aplicativo. `URL_APP_BASE` troca o esquema por um endereço web quando o
+  //    site existir.
   let convite_enviado = false;
   if (contaCriada) {
+    const base = Deno.env.get('URL_APP_BASE')?.trim().replace(/\/$/, '');
     const { error: erroLink } = await admin.auth.resetPasswordForEmail(email, {
-      redirectTo: Deno.env.get('URL_PAINEL_BASE') ?? undefined,
+      redirectTo: base ? `${base}/redefinir-senha` : 'decolanegocios://redefinir-senha',
     });
     convite_enviado = !erroLink;
   }

@@ -164,6 +164,34 @@ export type ResultadoCriacao = {
 };
 
 /**
+ * Reenvia o link de definição de senha para um usuário da empresa
+ * (Seções 5.5 e 7.15 B).
+ *
+ * A criação manual já dispara esse e-mail uma vez, mas ele se perde: cai no
+ * spam, expira, ou a conta é criada antes de o responsável existir de fato.
+ * Sem um reenvio pelo painel, a única saída era mexer no Supabase.
+ *
+ * Não passa por Edge Function porque `resetPasswordForEmail` é um endpoint
+ * público de propósito — é o mesmo "Esqueci minha senha" que qualquer pessoa
+ * aciona, e ele não revela se a conta existe. Não há privilégio a proteger
+ * aqui, e uma função a mais só somaria superfície.
+ *
+ * O destino é o app, não o painel: quem recebe é dono de loja, e a tela que
+ * grava a senha é `redefinir-senha` do aplicativo.
+ */
+export async function reenviarAcesso(email: string): Promise<void> {
+  // Sem site configurado, o destino é o esquema do app; com `VITE_URL_CADASTRO`
+  // vira um endereço web, que abre também para quem ainda não instalou nada.
+  const base = import.meta.env.VITE_URL_CADASTRO?.trim().replace(/\/$/, '');
+  const destino = base ? `${base}/redefinir-senha` : 'decolanegocios://redefinir-senha';
+
+  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: destino,
+  });
+  if (error) throw new Error(error.message);
+}
+
+/**
  * Seções 6.9 e 7.15 B — ativação manual. Passa pela Edge Function porque
  * criar a conta do responsável no Auth exige a service key, que não pode
  * viver no navegador.

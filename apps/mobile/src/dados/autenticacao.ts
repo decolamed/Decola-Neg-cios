@@ -161,6 +161,48 @@ export async function enviarLinkDeRecuperacao(email: string): Promise<void> {
 }
 
 /**
+ * Abre a sessão a partir do link de redefinição recebido por e-mail.
+ *
+ * O link do Supabase chega com `code` (fluxo PKCE) e é trocado por uma sessão
+ * de curta duração. É essa sessão que autoriza a troca de senha logo depois —
+ * a pessoa prova que tem acesso à caixa de e-mail, e não à senha antiga.
+ */
+export async function abrirSessaoDeRecuperacao(codigo: string): Promise<void> {
+  await exigirConexao('login');
+
+  const { error } = await supabase.auth.exchangeCodeForSession(codigo);
+  if (error) {
+    throw new ErroAutenticacao(
+      'Este link de redefinição expirou ou já foi usado. Peça um novo em "Esqueci minha senha".',
+    );
+  }
+}
+
+/**
+ * Define a senha de quem chegou pelo link de recuperação.
+ *
+ * Diferente de `alterarSenha`, aqui não há senha atual para conferir: quem
+ * chegou até este ponto já provou identidade pelo e-mail. Por isso a função é
+ * separada — para que a checagem da senha atual nunca seja pulada por engano
+ * no fluxo normal de troca (Seção 7.14).
+ */
+export async function definirNovaSenha(novaSenha: string): Promise<void> {
+  await exigirConexao();
+
+  const { data: sessao } = await supabase.auth.getSession();
+  if (!sessao.session) {
+    throw new ErroAutenticacao(
+      'Este link de redefinição expirou. Peça um novo em "Esqueci minha senha".',
+    );
+  }
+
+  const { error } = await supabase.auth.updateUser({ password: novaSenha });
+  if (error) {
+    throw new ErroAutenticacao('Não foi possível definir sua senha. Tente novamente.');
+  }
+}
+
+/**
  * Seção 7.14 — Alterar senha ("senha atual + nova"). A Seção 5.5 não exige
  * complexidade: só não pode ser vazia.
  *

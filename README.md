@@ -228,20 +228,69 @@ Existe por um motivo só: criar a conta do responsável quando o e-mail ainda n�
 existe exige a Admin API do Auth, e portanto a service key — que nunca pode
 viver no navegador. A parte transacional continua sendo da RPC
 `admin_criar_empresa`, que revalida a autorização sob a identidade de quem
-chamou. Secret opcional: `URL_PAINEL_BASE`, destino do link de definição de
-senha enviado ao responsável.
+chamou. Secret opcional: `URL_APP_BASE`, que troca o esquema do app por um
+endereço web no link de definição de senha enviado ao responsável — o destino é
+o aplicativo, não o painel, porque quem recebe é o dono da loja.
 
-### Secrets das Edge Functions
+## E-mail
 
-O envio do convite por e-mail (Seção 5.2) precisa de um provedor configurado
-nos secrets do projeto. Sem eles a função responde 503 com mensagem clara — o
-convite continua criado no banco e pode ser reenviado depois:
+O projeto envia e-mail por **dois caminhos independentes**, e é isso que causa
+mais confusão do que qualquer outra parte da configuração: acertar um não
+acerta o outro.
+
+| Caminho | Quem envia | O que sai por ele |
+|---|---|---|
+| **Supabase Auth** | o próprio Supabase | confirmação de cadastro, redefinição de senha, link de acesso do responsável |
+| **Edge Function `enviar-convite`** | a API do Resend, chamada pelo nosso código | convite de funcionário (Seção 5.2) |
+
+Os dois usam o Resend no fim, mas por portas diferentes: o Auth por **SMTP**, a
+Edge Function pela **API**. Cada um tem a sua credencial.
+
+### 1. Supabase Auth — SMTP
+
+Sem isto, o Auth usa o remetente de testes do próprio Supabase, que é limitado
+a poucos envios por hora e cai em spam. É a causa mais comum de "o e-mail não
+chega".
+
+Dashboard → **Authentication → Emails → SMTP Settings** → *Enable Custom SMTP*:
+
+| Campo | Valor |
+|---|---|
+| Host | `smtp.resend.com` |
+| Port | `587` |
+| Username | `resend` |
+| Password | a API key do Resend (a mesma de `RESEND_API_KEY`) |
+| Sender email | `negocios@decolamed.online` |
+| Sender name | `Decola Negócios` |
+
+Depois, em **Authentication → Rate Limits**, suba *"Emails sent per hour"* — com
+o SMTP do Supabase o teto é baixo por design; com SMTP próprio quem limita é o
+plano do Resend (3.000/mês, 100/dia no gratuito).
+
+E em **Authentication → URL Configuration → Redirect URLs**, adicione
+`decolanegocios://redefinir-senha`. Sem isso o Auth ignora o destino do link e
+joga a pessoa na Site URL.
+
+### 2. Edge Function — API
+
+Secrets do projeto (Dashboard → **Edge Functions → Secrets**). Sem eles a função
+responde 503 com mensagem clara, e o convite continua criado no banco para ser
+reenviado depois:
 
 - `RESEND_API_KEY` — credencial do provedor de e-mail.
-- `EMAIL_REMETENTE` — remetente verificado, ex.: `Decola <nao-responda@seu-dominio>`.
+- `EMAIL_REMETENTE` — remetente no domínio verificado, no formato
+  `Decola Negócios <negocios@decolamed.online>`.
 - `URL_CONVITE_BASE` — base do link de aceite. Sem ela cai no esquema do app
   (`decolanegocios://convite/<id>`), que funciona no dispositivo mas é
   bloqueado por vários webmails. O ideal é uma página web que redirecione.
+
+### Por que um endereço só para Negócios
+
+O domínio `decolamed.online` já está verificado no Resend e é compartilhado com
+a Decola Med. Separar pelo endereço — `negocios@` — mantém a reputação de envio
+do domínio (que é única) enquanto deixa os dois produtos distinguíveis na caixa
+de entrada de quem recebe. Um subdomínio separaria também a reputação, mas
+exigiria verificar DNS de novo e começar do zero o aquecimento.
 
 ### Integração com o Asaas (Seções 6.4 e 7.12)
 

@@ -34,5 +34,18 @@ export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
     persistSession: true,
     // React Native não tem URL de callback com fragmento como o navegador.
     detectSessionInUrl: false,
+    /**
+     * PKCE, e não o `implicit` que vem por padrão.
+     *
+     * No fluxo implícito o Supabase devolve os tokens no fragmento da URL
+     * (`#access_token=…`), e o app usa `exchangeCodeForSession`, que espera um
+     * `?code=`. Com o padrão, o login com Google e o link de redefinição de
+     * senha falhavam sempre — o `code` simplesmente não existia na volta.
+     *
+     * PKCE também é o certo para aplicativo: o segredo da troca fica no
+     * dispositivo (AsyncStorage) e não trafega na URL, que é visível ao
+     * sistema operacional e a qualquer app registrado no mesmo esquema.
+     */
+    flowType: 'pkce',
   },
 });

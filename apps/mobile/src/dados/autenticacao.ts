@@ -160,22 +160,79 @@ export async function enviarLinkDeRecuperacao(email: string): Promise<void> {
   }
 }
 
+const LINK_INVALIDO =
+  'Este link de redefinição expirou ou já foi usado. Peça um novo em "Esqueci minha senha".';
+
+/**
+ * Lê os parâmetros de um link de retorno, venham eles na query (`?a=b`) ou no
+ * fragmento (`#a=b`).
+ *
+ * O fragmento importa: `useLocalSearchParams` do expo-router não o enxerga, e
+ * é justamente ali que o fluxo implícito entrega os tokens.
+ */
+function parametrosDoLink(url: string): Record<string, string> {
+  const parametros: Record<string, string> = {};
+
+  const depoisDaInterrogacao = url.split('?')[1]?.split('#')[0];
+  const depoisDaCerquilha = url.split('#')[1];
+
+  for (const trecho of [depoisDaInterrogacao, depoisDaCerquilha]) {
+    if (!trecho) continue;
+    for (const par of trecho.split('&')) {
+      const [chave, valor] = par.split('=');
+      if (chave) parametros[decodeURIComponent(chave)] = decodeURIComponent(valor ?? '');
+    }
+  }
+
+  return parametros;
+}
+
 /**
  * Abre a sessão a partir do link de redefinição recebido por e-mail.
  *
- * O link do Supabase chega com `code` (fluxo PKCE) e é trocado por uma sessão
- * de curta duração. É essa sessão que autoriza a troca de senha logo depois —
- * a pessoa prova que tem acesso à caixa de e-mail, e não à senha antiga.
+ * Recebe a URL inteira, e não só um código, porque o link pode chegar em duas
+ * formas — e as duas são legítimas, vindas de origens diferentes:
+ *
+ *   ?code=…                    PKCE. Quem pediu foi este app, e o segredo da
+ *                              troca está no AsyncStorage deste dispositivo.
+ *
+ *   #access_token=&refresh_token=   Implícito. Quem pediu foi o servidor: o
+ *                              Painel Administrativo ("Enviar link de acesso")
+ *                              ou a criação manual de empresa. Aí não existe
+ *                              segredo local nenhum para trocar, e os tokens
+ *                              vêm prontos.
+ *
+ * Tratar só a primeira deixava o responsável criado pelo painel sem caminho
+ * nenhum para definir a senha pelo aplicativo.
  */
-export async function abrirSessaoDeRecuperacao(codigo: string): Promise<void> {
+export async function abrirSessaoDeRecuperacao(url: string): Promise<void> {
   await exigirConexao('login');
 
-  const { error } = await supabase.auth.exchangeCodeForSession(codigo);
-  if (error) {
-    throw new ErroAutenticacao(
-      'Este link de redefinição expirou ou já foi usado. Peça um novo em "Esqueci minha senha".',
-    );
+  const parametros = parametrosDoLink(url);
+
+  if (parametros.access_token && parametros.refresh_token) {
+    const { error } = await supabase.auth.setSession({
+      access_token: parametros.access_token,
+      refresh_token: parametros.refresh_token,
+    });
+    if (error) throw new ErroAutenticacao(LINK_INVALIDO);
+    return;
   }
+
+  if (parametros.code) {
+    const { error } = await supabase.auth.exchangeCodeForSession(parametros.code);
+    if (error) throw new ErroAutenticacao(LINK_INVALIDO);
+    return;
+  }
+
+  // O Supabase devolve o motivo no próprio link quando recusa o token.
+  if (parametros.error || parametros.error_description) {
+    throw new ErroAutenticacao(LINK_INVALIDO);
+  }
+
+  throw new ErroAutenticacao(
+    'Abra esta tela pelo link que enviamos por e-mail — é ele que autoriza a troca de senha.',
+  );
 }
 
 /**

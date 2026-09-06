@@ -15,7 +15,8 @@
  * salvar, depois de a pessoa já ter digitado tudo.
  */
 import { useCallback, useEffect, useState } from 'react';
-import { router, useLocalSearchParams } from 'expo-router';
+import { router } from 'expo-router';
+import * as Linking from 'expo-linking';
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -38,10 +39,18 @@ type Etapa =
   | { nome: 'linkInvalido'; mensagem: string };
 
 export default function RedefinirSenha() {
-  // O Supabase manda `code` no fluxo PKCE. `token_hash` aparece em links
-  // antigos; aceitar os dois evita que um e-mail já enviado deixe de funcionar.
-  const params = useLocalSearchParams<{ code?: string; token_hash?: string }>();
-  const codigo = params.code ?? params.token_hash ?? '';
+  /**
+   * A URL inteira, não os parâmetros de busca.
+   *
+   * `useLocalSearchParams` só enxerga a query, e o fluxo implícito — o dos
+   * links disparados pelo Painel Administrativo — entrega os tokens no
+   * fragmento (`#access_token=…`). Lendo só a query, esses links caíam sempre
+   * em "link inválido".
+   *
+   * `useURL` devolve `null` no primeiro render; enquanto for `null`, a tela
+   * segue em "validando" em vez de decidir cedo demais que não há link.
+   */
+  const url = Linking.useURL();
 
   const [etapa, setEtapa] = useState<Etapa>({ nome: 'validando' });
   const [senha, setSenha] = useState('');
@@ -54,19 +63,12 @@ export default function RedefinirSenha() {
     let ativo = true;
 
     const validar = async () => {
-      if (!codigo) {
-        if (ativo) {
-          setEtapa({
-            nome: 'linkInvalido',
-            mensagem:
-              'Abra esta tela pelo link que enviamos por e-mail — é ele que autoriza a troca de senha.',
-          });
-        }
-        return;
-      }
+      // Ainda não sabemos qual foi o link: esperar é o certo, e o estado
+      // "validando" já está na tela.
+      if (!url) return;
 
       try {
-        await abrirSessaoDeRecuperacao(codigo);
+        await abrirSessaoDeRecuperacao(url);
         if (ativo) setEtapa({ nome: 'pronto' });
       } catch (e) {
         if (ativo) {
@@ -83,7 +85,7 @@ export default function RedefinirSenha() {
     return () => {
       ativo = false;
     };
-  }, [codigo]);
+  }, [url]);
 
   const aoSalvar = useCallback(async () => {
     setErro(null);

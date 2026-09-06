@@ -11,7 +11,7 @@
  */
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { Aviso, CampoTexto, Carregando } from '@/componentes/Basicos';
-import { supabase } from '@/lib/supabase';
+import { VEIO_DE_LINK_DE_EMAIL, supabase } from '@/lib/supabase';
 
 type Etapa =
   | { nome: 'validando' }
@@ -30,7 +30,14 @@ export function RedefinirSenha() {
   useEffect(() => {
     let ativo = true;
 
-    // `detectSessionInUrl` resolve o código de forma assíncrona; o evento
+    // Sem link nenhum na URL, uma sessão que já existisse no navegador faria
+    // esta tela aceitar a troca como se o link tivesse valido.
+    if (!VEIO_DE_LINK_DE_EMAIL) {
+      setEtapa({ nome: 'linkInvalido' });
+      return;
+    }
+
+    // `detectSessionInUrl` resolve o link de forma assíncrona; o evento
     // PASSWORD_RECOVERY é o sinal de que a sessão da recuperação existe.
     const { data: inscricao } = supabase.auth.onAuthStateChange((evento) => {
       if (!ativo) return;
@@ -39,18 +46,29 @@ export function RedefinirSenha() {
       }
     });
 
-    // Recarregar a página depois de o código já ter sido trocado não dispara
-    // evento nenhum — por isso a sessão também é conferida diretamente.
-    void supabase.auth.getSession().then(({ data }) => {
+    // O evento pode ter disparado antes da inscrição — daí conferir a sessão
+    // também. Só que o contrário também acontece: `getSession` responde antes
+    // de o cliente terminar de processar o link. Concluir "inválido" nesse
+    // instante faria a tela piscar o erro e voltar atrás sozinha.
+    const conferir = async () => {
+      const { data } = await supabase.auth.getSession();
+      if (!ativo) return false;
+      if (data.session) {
+        setEtapa((atual) => (atual.nome === 'validando' ? { nome: 'pronto' } : atual));
+        return true;
+      }
+      return false;
+    };
+
+    void (async () => {
+      if (await conferir()) return;
+      // Uma segunda chance, depois de o processamento do link ter tempo de
+      // terminar. Se ainda não houver sessão, o link realmente não valeu.
+      await new Promise((resolver) => setTimeout(resolver, 3000));
       if (!ativo) return;
-      setEtapa((atual) =>
-        atual.nome === 'validando'
-          ? data.session
-            ? { nome: 'pronto' }
-            : { nome: 'linkInvalido' }
-          : atual,
-      );
-    });
+      if (await conferir()) return;
+      setEtapa((atual) => (atual.nome === 'validando' ? { nome: 'linkInvalido' } : atual));
+    })();
 
     return () => {
       ativo = false;

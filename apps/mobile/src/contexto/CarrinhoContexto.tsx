@@ -56,7 +56,7 @@ export function ProvedorDeCarrinho({ children }: { children: ReactNode }) {
                 ...item,
                 quantidade: item.quantidade + quantidade,
                 // O produto pode ter sido recarregado com estoque novo.
-                estoqueDisponivel: produto.estoque_atual,
+                estoqueDisponivel: produto.estoque_disponivel,
                 precoUnitario: produto.preco,
               }
             : item,
@@ -71,7 +71,7 @@ export function ProvedorDeCarrinho({ children }: { children: ReactNode }) {
           codigo: produto.codigo,
           precoUnitario: produto.preco,
           quantidade,
-          estoqueDisponivel: produto.estoque_atual,
+          estoqueDisponivel: produto.estoque_disponivel,
         },
       ];
     });

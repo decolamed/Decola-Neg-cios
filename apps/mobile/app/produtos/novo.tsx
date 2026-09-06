@@ -91,6 +91,8 @@ export default function NovoProduto() {
         preco: preco!,
         quantidadeInicial: Number(valores.quantidadeInicial || '0'),
         atributos: valores.atributos,
+        descricao: valores.descricao,
+        visivelNaLoja: valores.visivelNaLoja,
       });
       router.replace(`/produtos/${id}`);
     } catch (e) {

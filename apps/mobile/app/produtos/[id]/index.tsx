@@ -229,6 +229,20 @@ export default function DetalhesDoProduto() {
         <View style={estilos.card}>
           <Linha rotulo="Preço" valor={moeda(produto.preco)} />
           <Linha rotulo="Em estoque" valor={`${produto.estoque_atual} unidade(s)`} />
+          {/* Só aparece quando há reserva: explicar o desconto entre o físico
+              e o vendável é o que evita a pergunta "sumiu unidade?". */}
+          {produto.estoque_reservado > 0 ? (
+            <>
+              <Linha
+                rotulo="Reservado em pedidos"
+                valor={`${produto.estoque_reservado} unidade(s)`}
+              />
+              <Linha
+                rotulo="Disponível para venda"
+                valor={`${produto.estoque_disponivel} unidade(s)`}
+              />
+            </>
+          ) : null}
           <Linha
             rotulo="Referência do ciclo"
             valor={`${produto.estoque_referencia_alerta} unidade(s)`}

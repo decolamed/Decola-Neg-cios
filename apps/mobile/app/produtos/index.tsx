@@ -243,7 +243,10 @@ function ItemDeProduto({
 
       <View style={estilos.itemValores}>
         <Text style={estilos.itemPreco}>{moeda(produto.preco)}</Text>
-        <Text style={estilos.itemEstoque}>{produto.estoque_atual} un.</Text>
+        <Text style={estilos.itemEstoque}>
+          {produto.estoque_atual} un.
+          {produto.estoque_reservado > 0 ? ` (${produto.estoque_disponivel} livre)` : ''}
+        </Text>
       </View>
     </Pressable>
   );

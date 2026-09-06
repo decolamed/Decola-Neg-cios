@@ -36,7 +36,13 @@
 --   pedido abandonado ............................ segura estoque até o gestor
 --                                                  cancelar (ver nota abaixo)
 --
--- NOTA SOBRE VENDA DE BALCÃO. `registrar_venda` NÃO foi alterada: ela continua
+-- NOTA SOBRE VENDA DE BALCÃO — SUPERADA POR 0034. O parágrafo abaixo descreve
+-- a decisão tomada aqui, que foi revista logo em seguida: a regra em vigor é
+-- "disponível = estoque_atual - estoque_reservado", valendo TAMBÉM para a
+-- venda de balcão. Fica registrado por ser o histórico da decisão; para o
+-- comportamento atual, ver 0034.
+--
+-- `registrar_venda` NÃO foi alterada: ela continua
 -- olhando só `estoque_atual`. É deliberado. Bloquear quem está fisicamente na
 -- loja por causa de um pedido online não confirmado é o pior dos dois erros
 -- para um pequeno negócio — e mudar uma RPC testada para isso seria mexer em

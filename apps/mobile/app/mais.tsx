@@ -46,6 +46,19 @@ export default function Mais() {
     },
   ];
 
+  // Atender pedido é ação de Gestor: as quatro RPCs (confirmar pagamento,
+  // avançar, cancelar, finalizar) exigem `pode_escrever_como_gestor`. Mostrar
+  // a tela a quem só conseguiria ler seria oferecer botões que o banco recusa.
+  if (conta.ehGestor) {
+    itens.push({
+      titulo: 'Pedidos da loja',
+      descricao: 'Solicitações que chegaram pela sua loja virtual.',
+      destino: '/pedidos',
+      icone: 'vendas',
+      cor: tema.cores.acaoPrimaria,
+    });
+  }
+
   if (temPermissao('exportar_relatorios')) {
     itens.push({
       titulo: 'Relatórios',

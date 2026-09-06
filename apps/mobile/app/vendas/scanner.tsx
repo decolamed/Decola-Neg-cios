@@ -44,11 +44,14 @@ export default function Scanner() {
         }
 
         const jaNoCarrinho = carrinho.quantidadeDe(produto.id);
-        if (jaNoCarrinho + 1 > produto.estoque_atual) {
+        if (jaNoCarrinho + 1 > produto.estoque_disponivel) {
           // A divergência (Seção 8.1) é resolvida na tela de venda, que tem o
           // painel com as duas saídas. Aqui só devolvemos o usuário para lá.
           setErro(
-            `${produto.nome} tem apenas ${produto.estoque_atual} unidade(s). ` +
+            `${produto.nome} tem apenas ${produto.estoque_disponivel} unidade(s) disponível(is)` +
+              (produto.estoque_reservado > 0
+                ? ` (${produto.estoque_reservado} reservado(s) para pedidos da loja). `
+                : '. ') +
               'Ajuste a quantidade na tela da venda.',
           );
           return;

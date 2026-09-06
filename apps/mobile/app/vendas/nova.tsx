@@ -107,11 +107,12 @@ export default function NovaVenda() {
       setMensagem(null);
       const jaNoCarrinho = carrinho.quantidadeDe(produto.id);
 
-      if (jaNoCarrinho + 1 > produto.estoque_atual) {
+      // Disponível, não físico: é o mesmo número que `registrar_venda` confere.
+      if (jaNoCarrinho + 1 > produto.estoque_disponivel) {
         setDivergencia({
           produtoId: produto.id,
           nome: produto.nome,
-          disponivel: produto.estoque_atual,
+          disponivel: produto.estoque_disponivel,
           solicitado: jaNoCarrinho + 1,
         });
         return;
@@ -220,7 +221,10 @@ export default function NovaVenda() {
                           <Text style={estilos.sugestaoNome}>{produto.nome}</Text>
                           <Text style={estilos.sugestaoDetalhe}>
                             {produto.codigo ? `${produto.codigo} · ` : ''}
-                            {produto.estoque_atual} em estoque
+                            {produto.estoque_disponivel} disponível
+                            {produto.estoque_reservado > 0
+                              ? ` · ${produto.estoque_reservado} reservado`
+                              : ''}
                           </Text>
                         </View>
                         <Text style={estilos.sugestaoPreco}>{moeda(produto.preco)}</Text>

@@ -12,6 +12,7 @@ import type { CampoConfigurado } from '@/dados/camposProduto';
 import type { Categoria } from '@/dados/categorias';
 import { Botao } from './Botao';
 import { CampoPersonalizado } from './CampoPersonalizado';
+import { Checkbox } from './Checkbox';
 import { CampoTexto } from './CampoTexto';
 import { Seletor } from './Seletor';
 
@@ -22,6 +23,10 @@ export type ValoresDoProduto = {
   preco: string;
   quantidadeInicial: string;
   atributos: Record<string, unknown>;
+  /** Vitrine: o que o cliente lê na página pública. */
+  descricao: string;
+  /** Vitrine: o produto aparece na loja. Nasce desmarcado. */
+  visivelNaLoja: boolean;
 };
 
 export const VALORES_INICIAIS: ValoresDoProduto = {
@@ -31,6 +36,10 @@ export const VALORES_INICIAIS: ValoresDoProduto = {
   preco: '',
   quantidadeInicial: '0',
   atributos: {},
+  descricao: '',
+  // Desmarcado por padrão: publicar um produto é decisão de quem cadastra,
+  // não consequência de cadastrar.
+  visivelNaLoja: false,
 };
 
 type Props = {
@@ -169,6 +178,29 @@ export function FormularioDeProduto({
             />
           ))}
         </>
+      ) : null}
+
+      {/* --------------------------------------------------------- vitrine --
+          Fica no fim porque é opcional: quem não usa a loja virtual chega ao
+          botão de salvar sem precisar decidir nada aqui. */}
+      <Text style={estilos.secao}>Loja virtual</Text>
+
+      <Checkbox
+        marcado={valores.visivelNaLoja}
+        aoMudar={(v) => definir('visivelNaLoja', v)}
+        bloqueado={bloqueado}
+      >
+        Mostrar este produto na loja virtual
+      </Checkbox>
+
+      {valores.visivelNaLoja ? (
+        <CampoTexto
+          rotulo="Descrição para o cliente"
+          valor={valores.descricao}
+          aoMudar={(v) => definir('descricao', v)}
+          bloqueado={bloqueado}
+          placeholder="O que o cliente precisa saber sobre o produto"
+        />
       ) : null}
 
       <Botao

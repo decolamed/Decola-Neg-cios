@@ -30,6 +30,16 @@ export type ProdutoComStatus = {
   atualizado_em: string;
   status_estoque: StatusEstoque;
   percentual_restante: number | null;
+  descricao: string | null;
+  visivel_na_loja: boolean;
+  /** Unidades comprometidas com pedidos abertos da loja virtual. */
+  estoque_reservado: number;
+  /**
+   * `estoque_atual - estoque_reservado`. É este número que `registrar_venda`
+   * confere (0034) — checar `estoque_atual` na tela deixaria o app oferecer
+   * uma venda que o banco recusa.
+   */
+  estoque_disponivel: number;
 };
 
 const CAMPOS = '*';
@@ -114,6 +124,10 @@ export type DadosDeProduto = {
   categoriaId: string | null;
   preco: number;
   atributos: Record<string, unknown>;
+  /** Vitrine — a descrição que o cliente lê na página pública. */
+  descricao: string | null;
+  /** Vitrine — se o produto aparece na loja. */
+  visivelNaLoja: boolean;
 };
 
 /**
@@ -139,6 +153,8 @@ export async function criarProduto(
       estoque_atual: dados.quantidadeInicial,
       estoque_referencia_alerta: dados.quantidadeInicial,
       atributos: dados.atributos as Json,
+      descricao: dados.descricao?.trim() || null,
+      visivel_na_loja: dados.visivelNaLoja,
       criado_por: dados.criadoPor,
     })
     .select('id')
@@ -164,6 +180,8 @@ export async function editarProduto(id: string, dados: DadosDeProduto): Promise<
       categoria_id: dados.categoriaId,
       preco: dados.preco,
       atributos: dados.atributos as Json,
+      descricao: dados.descricao?.trim() || null,
+      visivel_na_loja: dados.visivelNaLoja,
     })
     .eq('id', id);
 

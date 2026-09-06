@@ -59,6 +59,8 @@ export default function EditarProduto() {
         preco: String(produto.preco).replace('.', ','),
         quantidadeInicial: String(produto.estoque_atual),
         atributos: (produto.atributos ?? {}) as Record<string, unknown>,
+        descricao: produto.descricao ?? '',
+        visivelNaLoja: produto.visivel_na_loja,
       });
       setCategorias(cats);
       setCampos(ativos);
@@ -104,6 +106,8 @@ export default function EditarProduto() {
         categoriaId: valores.categoriaId,
         preco: preco!,
         atributos: valores.atributos,
+        descricao: valores.descricao,
+        visivelNaLoja: valores.visivelNaLoja,
       });
       router.back();
     } catch (e) {

@@ -73,6 +73,14 @@ export default function Configuracoes() {
       disponivel: true,
     },
     {
+      titulo: 'Loja virtual',
+      descricao: 'Publique seus produtos numa página pública e receba pedidos.',
+      destino: '/configuracoes/loja',
+      icone: 'vendas',
+      cor: tema.cores.acaoPrimaria,
+      disponivel: true,
+    },
+    {
       titulo: 'Funcionários e permissões',
       descricao: 'Convide colaboradores e defina o que cada um pode fazer.',
       destino: '/funcionarios',

@@ -117,6 +117,10 @@ export default function CadastroRapido() {
         preco: precoNumero!,
         quantidadeInicial,
         atributos,
+        // Cadastro no meio de uma venda resolve o balcão. Publicar na vitrine é
+        // outra decisão, tomada com calma na tela do produto.
+        descricao: null,
+        visivelNaLoja: false,
       });
 
       // Volta ao carrinho já com o produto adicionado (Seção 8.2, item 6).

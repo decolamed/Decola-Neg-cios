@@ -260,7 +260,7 @@ Dashboard → **Authentication → Emails → SMTP Settings** → *Enable Custom
 | Port | `587` |
 | Username | `resend` |
 | Password | a API key do Resend (a mesma de `RESEND_API_KEY`) |
-| Sender email | `negocios@decolamed.online` |
+| Sender email | `negocios@decola.pro` |
 | Sender name | `Decola Negócios` |
 
 Depois, em **Authentication → Rate Limits**, suba *"Emails sent per hour"* — com
@@ -279,18 +279,27 @@ reenviado depois:
 
 - `RESEND_API_KEY` — credencial do provedor de e-mail.
 - `EMAIL_REMETENTE` — remetente no domínio verificado, no formato
-  `Decola Negócios <negocios@decolamed.online>`.
+  `Decola Negócios <negocios@decola.pro>`.
 - `URL_CONVITE_BASE` — base do link de aceite. Sem ela cai no esquema do app
   (`decolanegocios://convite/<id>`), que funciona no dispositivo mas é
   bloqueado por vários webmails. O ideal é uma página web que redirecione.
 
-### Por que um endereço só para Negócios
+### O domínio
 
-O domínio `decolamed.online` já está verificado no Resend e é compartilhado com
-a Decola Med. Separar pelo endereço — `negocios@` — mantém a reputação de envio
-do domínio (que é única) enquanto deixa os dois produtos distinguíveis na caixa
-de entrada de quem recebe. Um subdomínio separaria também a reputação, mas
-exigiria verificar DNS de novo e começar do zero o aquecimento.
+`decola.pro` é o domínio dos dois produtos, e o Negócios envia de
+`negocios@decola.pro`. Antes dele o envio saía de `decolamed.online`, o domínio
+da Decola Med — o que funcionava, mas misturava numa reputação de envio só duas
+operações que não têm relação entre si. Com domínio próprio, um problema de
+entrega de um produto não contamina o outro.
+
+Um endereço por produto no mesmo domínio, e não um subdomínio por produto: a
+reputação segue sendo do domínio, e mantê-la única concentra o volume — o que
+ajuda a entrega enquanto o volume é baixo. Se algum dia um dos produtos passar
+a mandar marketing em massa, aí vale separar em subdomínio.
+
+A chave de API do Resend **não** é restrita a um domínio, de propósito: ela
+precisa continuar valendo se o remetente mudar de domínio, senão a troca
+quebra o envio com um erro que não menciona a chave.
 
 ### Integração com o Asaas (Seções 6.4 e 7.12)
 

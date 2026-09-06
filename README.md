@@ -392,6 +392,7 @@ Ele faz o caminho inteiro da Seção 7.12 no navegador:
 | `/pagamento` | pede a cobrança ao backend e leva ao checkout do Asaas |
 | `/pronto` | fim da contratação com trial, com o passo a passo de entrar no app |
 | `/redefinir-senha` | destino dos links de e-mail, para quem não tem o app |
+| `/convite/<id>` | aceite de convite de funcionário (Seção 5.2, item 4) |
 
 Não há área logada aqui: o produto é o aplicativo. O site termina onde a conta
 começa.
@@ -423,9 +424,10 @@ Com ele publicado, três variáveis deixam de cair no esquema do app:
 - `VITE_URL_CADASTRO` no **painel** → `https://decola.pro`, e o link de plano
   vira `https://decola.pro/cadastro?plano=<slug>`, clicável em qualquer lugar.
 - `URL_APP_BASE` na Edge Function `admin-criar-empresa` → `https://decola.pro`.
-- `URL_CONVITE_BASE`: **ainda não**. A rota `/convite/<id>` não existe no site;
-  o aceite de convite de funcionário segue só pelo aplicativo. Apontar essa
-  variável para o site agora levaria o convidado a uma página que não existe.
+- `URL_CONVITE_BASE` na Edge Function `enviar-convite` →
+  `https://decola.pro/convite`. Sem ela o convite sai no esquema do app, que
+  vários webmails bloqueiam — e o convidado é justamente quem ainda não tem o
+  aplicativo instalado.
 
 ## Deploy do Painel Administrativo
 

@@ -11,6 +11,7 @@ import { Navigate, Route, Routes } from 'react-router-dom';
 import { Aviso, Moldura } from '@/componentes/Basicos';
 import { CONFIGURADO } from '@/lib/supabase';
 import { Cadastro } from '@/paginas/Cadastro';
+import { Convite } from '@/paginas/Convite';
 import { Pagamento } from '@/paginas/Pagamento';
 import { Planos } from '@/paginas/Planos';
 import { Pronto } from '@/paginas/Pronto';
@@ -47,6 +48,7 @@ export function App() {
         <Route path="/pagamento" element={<Pagamento />} />
         <Route path="/pronto" element={<Pronto />} />
         <Route path="/redefinir-senha" element={<RedefinirSenha />} />
+        <Route path="/convite/:id" element={<Convite />} />
         {/* Qualquer outro caminho cai na vitrine: um link de plano antigo ou
             digitado errado vira uma escolha de plano, não um beco sem saída. */}
         <Route path="*" element={<Navigate to="/planos" replace />} />

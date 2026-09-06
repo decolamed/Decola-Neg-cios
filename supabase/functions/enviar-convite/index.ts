@@ -46,6 +46,15 @@ function escaparHtml(texto: string): string {
 function montarEmail(nome: string, empresa: string, link: string): string {
   const nomeSeguro = escaparHtml(nome);
   const empresaSeguro = escaparHtml(empresa);
+  // O link vem de um secret nosso mais um UUID do banco, então hoje não tem
+  // como carregar caractere perigoso. Escapar mesmo assim: o dia em que a
+  // base virar algo configurável, este ponto não precisa ser lembrado.
+  const linkSeguro = escaparHtml(link);
+
+  // O botão usa amarelo sobre azul-marinho: o par acaoPrimaria/textoSobreAcao
+  // do tema. Antes era o vermelho, que no tema significa ação destrutiva —
+  // cor errada para um convite. (Este comentário fica FORA do template
+  // literal: crase dentro dele fecharia a string.)
 
   return `<!doctype html>
 <html lang="pt-BR">
@@ -61,11 +70,16 @@ function montarEmail(nome: string, empresa: string, link: string): string {
       </p>
 
       <p style="margin:32px 0">
-        <a href="${link}"
-           style="display:inline-block;background:#D63C3C;color:#FFFFFF;text-decoration:none;
+        <a href="${linkSeguro}"
+           style="display:inline-block;background:#F2B532;color:#01395E;text-decoration:none;
                   padding:14px 28px;border-radius:12px;font-weight:bold;font-size:14px">
           Aceitar convite
         </a>
+      </p>
+
+      <p style="font-size:13px;line-height:1.5;color:#5A6B78">
+        Se o botão não funcionar, copie e cole este endereço no navegador:<br />
+        <span style="font-size:12px;word-break:break-all">${linkSeguro}</span>
       </p>
 
       <p style="font-size:13px;line-height:1.5;color:#5A6B78">

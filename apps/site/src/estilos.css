@@ -1,0 +1,308 @@
+/*
+ * Estilos do site público.
+ *
+ * Mesma regra do painel: nenhum valor visual hardcoded. Tudo vem das
+ * variáveis geradas em `src/lib/tokens.ts` a partir de `packages/theme`, para
+ * que app, painel e site mudem juntos quando a marca mudar.
+ */
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--cor-fundo);
+  color: var(--cor-texto);
+  font-family: var(--familia-corpo);
+  font-size: var(--fonte-corpo-tamanho);
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--familia-titulo);
+  margin: 0;
+}
+
+h1 {
+  font-size: var(--fonte-h1-tamanho);
+  font-weight: var(--fonte-h1-peso);
+}
+
+h2 {
+  font-size: var(--fonte-h2-tamanho);
+  font-weight: var(--fonte-h2-peso);
+}
+
+a {
+  color: var(--cor-primaria);
+}
+
+/* ---------------------------------------------------------------- layout -- */
+
+.topo {
+  background: var(--cor-primaria);
+  padding: var(--espaco-md) var(--espaco-lg);
+}
+
+.topo img {
+  display: block;
+  width: 140px;
+  height: auto;
+}
+
+.pagina {
+  max-width: 880px;
+  margin: 0 auto;
+  padding: var(--espaco-xl) var(--espaco-lg);
+}
+
+.pagina.estreita {
+  max-width: 520px;
+}
+
+.cabecalho-pagina {
+  margin-bottom: var(--espaco-lg);
+}
+
+.cabecalho-pagina p {
+  color: var(--cor-textoSuave);
+  margin: var(--espaco-sm) 0 0;
+}
+
+.centralizado {
+  min-height: 60vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--espaco-md);
+  text-align: center;
+}
+
+.rodape {
+  border-top: 1px solid var(--cor-bordaSuave);
+  margin-top: var(--espaco-xl);
+  padding: var(--espaco-lg);
+  text-align: center;
+  color: var(--cor-textoSuave);
+  font-size: var(--fonte-legenda-tamanho);
+}
+
+/* ------------------------------------------------------------ cartões ----- */
+
+.card {
+  background: var(--cor-fundoCard);
+  border-radius: var(--raio-lg);
+  padding: var(--espaco-lg);
+  box-shadow: var(--sombra-card);
+  margin-bottom: var(--espaco-md);
+}
+
+.grade-planos {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: var(--espaco-md);
+}
+
+.plano {
+  background: var(--cor-fundoCard);
+  border-radius: var(--raio-lg);
+  padding: var(--espaco-lg);
+  box-shadow: var(--sombra-card);
+  display: flex;
+  flex-direction: column;
+  gap: var(--espaco-sm);
+}
+
+.plano .nome {
+  font-family: var(--familia-titulo);
+  font-size: var(--fonte-h2-tamanho);
+  font-weight: var(--fonte-h2-peso);
+  color: var(--cor-primaria);
+}
+
+.plano .preco {
+  font-family: var(--familia-titulo);
+  font-size: var(--fonte-numero-tamanho);
+  font-weight: var(--fonte-numero-peso);
+  color: var(--cor-texto);
+}
+
+.plano .preco small {
+  font-family: var(--familia-corpo);
+  font-size: var(--fonte-legenda-tamanho);
+  font-weight: normal;
+  color: var(--cor-textoSuave);
+}
+
+.plano ul {
+  list-style: none;
+  padding: 0;
+  margin: var(--espaco-sm) 0;
+  display: grid;
+  gap: var(--espaco-xs);
+  color: var(--cor-textoSuave);
+  font-size: var(--fonte-legenda-tamanho);
+}
+
+.plano ul li::before {
+  content: '✓ ';
+  color: var(--cor-secundaria);
+  font-weight: bold;
+}
+
+.plano .acao {
+  margin-top: auto;
+  padding-top: var(--espaco-md);
+}
+
+.selo-trial {
+  display: inline-block;
+  align-self: flex-start;
+  padding: 2px var(--espaco-md);
+  border-radius: var(--raio-pill);
+  background: var(--tom-secundaria);
+  color: var(--cor-primaria);
+  font-size: var(--fonte-legenda-tamanho);
+  font-weight: var(--fonte-corpoDestacado-peso);
+}
+
+.resumo-plano {
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio-md);
+  padding: var(--espaco-md);
+  margin-bottom: var(--espaco-lg);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--espaco-md);
+  flex-wrap: wrap;
+}
+
+/* ------------------------------------------------------------ controles --- */
+
+.botao {
+  font-family: var(--familia-corpo);
+  font-size: var(--fonte-botao-tamanho);
+  font-weight: var(--fonte-botao-peso);
+  border: none;
+  border-radius: var(--raio-md);
+  padding: var(--espaco-sm) var(--espaco-lg);
+  min-height: 44px;
+  width: 100%;
+  cursor: pointer;
+  background: var(--cor-acaoPrimaria);
+  color: var(--cor-textoSobreAcao);
+}
+
+.botao:hover:not(:disabled) {
+  background: var(--cor-acao-pressionada);
+}
+
+.botao.discreto {
+  background: transparent;
+  color: var(--cor-primaria);
+  border: 1px solid var(--cor-borda);
+}
+
+.botao.texto {
+  background: transparent;
+  color: var(--cor-primaria);
+  min-height: auto;
+  padding: var(--espaco-sm);
+}
+
+.botao:disabled {
+  opacity: var(--opacidade-desabilitado);
+  cursor: not-allowed;
+}
+
+.campo {
+  display: block;
+  margin-bottom: var(--espaco-md);
+}
+
+.campo > span {
+  display: block;
+  font-size: var(--fonte-rotulo-tamanho);
+  font-weight: var(--fonte-rotulo-peso);
+  margin-bottom: var(--espaco-sm);
+}
+
+.campo input {
+  width: 100%;
+  font-family: var(--familia-corpo);
+  font-size: var(--fonte-corpo-tamanho);
+  color: var(--cor-texto);
+  background: var(--cor-fundoCampo);
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio-md);
+  padding: var(--espaco-sm) var(--espaco-md);
+  min-height: 46px;
+}
+
+.campo input:focus {
+  outline: 2px solid var(--cor-secundaria);
+  outline-offset: -1px;
+}
+
+.campo.com-erro input {
+  border-color: var(--cor-bordaErro);
+}
+
+.campo .erro {
+  display: block;
+  margin-top: var(--espaco-xs);
+  color: var(--cor-erro);
+  font-size: var(--fonte-legenda-tamanho);
+}
+
+.aceite {
+  display: flex;
+  gap: var(--espaco-sm);
+  align-items: flex-start;
+  margin-bottom: var(--espaco-lg);
+  font-size: var(--fonte-legenda-tamanho);
+  color: var(--cor-textoSuave);
+}
+
+.aceite input {
+  margin-top: 3px;
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
+/* ---------------------------------------------------------------- aviso --- */
+
+.aviso {
+  border-radius: var(--raio-md);
+  border-left: 3px solid transparent;
+  padding: var(--espaco-md);
+  margin-bottom: var(--espaco-md);
+}
+
+.aviso.erro {
+  background: var(--tom-negativo);
+  border-left-color: var(--cor-erro);
+  color: var(--cor-erro);
+}
+
+.aviso.alerta {
+  background: var(--tom-destaque);
+  border-left-color: var(--cor-alerta);
+  color: var(--cor-textoAlerta);
+}
+
+.aviso.sucesso {
+  background: var(--tom-secundaria);
+  border-left-color: var(--cor-secundaria);
+  color: var(--cor-primaria);
+}
+
+.legenda {
+  font-size: var(--fonte-legenda-tamanho);
+  color: var(--cor-textoSuave);
+}

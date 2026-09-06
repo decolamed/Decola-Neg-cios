@@ -11,6 +11,7 @@ produto e arquitetura já está tomada lá; este repositório implementa.
 ```
 apps/mobile/        App cliente — React Native + Expo (Seção 3.1)
 apps/admin/         Painel Administrativo SaaS — Vite + React (Seção 7.15)
+apps/site/          Site público de contratação — Vite + React (Seção 6.3)
 packages/theme/     Design tokens centralizados (Seções 2.1–2.3)
 supabase/
   migrations/       Schema, RLS, triggers e RPCs
@@ -374,6 +375,57 @@ npm run painel
 A anon key do Supabase é pública por design — quem protege os dados é a RLS.
 A chave da API do Asaas e a `service_role` key **nunca** entram no app: vivem
 apenas como secrets de Edge Function (Seções 6.4 e 9.1).
+
+## Site público de contratação (`apps/site`)
+
+O link direto de plano (Seção 6.3) precisa abrir para quem **ainda não é
+cliente** — e quem ainda não é cliente não tem o aplicativo instalado. Um link
+no esquema `decolanegocios://` não serve para vender: ele só significa alguma
+coisa num aparelho que já tem o app. Por isso o site existe.
+
+Ele faz o caminho inteiro da Seção 7.12 no navegador:
+
+| Rota | Papel |
+|---|---|
+| `/planos` | vitrine dos planos ativos, leitura anônima |
+| `/cadastro?plano=<slug>` | conta no Auth → `criar_empresa_e_assinatura` → pagamento |
+| `/pagamento` | pede a cobrança ao backend e leva ao checkout do Asaas |
+| `/pronto` | fim da contratação com trial, com o passo a passo de entrar no app |
+| `/redefinir-senha` | destino dos links de e-mail, para quem não tem o app |
+
+Não há área logada aqui: o produto é o aplicativo. O site termina onde a conta
+começa.
+
+A ordem dos passos do cadastro é a mesma do app, e não por simetria: sem a
+sessão criada primeiro, a RPC seguinte rodaria como anônimo e seria recusada.
+
+### Deploy
+
+É um **segundo projeto na Vercel**, separado do painel — domínios diferentes e
+públicos diferentes: `decola.pro` é a porta do cliente, o painel é interno e
+marcado `noindex`. Não confundir com os projetos duplicados que já existiram:
+ali eram três projetos para a mesma coisa.
+
+| Ajuste | Valor |
+|---|---|
+| Root Directory | `apps/site` |
+| Production Branch | `main` |
+| Domínio | `decola.pro` |
+
+A configuração de build vem de `apps/site/vercel.json`, que a Vercel lê por
+estar no Root Directory do projeto. Variáveis: `VITE_SUPABASE_URL` e
+`VITE_SUPABASE_ANON_KEY`, as mesmas do painel.
+
+### O que o site destrava nas outras pontas
+
+Com ele publicado, três variáveis deixam de cair no esquema do app:
+
+- `VITE_URL_CADASTRO` no **painel** → `https://decola.pro`, e o link de plano
+  vira `https://decola.pro/cadastro?plano=<slug>`, clicável em qualquer lugar.
+- `URL_APP_BASE` na Edge Function `admin-criar-empresa` → `https://decola.pro`.
+- `URL_CONVITE_BASE`: **ainda não**. A rota `/convite/<id>` não existe no site;
+  o aceite de convite de funcionário segue só pelo aplicativo. Apontar essa
+  variável para o site agora levaria o convidado a uma página que não existe.
 
 ## Deploy do Painel Administrativo
 

@@ -6,6 +6,7 @@
  * aparece em mais de uma tela.
  */
 import type { ReactNode } from 'react';
+import { useLocation } from 'react-router-dom';
 
 export function Aviso({
   mensagem,
@@ -62,14 +63,36 @@ export function CampoTexto({
 }
 
 export function Moldura({ children }: { children: ReactNode }) {
+  const { pathname } = useLocation();
+
+  /**
+   * Na vitrine de um negócio, quem lidera é a marca DELE.
+   *
+   * O topo com o logotipo do Decola faz sentido nas telas da plataforma
+   * (planos, cadastro, redefinir senha), mas na loja de um lojista ele
+   * disputaria a atenção com o nome do próprio negócio — e a página é dele,
+   * não nossa. Aqui a plataforma vira assinatura discreta no rodapé.
+   */
+  const daLoja = pathname.startsWith('/loja/') || pathname.startsWith('/pedido/');
+
   return (
     <>
-      <header className="topo">
-        <img src="/marca/logo-nome-claro.png" alt="Decola Negócios" />
-      </header>
+      {daLoja ? null : (
+        <header className="topo">
+          <img src="/marca/logo-nome-claro.png" alt="Decola Negócios" />
+        </header>
+      )}
+
       {children}
+
       <footer className="rodape">
-        Decola Negócios — gestão para pequenos e médios negócios.
+        {daLoja ? (
+          <>
+            Loja online feita com <strong>Decola Negócios</strong>
+          </>
+        ) : (
+          'Decola Negócios — gestão para pequenos e médios negócios.'
+        )}
       </footer>
     </>
   );

@@ -306,3 +306,338 @@ a {
   font-size: var(--fonte-legenda-tamanho);
   color: var(--cor-textoSuave);
 }
+
+/* ================================================================ vitrine == */
+
+.pagina.com-barra {
+  /* Espaço para a barra fixa do carrinho não cobrir o último produto. */
+  padding-bottom: 96px;
+}
+
+.loja-cabecalho {
+  display: flex;
+  gap: var(--espaco-md);
+  align-items: center;
+  margin-bottom: var(--espaco-lg);
+}
+
+.loja-logo {
+  width: 64px;
+  height: 64px;
+  border-radius: var(--raio-md);
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.loja-descricao {
+  margin: var(--espaco-xs) 0 0;
+  color: var(--cor-textoSuave);
+}
+
+.voltar {
+  display: inline-block;
+  margin-bottom: var(--espaco-md);
+  text-decoration: none;
+  font-size: var(--fonte-legenda-tamanho);
+}
+
+/* Duas colunas no celular: é o que cabe sem a imagem virar miniatura. */
+.grade-produtos {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: var(--espaco-md);
+}
+
+.produto {
+  background: var(--cor-fundoCard);
+  border-radius: var(--raio-lg);
+  padding: var(--espaco-md);
+  box-shadow: var(--sombra-card);
+  display: flex;
+  flex-direction: column;
+  gap: var(--espaco-sm);
+}
+
+.produto-link {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espaco-xs);
+  text-decoration: none;
+  color: inherit;
+}
+
+.produto-capa {
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  border-radius: var(--raio-md);
+  background: var(--cor-fundo);
+}
+
+.produto-capa.grande {
+  aspect-ratio: 4 / 3;
+  margin-bottom: var(--espaco-md);
+}
+
+.produto-capa.sem-imagem {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--familia-titulo);
+  font-size: 40px;
+  color: var(--cor-textoInverso);
+  background: var(--cor-primaria);
+}
+
+.produto-nome {
+  font-weight: var(--fonte-corpoDestacado-peso);
+  line-height: 1.3;
+}
+
+.produto-preco {
+  font-family: var(--familia-titulo);
+  color: var(--cor-primaria);
+  font-weight: var(--fonte-h2-peso);
+}
+
+.produto-preco.grande {
+  font-size: var(--fonte-numero-tamanho);
+  margin: var(--espaco-xs) 0 var(--espaco-md);
+}
+
+.produto-titulo {
+  margin-top: var(--espaco-sm);
+}
+
+.produto-descricao {
+  color: var(--cor-textoSuave);
+  line-height: 1.6;
+  margin-bottom: var(--espaco-lg);
+}
+
+.botao.pequeno {
+  min-height: 38px;
+  font-size: var(--fonte-legenda-tamanho);
+  padding: var(--espaco-xs) var(--espaco-md);
+}
+
+.esgotado {
+  text-align: center;
+  font-size: var(--fonte-legenda-tamanho);
+  color: var(--cor-textoSuave);
+  padding: var(--espaco-sm);
+}
+
+.miniaturas {
+  display: flex;
+  gap: var(--espaco-sm);
+  margin-bottom: var(--espaco-md);
+  overflow-x: auto;
+}
+
+.miniatura {
+  border: 2px solid transparent;
+  border-radius: var(--raio-sm);
+  padding: 0;
+  background: none;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.miniatura.ativa {
+  border-color: var(--cor-acaoPrimaria);
+}
+
+.miniatura img {
+  display: block;
+  width: 56px;
+  height: 56px;
+  object-fit: cover;
+  border-radius: var(--raio-sm);
+}
+
+/* ---------------------------------------------------------- carrinho ------ */
+
+.barra-carrinho {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: var(--espaco-md);
+  background: var(--cor-fundoCard);
+  border-top: 1px solid var(--cor-bordaSuave);
+  box-shadow: 0 -4px 14px rgba(11, 42, 68, 0.07);
+}
+
+.barra-carrinho .botao {
+  display: block;
+  text-align: center;
+  text-decoration: none;
+  line-height: 28px;
+}
+
+.linha-carrinho {
+  display: grid;
+  grid-template-columns: 72px 1fr auto;
+  gap: var(--espaco-md);
+  align-items: start;
+  background: var(--cor-fundoCard);
+  border-radius: var(--raio-lg);
+  padding: var(--espaco-md);
+  box-shadow: var(--sombra-card);
+  margin-bottom: var(--espaco-sm);
+}
+
+.linha-carrinho .produto-capa {
+  width: 72px;
+}
+
+.linha-dados {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espaco-xs);
+  min-width: 0;
+}
+
+.linha-fim {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--espaco-xs);
+  white-space: nowrap;
+}
+
+.erro-linha {
+  color: var(--cor-erro);
+  font-size: var(--fonte-legenda-tamanho);
+}
+
+.contador {
+  display: flex;
+  align-items: center;
+  gap: var(--espaco-sm);
+}
+
+.contador .botao {
+  width: 40px;
+  min-height: 40px;
+  padding: 0;
+  font-size: 18px;
+}
+
+.contador-valor {
+  min-width: 28px;
+  text-align: center;
+  font-weight: var(--fonte-corpoDestacado-peso);
+}
+
+.total-carrinho {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--espaco-md) 0 var(--espaco-lg);
+  font-size: var(--fonte-h2-tamanho);
+}
+
+/* ---------------------------------------------------------- checkout ------ */
+
+.resumo-linha {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--espaco-md);
+  padding: var(--espaco-xs) 0;
+}
+
+.resumo-linha.total {
+  border-top: 1px solid var(--cor-bordaSuave);
+  margin-top: var(--espaco-sm);
+  padding-top: var(--espaco-sm);
+}
+
+.opcoes {
+  display: grid;
+  gap: var(--espaco-sm);
+}
+
+/* Alvo grande e estado escolhido evidente: a escolha entre retirada e entrega
+   muda tudo o que vem depois, e errá-la é caro para o cliente. */
+.opcao {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  text-align: left;
+  padding: var(--espaco-md);
+  border: 2px solid var(--cor-borda);
+  border-radius: var(--raio-md);
+  background: var(--cor-fundoCard);
+  cursor: pointer;
+  font-family: var(--familia-corpo);
+  font-size: var(--fonte-corpo-tamanho);
+  color: var(--cor-texto);
+}
+
+.opcao.escolhida {
+  border-color: var(--cor-acaoPrimaria);
+  background: var(--tom-destaque);
+}
+
+.destaque-frete {
+  border-left-width: 4px;
+  line-height: 1.5;
+}
+
+/* ------------------------------------------------------------- pedido ----- */
+
+.faixa-status {
+  border-radius: var(--raio-md);
+  padding: var(--espaco-md);
+  margin-bottom: var(--espaco-md);
+  font-weight: var(--fonte-corpoDestacado-peso);
+  background: var(--tom-destaque);
+  color: var(--cor-textoAlerta);
+  text-align: center;
+}
+
+.faixa-status.pagamento_confirmado,
+.faixa-status.pronto_para_retirada,
+.faixa-status.entrega_combinada,
+.faixa-status.confirmado,
+.faixa-status.finalizado {
+  background: var(--tom-secundaria);
+  color: var(--cor-primaria);
+}
+
+.faixa-status.cancelado {
+  background: var(--tom-negativo);
+  color: var(--cor-erro);
+}
+
+.chave-pix {
+  display: flex;
+  gap: var(--espaco-sm);
+  align-items: center;
+  flex-wrap: wrap;
+  margin: var(--espaco-md) 0;
+}
+
+.chave-pix code {
+  flex: 1;
+  min-width: 200px;
+  font-family: ui-monospace, monospace;
+  background: var(--cor-fundo);
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio-md);
+  padding: var(--espaco-sm) var(--espaco-md);
+  word-break: break-all;
+}
+
+.chave-pix .botao {
+  width: auto;
+}
+
+.valor-destaque {
+  font-family: var(--familia-titulo);
+  font-size: var(--fonte-numero-tamanho);
+  color: var(--cor-primaria);
+  margin: 0 0 var(--espaco-md);
+}

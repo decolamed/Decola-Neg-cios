@@ -18,7 +18,12 @@ import { mensagemDeErro } from '@/lib/erros';
 
 export type CategoriaNotificacao = Enums['notificacao_categoria'];
 
-/** As três categorias nomeadas literalmente na Seção 7.14. */
+/**
+ * As três categorias da Seção 7.14, mais `pedido`, que veio com a vitrine.
+ *
+ * A lista é a fonte da tela de preferências: categoria que não aparece aqui
+ * fica ligada sem o usuário poder desligar.
+ */
 export const CATEGORIAS_NOTIFICACAO: {
   chave: CategoriaNotificacao;
   rotulo: string;
@@ -39,12 +44,18 @@ export const CATEGORIAS_NOTIFICACAO: {
     rotulo: 'Avisos administrativos',
     descricao: 'Solicitações de cancelamento de venda e mudanças na sua conta.',
   },
+  {
+    chave: 'pedido',
+    rotulo: 'Pedidos da loja virtual',
+    descricao: 'Novo pedido na vitrine e aviso de pagamento declarado pelo cliente.',
+  },
 ];
 
 export const PREFERENCIAS_PADRAO: Record<CategoriaNotificacao, boolean> = {
   estoque: true,
   assinatura: true,
   administrativo: true,
+  pedido: true,
 };
 
 /**
@@ -68,6 +79,7 @@ export async function carregarPreferencias(
     estoque: linha.estoque,
     assinatura: linha.assinatura,
     administrativo: linha.administrativo,
+    pedido: linha.pedido,
   };
 }
 

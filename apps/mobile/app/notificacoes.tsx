@@ -36,6 +36,7 @@ const ROTULO_CATEGORIA: Record<CategoriaDoAviso, string> = {
   estoque: 'Estoque',
   assinatura: 'Assinatura',
   administrativo: 'Administrativo',
+  pedido: 'Pedidos',
 };
 
 /** Ícone e cor por categoria — só aparência; a categoria vem do banco. */
@@ -43,6 +44,7 @@ const APARENCIA_CATEGORIA: Record<CategoriaDoAviso, { icone: NomeDeIcone; cor: s
   estoque: { icone: 'alerta', cor: tema.cores.alerta },
   assinatura: { icone: 'plano', cor: tema.cores.secundaria },
   administrativo: { icone: 'sino', cor: tema.cores.apoio },
+  pedido: { icone: 'vendas', cor: tema.cores.acaoPrimaria },
 };
 
 function quando(iso: string): string {

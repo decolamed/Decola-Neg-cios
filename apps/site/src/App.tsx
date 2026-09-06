@@ -11,7 +11,12 @@ import { Navigate, Route, Routes } from 'react-router-dom';
 import { Aviso, Moldura } from '@/componentes/Basicos';
 import { CONFIGURADO } from '@/lib/supabase';
 import { Cadastro } from '@/paginas/Cadastro';
+import { Carrinho } from '@/paginas/Carrinho';
+import { Checkout } from '@/paginas/Checkout';
 import { Convite } from '@/paginas/Convite';
+import { Loja } from '@/paginas/Loja';
+import { Pedido } from '@/paginas/Pedido';
+import { Produto } from '@/paginas/Produto';
 import { Pagamento } from '@/paginas/Pagamento';
 import { Planos } from '@/paginas/Planos';
 import { Pronto } from '@/paginas/Pronto';
@@ -49,6 +54,15 @@ export function App() {
         <Route path="/pronto" element={<Pronto />} />
         <Route path="/redefinir-senha" element={<RedefinirSenha />} />
         <Route path="/convite/:id" element={<Convite />} />
+
+        {/* Vitrine pública. `/pedido/:token` fica fora de `/loja/:slug` de
+            propósito: o link vai por WhatsApp e sobrevive a uma eventual troca
+            de endereço da loja. */}
+        <Route path="/loja/:slug" element={<Loja />} />
+        <Route path="/loja/:slug/produto/:id" element={<Produto />} />
+        <Route path="/loja/:slug/carrinho" element={<Carrinho />} />
+        <Route path="/loja/:slug/checkout" element={<Checkout />} />
+        <Route path="/pedido/:token" element={<Pedido />} />
         {/* Qualquer outro caminho cai na vitrine: um link de plano antigo ou
             digitado errado vira uma escolha de plano, não um beco sem saída. */}
         <Route path="*" element={<Navigate to="/planos" replace />} />

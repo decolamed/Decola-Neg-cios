@@ -26,7 +26,7 @@ export type Enums = {
   forma_pagamento_venda: 'dinheiro' | 'pix' | 'cartao' | 'outros';
   movimentacao_origem: 'venda' | 'manual' | 'estorno_venda';
   movimentacao_tipo: 'entrada' | 'saida';
-  notificacao_categoria: 'estoque' | 'assinatura' | 'administrativo';
+  notificacao_categoria: 'estoque' | 'assinatura' | 'administrativo' | 'pedido';
   papel_usuario: 'gestor_principal' | 'gestor' | 'funcionario';
   solicitacao_status: 'pendente' | 'aprovado' | 'rejeitado';
   tipo_campo: 'texto' | 'numero' | 'selecao' | 'booleano' | 'data';
@@ -34,6 +34,24 @@ export type Enums = {
   vinculo_status: 'convidado' | 'ativo' | 'removido';
   /** Computado em tempo de leitura pela view `produtos_com_status` (Seção 8.3). */
   status_estoque: 'disponivel' | 'estoque_baixo' | 'esgotado';
+  pedido_modalidade: 'retirada' | 'entrega';
+  /** `a_combinar` é a entrega: pagamento é acertado junto com o frete. */
+  pedido_pagamento: 'pix_online' | 'na_retirada' | 'a_combinar';
+  /**
+   * Um enum só para os dois fluxos. Quais status valem para qual modalidade é
+   * regra de transição, no banco — não do tipo.
+   */
+  pedido_status:
+    | 'aguardando_pagamento'
+    | 'pagamento_confirmado'
+    | 'pagamento_na_retirada'
+    | 'pronto_para_retirada'
+    | 'aguardando_negociacao'
+    | 'entrega_combinada'
+    | 'confirmado'
+    | 'em_entrega'
+    | 'finalizado'
+    | 'cancelado';
 };
 
 /** Chaves canônicas de permissão da Seção 5.3 — espelham app.chaves_permissao(). */
@@ -70,6 +88,13 @@ export type Empresa = {
   alerta_estoque_percentual: number;
   /** Quando a empresa passou a `inativa` (encerrada). Base do churn (7.15 A). */
   encerrada_em: string | null;
+  /** Endereço da vitrine: /loja/<slug>. Nulo enquanto o dono não publicar. */
+  loja_slug: string | null;
+  loja_ativa: boolean;
+  whatsapp: string | null;
+  loja_descricao: string | null;
+  /** Horas que um pedido em aberto segura estoque. Nulo = reserva não expira. */
+  reserva_horas: number | null;
   criado_em: string;
   atualizado_em: string;
 };
@@ -151,6 +176,16 @@ export type Produto = {
   estoque_referencia_alerta: number;
   ciclo_vida: Enums['ciclo_vida'];
   atributos: Json;
+  descricao: string | null;
+  /** Caminhos no bucket `produtos` do Storage, em ordem. A primeira é a capa. */
+  imagens: string[];
+  visivel_na_loja: boolean;
+  /**
+   * Unidades comprometidas com pedidos em aberto. NÃO é estoque físico —
+   * o disponível é `estoque_atual - estoque_reservado`, e essa é a conta que
+   * vale tanto para a vitrine quanto para a venda de balcão.
+   */
+  estoque_reservado: number;
   criado_por: string | null;
   criado_em: string;
   atualizado_em: string;
@@ -288,6 +323,7 @@ export type PreferenciaNotificacao = {
   estoque: boolean;
   assinatura: boolean;
   administrativo: boolean;
+  pedido: boolean;
   atualizado_em: string;
 };
 
@@ -321,6 +357,71 @@ export type ProdutoComStatusRow = Produto & {
   percentual_restante: number | null;
 };
 
+export type Pedido = {
+  id: string;
+  empresa_id: string;
+  numero: number;
+  /** Segredo que dá ao cliente acesso ao próprio pedido, sem conta. */
+  token: string;
+  status: Enums['pedido_status'];
+  modalidade: Enums['pedido_modalidade'];
+  pagamento: Enums['pedido_pagamento'];
+  cliente_nome: string;
+  cliente_telefone: string;
+  endereco_entrega: string | null;
+  ciente_custo_entrega: boolean;
+  observacao: string | null;
+  subtotal: number;
+  /** Preenchido na finalização — é o elo com a gestão interna. */
+  venda_id: string | null;
+  pagamento_confirmado_em: string | null;
+  pagamento_confirmado_por: string | null;
+  finalizado_em: string | null;
+  cancelado_em: string | null;
+  cancelado_por: string | null;
+  motivo_cancelamento: string | null;
+  reserva_expira_em: string | null;
+  criado_em: string;
+  atualizado_em: string;
+};
+
+export type PedidoItem = {
+  id: string;
+  pedido_id: string;
+  produto_id: string;
+  /** Congelados no momento do pedido: renomear o produto não reescreve o histórico. */
+  nome_produto: string;
+  preco_unitario: number;
+  quantidade: number;
+  subtotal: number;
+};
+
+/** View `vitrine_lojas` (0032) — a superfície pública de uma loja. */
+export type VitrineLojaRow = {
+  id: string;
+  slug: string;
+  nome: string;
+  descricao: string | null;
+  logo_url: string | null;
+  whatsapp: string | null;
+  endereco: string | null;
+  /** Só o fato de existir chave Pix; a chave em si não sai daqui. */
+  aceita_pix: boolean;
+};
+
+/** View `vitrine_produtos` (0032) — a superfície pública do catálogo. */
+export type VitrineProdutoRow = {
+  id: string;
+  empresa_id: string;
+  loja_slug: string;
+  nome: string;
+  descricao: string | null;
+  preco: number;
+  imagens: string[];
+  /** `estoque_atual - estoque_reservado`, calculado pela view. */
+  disponivel: number;
+};
+
 export type Database = {
   public: {
     Tables: {
@@ -349,10 +450,20 @@ export type Database = {
       preferencias_notificacao: Linha<PreferenciaNotificacao>;
       logs_auditoria: Linha<LogAuditoria>;
       administradores_plataforma: Linha<AdministradorPlataforma>;
+      pedidos: Linha<Pedido>;
+      pedido_itens: Linha<PedidoItem>;
     };
     Views: {
       produtos_com_status: {
         Row: ProdutoComStatusRow;
+        Relationships: [];
+      };
+      vitrine_lojas: {
+        Row: VitrineLojaRow;
+        Relationships: [];
+      };
+      vitrine_produtos: {
+        Row: VitrineProdutoRow;
         Relationships: [];
       };
     };
@@ -480,6 +591,52 @@ export type Database = {
       admin_excluir_empresa: {
         Args: { p_empresa_id: string; p_confirmacao: string };
         Returns: undefined;
+      };
+
+      // ---------------------------------------------------------- vitrine --
+      // As duas primeiras são as únicas chamáveis pelo papel `anon`.
+      vitrine_criar_pedido: {
+        Args: {
+          p_loja_slug: string;
+          p_itens: { produto_id: string; quantidade: number }[];
+          p_cliente_nome: string;
+          p_cliente_telefone: string;
+          p_modalidade: Enums['pedido_modalidade'];
+          p_pagamento: Enums['pedido_pagamento'];
+          p_endereco?: string | null;
+          p_ciente_custo_entrega?: boolean;
+          p_observacao?: string | null;
+        };
+        Returns: {
+          pedido_id: string;
+          numero: number;
+          token: string;
+          status: Enums['pedido_status'];
+          subtotal: number;
+        };
+      };
+      vitrine_consultar_pedido: {
+        Args: { p_token: string };
+        Returns: Json;
+      };
+      pedido_confirmar_pagamento: {
+        Args: { p_pedido_id: string };
+        Returns: undefined;
+      };
+      pedido_atualizar_status: {
+        Args: { p_pedido_id: string; p_status: Enums['pedido_status'] };
+        Returns: undefined;
+      };
+      pedido_cancelar: {
+        Args: { p_pedido_id: string; p_motivo?: string | null };
+        Returns: undefined;
+      };
+      pedido_finalizar: {
+        Args: {
+          p_pedido_id: string;
+          p_forma_pagamento?: Enums['forma_pagamento_venda'] | null;
+        };
+        Returns: { venda_id: string; total: number };
       };
     };
     Enums: Enums;

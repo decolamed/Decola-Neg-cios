@@ -145,17 +145,34 @@ export async function entrarComGoogle(): Promise<Session> {
   return troca.data.session;
 }
 
-/** Seção 7.11 — Esqueci minha senha (mecanismo padrão do Supabase Auth). */
+/** Seção 7.11 — Esqueci minha senha. O e-mail sai pelo Decola, não pelo Auth. */
 export async function enviarLinkDeRecuperacao(email: string): Promise<void> {
   await exigirConexao('login');
 
-  const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
-    redirectTo: Linking.createURL('/redefinir-senha'),
-  });
+  // Pela Edge Function, e não por `resetPasswordForEmail`: é o que garante o
+  // remetente do Decola, o texto em português e um link que abre no site —
+  // e não um e-mail do Supabase apontando para uma rota do Auth.
+  const resposta = await fetch(
+    `${process.env.EXPO_PUBLIC_SUPABASE_URL}/functions/v1/enviar-acesso`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        apikey: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ?? '',
+      },
+      body: JSON.stringify({ email: email.trim(), tipo: 'recuperacao' }),
+    },
+  );
 
-  // Um e-mail inexistente NÃO é sinalizado: a tela mostra a mesma confirmação
-  // em qualquer caso, para não revelar quais contas existem.
-  if (error && error.status !== 400) {
+  // 429 é o freio de repetição e tem mensagem própria — vale mostrar.
+  if (resposta.status === 429) {
+    const corpo = await resposta.json().catch(() => null);
+    throw new ErroAutenticacao(corpo?.error ?? ERRO_ENTRAR_GENERICO);
+  }
+
+  // Nos demais casos a tela mostra a mesma confirmação, com conta ou sem —
+  // não revelamos quais e-mails estão cadastrados (Seção 7.11).
+  if (!resposta.ok && resposta.status !== 400) {
     throw new ErroAutenticacao(ERRO_ENTRAR_GENERICO);
   }
 }

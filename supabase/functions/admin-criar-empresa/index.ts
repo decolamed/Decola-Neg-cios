@@ -18,7 +18,8 @@
  * A autorização é do banco: a RPC roda com o JWT de quem chamou e levanta
  * exceção se não for administrador da plataforma. Esta função não decide isso.
  *
- * SECRETS: SUPABASE_SERVICE_ROLE_KEY (padrão do projeto), URL_APP_BASE (opcional).
+ * SECRETS: SUPABASE_SERVICE_ROLE_KEY (padrão do projeto). O e-mail de acesso
+ * sai pela função `enviar-acesso`, que tem os secrets dela.
  */
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
 
@@ -159,20 +160,28 @@ Deno.serve(async (requisicao) => {
     return erro(error.message, 400);
   }
 
-  // 3. Link para o responsável definir a senha. Best-effort: a empresa já
-  //    existe, e o painel tem "Enviar link de acesso" para reenviar.
-  //
-  //    O destino é o APP, não o painel administrativo: quem recebe este e-mail
-  //    é dono de loja, e a tela que grava a senha é `redefinir-senha` do
-  //    aplicativo. `URL_APP_BASE` troca o esquema por um endereço web quando o
-  //    site existir.
+  // 3. Link para o responsável definir a senha, pela função `enviar-acesso`:
+  //    é ela que garante remetente, texto e destino do Decola. Best-effort —
+  //    a empresa já existe, e o painel tem "Enviar link de acesso" para
+  //    reenviar se este envio falhar.
   let convite_enviado = false;
   if (contaCriada) {
-    const base = Deno.env.get('URL_APP_BASE')?.trim().replace(/\/$/, '');
-    const { error: erroLink } = await admin.auth.resetPasswordForEmail(email, {
-      redirectTo: base ? `${base}/redefinir-senha` : 'decolanegocios://redefinir-senha',
-    });
-    convite_enviado = !erroLink;
+    try {
+      const envio = await fetch(
+        `${Deno.env.get('SUPABASE_URL')}/functions/v1/enviar-acesso`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            apikey: Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+          },
+          body: JSON.stringify({ email, tipo: 'primeiro_acesso' }),
+        },
+      );
+      convite_enviado = envio.ok;
+    } catch (e) {
+      console.error('admin-criar-empresa: envio de acesso falhou', e);
+    }
   }
 
   return responder({ ...(data as Record<string, unknown>), conta_criada: contaCriada, convite_enviado });

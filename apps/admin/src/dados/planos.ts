@@ -85,19 +85,21 @@ export async function definirPlanoAtivo(id: string, ativo: boolean): Promise<voi
 }
 
 /**
- * Seções 6.3 e 7.15 C — link direto de cadastro com o plano pré-selecionado.
+ * Seções 6.3 e 7.15 C — link direto de contratação.
  *
- * O destino é `cadastro?plano=<slug>`, que é a rota que o app realmente tem:
- * `apps/mobile/app/cadastro.tsx` lê o parâmetro `plano`, resolve o plano pelo
- * slug e fixa a escolha, pulando a tela de Escolha do Plano. Não existe rota
- * `/planos/<slug>` — `app/planos.tsx` responde só por `/planos`, sem segmento
- * dinâmico, então um link para lá abriria o app numa rota inexistente.
+ * Endereço WEB por padrão, e não o esquema do app. Quem recebe este link é
+ * justamente quem ainda NÃO é cliente — não tem conta, não tem o aplicativo, e
+ * pode estar no computador. Um `decolanegocios://` aí é um link que não abre
+ * para ninguém, que era exatamente o defeito relatado.
+ *
+ * `VITE_URL_CADASTRO` continua existindo para apontar a outro domínio; sem ela
+ * o padrão é o site oficial.
  */
 export function linkDoPlano(slug: string): string {
-  const caminho = `cadastro?plano=${encodeURIComponent(slug)}`;
-  const base = import.meta.env.VITE_URL_CADASTRO?.trim();
-  return base ? `${base.replace(/\/$/, '')}/${caminho}` : `decolanegocios://${caminho}`;
+  const base = import.meta.env.VITE_URL_CADASTRO?.trim().replace(/\/$/, '') || 'https://decola.pro';
+  return `${base}/cadastro?plano=${encodeURIComponent(slug)}`;
 }
+
 
 // -----------------------------------------------------------------------------
 // Configurações SaaS — Seção 7.15 D

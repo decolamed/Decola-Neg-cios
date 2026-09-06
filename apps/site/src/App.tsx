@@ -14,6 +14,7 @@ import { Cadastro } from '@/paginas/Cadastro';
 import { Carrinho } from '@/paginas/Carrinho';
 import { Checkout } from '@/paginas/Checkout';
 import { Convite } from '@/paginas/Convite';
+import { DefinirSenha } from '@/paginas/DefinirSenha';
 import { Loja } from '@/paginas/Loja';
 import { Pedido } from '@/paginas/Pedido';
 import { Produto } from '@/paginas/Produto';
@@ -52,6 +53,9 @@ export function App() {
         <Route path="/cadastro" element={<Cadastro />} />
         <Route path="/pagamento" element={<Pagamento />} />
         <Route path="/pronto" element={<Pronto />} />
+        {/* Destino dos e-mails que o Decola envia por conta própria. */}
+        <Route path="/definir-senha" element={<DefinirSenha />} />
+        {/* Mantida para os links do Supabase Auth que já saíram antes. */}
         <Route path="/redefinir-senha" element={<RedefinirSenha />} />
         <Route path="/convite/:id" element={<Convite />} />
 

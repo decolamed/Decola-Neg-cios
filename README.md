@@ -292,7 +292,8 @@ Há uma divisão deliberada aqui, e vale entendê-la antes de "simplificar":
 | | Domínio | Onde aparece |
 |---|---|---|
 | **Envio de e-mail** | `decola.pro` | Só no remetente: `negocios@decola.pro` |
-| **Site público** | `site-kappa-five-66.vercel.app` | Links de loja, de plano, de definir senha |
+| **Parte pública** | `site-kappa-five-66.vercel.app` | Links de plano e as lojas dos clientes |
+| **O produto** | `decolanegocios.vercel.app` | Onde se entra; destino dos e-mails de acesso |
 
 A razão é o que acontece quando um domínio comprado não é renovado. Endereço de
 loja é link que o lojista imprime no balcão, cola na bio do Instagram e manda no
@@ -422,49 +423,84 @@ sessão criada primeiro, a RPC seguinte rodaria como anônimo e seria recusada.
 
 ### Deploy
 
-É um **segundo projeto na Vercel**, separado do painel — domínios diferentes e
-públicos diferentes: o site é a porta do cliente, o painel é interno e marcado
-`noindex`. Não confundir com os projetos duplicados que já existiram: ali eram
-três projetos para a mesma coisa. Aqui são duas aplicações que se constroem de
-pastas diferentes e têm regras opostas de indexação — a Vercel só aceita uma
-pasta raiz e um build por projeto.
+São **dois projetos na Vercel**, e a divisão não é por tecnologia — é por
+quem entra:
 
-O nome do projeto na Vercel define o domínio, então ele não é detalhe: é o
-endereço que vai dentro dos links de loja dos clientes.
+| | Projeto | Domínio | Quem usa |
+|---|---|---|---|
+| **O produto** | `decolanegocios` | `decolanegocios.vercel.app` | Quem já é cliente, e você |
+| **A parte pública** | `site` | `site-kappa-five-66.vercel.app` | Quem ainda não é cliente |
 
-| Ajuste | Site | Painel |
+### O produto: um endereço, um login, dois destinos
+
+O projeto `decolanegocios` publica DUAS aplicações na mesma saída:
+
+| Caminho | O que é | De onde vem |
 |---|---|---|
-| Nome do projeto | `site` | `decolanegocios` |
-| Root Directory | `apps/site` | raiz do repositório |
-| Production Branch | `main` | `main` |
-| Domínio | `site-kappa-five-66.vercel.app` | `decolanegocios.vercel.app` |
+| `/` | Painel administrativo da plataforma | `apps/admin` (Vite) |
+| `/app` | Aplicativo do cliente | `apps/mobile`, exportado para web pelo Expo |
+
+Quem entra pela raiz é encaminhado pelo tipo da conta: administrador da
+plataforma fica no painel, dono de negócio vai para `/app`.
+
+**Servir as duas na mesma origem é o que faz isso funcionar**, e não uma
+economia de projeto. Elas dividem a chave de sessão do navegador
+(`decola-negocios`), então o encaminhamento não cobra a senha de novo. Em
+domínios separados, seria um segundo login — e o encaminhamento pioraria a
+experiência em vez de melhorá-la.
+
+Uma consequência disso exigiu cuidado: administrador da plataforma não tem
+empresa, e o aplicativo, ao encontrar conta sem empresa, encerra a sessão. Com
+a sessão compartilhada, um clique em "Visualizar aplicativo" derrubaria o
+painel de onde a pessoa veio. A splash (`apps/mobile/app/index.tsx`) pergunta
+antes se quem chegou é administrador e o devolve à raiz sem deslogar.
+
+O build de `npm run painel:build` produz os dois: `vite build` para o painel e
+`expo export --platform web` para o aplicativo, com `baseUrl: /app` no
+`app.json` para que roteador e assets vivam sob o prefixo. As rewrites do
+`vercel.json` da raiz separam as duas aplicações.
+
+A versão de celular continua intacta: a web é adicional, e o mesmo código
+compila para as duas.
+
+### A parte pública
+
+| Ajuste | Valor |
+|---|---|
+| Root Directory | `apps/site` |
+| Production Branch | `main` |
+
+Planos, contratação e as vitrines dos lojistas — tudo o que precisa ser aberto
+e indexável, ao contrário do produto, que é `noindex`. O botão "Entrar" no topo
+leva ao endereço do produto.
 
 O nome `site` foi o que a Vercel recebeu na criação, e o sufixo aleatório do
-domínio veio de `site.vercel.app` já existir. Um nome melhor para o site seria
-`decolanegocios` — mas esse hoje é o painel, então a troca é em duas etapas
-(renomear o painel primeiro) e muda o endereço que vai nos links. Enquanto
-nenhum link estiver na mão de cliente, a troca é barata; depois, não é. O
-endereço em vigor está em UM lugar por aplicação, listado abaixo.
+domínio veio de `site.vercel.app` já existir. Renomear muda o endereço que vai
+nos links de loja dos clientes: enquanto nenhum estiver na mão de cliente a
+troca é barata, depois não é.
 
-A configuração de build vem de `apps/site/vercel.json`, que a Vercel lê por
-estar no Root Directory do projeto. Variáveis: `VITE_SUPABASE_URL` e
-`VITE_SUPABASE_ANON_KEY`, as mesmas do painel.
+### Configuração
 
-### O que o site destrava nas outras pontas
+A conexão do Supabase vive no CÓDIGO das três aplicações, não em variável de
+ambiente. A anon key é pública por definição — já vai no bundle servido a
+qualquer visitante —, então guardá-la fora do repositório nunca a tornou
+secreta; só a tornou fácil de esquecer, e um esquecimento desses derrubava a
+publicação inteira. Quem protege os dados é a RLS.
 
-Com ele publicado, três variáveis deixam de cair no esquema do app:
+As variáveis continuam tendo prioridade onde existem, para apontar a um projeto
+de homologação sem tocar no código:
 
-- `VITE_URL_SITE` no **painel** → `https://site-kappa-five-66.vercel.app`, e o link
-  de plano vira `.../cadastro?plano=<slug>`, clicável em qualquer lugar. O nome
+- `VITE_URL_SITE` no **painel** → base dos links de plano e de loja. O nome
   antigo `VITE_URL_CADASTRO` continua sendo aceito.
-- `EXPO_PUBLIC_URL_SITE` no **app** → mesma base, usada no link da loja virtual
-  que o lojista compartilha.
-- `URL_SITE` nas **Edge Functions** → mesma base, usada nos links dos e-mails.
-- `URL_APP_BASE` na Edge Function `admin-criar-empresa` → mesma base.
-- `URL_CONVITE_BASE` na Edge Function `enviar-convite` →
-  `https://site-kappa-five-66.vercel.app/convite`. Sem ela o convite sai no esquema do app, que
-  vários webmails bloqueiam — e o convidado é justamente quem ainda não tem o
-  aplicativo instalado.
+- `VITE_URL_APP` no **site** → para onde o botão "Entrar" aponta.
+- `EXPO_PUBLIC_URL_SITE` no **app** → base do link da loja virtual.
+- `URL_CONVITE_BASE` na Edge Function `enviar-convite` → base do link de
+  convite. Sem ela o convite sai no esquema do app, que vários webmails
+  bloqueiam — e o convidado é justamente quem ainda não tem nada instalado.
+
+O endereço do site nas Edge Functions deixou de ser secret: onde publicamos é
+fato do repositório, e um valor antigo guardado no painel do Supabase mandava
+todo mundo para o lugar errado sem nada no código denunciar.
 
 ## Deploy do Painel Administrativo
 

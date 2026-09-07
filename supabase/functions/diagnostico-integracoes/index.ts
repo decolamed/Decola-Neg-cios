@@ -273,11 +273,16 @@ async function verificarResend(): Promise<Verificacao> {
  * função provou isso: o site respondeu 200 exibindo "Em configuração", porque
  * tinha sido publicado sem `VITE_SUPABASE_URL`. Verde, e nada funcionava.
  *
- * O que torna a checagem possível é o Vite substituir `import.meta.env.*` em
- * tempo de BUILD. Publicado com a variável, o endereço do projeto Supabase
- * aparece literalmente dentro do bundle; publicado sem ela, não aparece. Então
- * dá para responder a pergunta real — "este site fala com o nosso banco?" —
- * baixando o bundle e procurando a referência do projeto.
+ * O que torna a checagem possível é o Vite resolver a conexão em tempo de
+ * BUILD: publicado corretamente, o endereço do projeto Supabase aparece
+ * literalmente dentro do bundle. Então dá para responder a pergunta real —
+ * "este site fala com o nosso banco?" — baixando o bundle e procurando a
+ * referência do projeto.
+ *
+ * Desde que a conexão passou a viver no código, esta verificação deixou de ser
+ * a que pega o erro comum e virou a que confirma que a publicação em vigor é
+ * recente. Continua valendo: um deploy antigo, feito antes daquela mudança,
+ * ainda estaria quebrado, e é isso que ela denuncia.
  */
 async function verificarSite(): Promise<Verificacao> {
   // Mesma constante de `enviar-acesso`, e pelo mesmo motivo: onde publicamos é
@@ -300,7 +305,7 @@ async function verificarSite(): Promise<Verificacao> {
         resumo: `${base} respondeu ${resposta.status}.`,
         proximoPasso:
           'Os links de definir senha, de convite e da loja virtual apontam para este endereço. ' +
-          'Confira a publicação do site e o domínio na Vercel.',
+          'Confira a publicação do site e o nome do projeto na Vercel.',
         detalhes: { url: base, http: resposta.status },
       };
     }
@@ -331,12 +336,11 @@ async function verificarSite(): Promise<Verificacao> {
         chave: 'site',
         nome,
         situacao: 'falha',
-        resumo: `${base} responde, mas foi publicado SEM as variáveis do Supabase.`,
+        resumo: `${base} responde, mas a publicação em vigor não fala com o Supabase.`,
         proximoPasso:
-          'O site mostra "Em configuração" e nada funciona nele: nem os planos, nem o cadastro, ' +
-          'nem os links de definir senha, nem as lojas virtuais. Na Vercel, no projeto do site, ' +
-          'defina VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY e publique de novo — as variáveis ' +
-          'entram no código durante a publicação, então mudá-las exige um novo deploy.',
+          'O site mostra "Em configuração" e nada funciona nele. A conexão agora vem no ' +
+          'próprio código, então isto significa que a publicação em vigor é antiga: na Vercel, ' +
+          'no projeto do site, refaça o deploy do commit mais recente da branch main.',
         detalhes: { url: base, http: resposta.status },
       };
     }

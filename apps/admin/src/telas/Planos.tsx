@@ -48,10 +48,10 @@ const VAZIO: DadosDoPlano = {
 /**
  * Painel do link direto (Seção 6.3).
  *
- * Sem `VITE_URL_CADASTRO` o link sai no esquema do app (`decolanegocios://`),
- * que não é endereço de internet: só significa alguma coisa num celular com o
- * app instalado. Não dá para torná-lo clicável no navegador — o que dá para
- * fazer, e é o que falta quando ele parece quebrado, é dizer onde ele abre.
+ * O link é sempre um endereço web comum, e isso importa: quem recebe ainda NÃO
+ * é cliente — não tem conta, não tem o app, e pode estar no computador. Já foi
+ * um `decolanegocios://`, que não abria para ninguém fora de um celular com o
+ * aplicativo instalado; era o defeito relatado.
  */
 function PainelDoLink({
   plano,
@@ -64,7 +64,6 @@ function PainelDoLink({
   copiado: boolean;
   aoFechar: () => void;
 }) {
-  const ehEnderecoWeb = url.startsWith('http://') || url.startsWith('https://');
 
   return (
     <div className="card">
@@ -95,18 +94,14 @@ function PainelDoLink({
 
       <p className="legenda" style={{ marginTop: 'var(--espaco-sm)' }}>
         {copiado ? 'Copiado para a área de transferência. ' : ''}
-        {ehEnderecoWeb
-          ? 'Abre em qualquer navegador e leva ao cadastro com este plano já escolhido.'
-          : 'Este link abre o aplicativo num celular que já o tenha instalado — ' +
-            'colado no navegador do computador, ele não faz nada. Para virar um ' +
-            'endereço comum, configure VITE_URL_CADASTRO com o endereço do site.'}
+        Abre em qualquer navegador e leva ao cadastro com este plano já escolhido. O cliente
+        preenche os dados, paga por Pix, boleto ou cartão, e o acesso é liberado sozinho quando o
+        pagamento é confirmado.
       </p>
 
-      {ehEnderecoWeb ? (
-        <a href={url} target="_blank" rel="noreferrer">
-          Abrir em nova aba
-        </a>
-      ) : null}
+      <a href={url} target="_blank" rel="noreferrer">
+        Abrir em nova aba
+      </a>
     </div>
   );
 }

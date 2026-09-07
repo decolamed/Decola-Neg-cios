@@ -10,7 +10,7 @@
  */
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { useParams } from 'react-router-dom';
-import { Aviso, CampoTexto, Carregando } from '@/componentes/Basicos';
+import { Aviso, CampoTexto, Carregando, LINK_DO_APP } from '@/componentes/Basicos';
 import {
   aceitarConvite,
   criarContaDoConvidado,
@@ -110,12 +110,16 @@ export function Convite() {
         </div>
         <Aviso tom="sucesso" mensagem="Pronto! Você já faz parte da equipe." />
         <div className="card">
-          <h2>Como entrar</h2>
-          <ol className="legenda" style={{ lineHeight: 1.8 }}>
-            <li>Baixe o Decola Negócios na loja de aplicativos do seu celular.</li>
-            <li>Toque em “Entrar”.</li>
-            <li>Use o mesmo e-mail e senha desta conta.</li>
-          </ol>
+          <h2>Entrar agora</h2>
+          <p>
+            Use o mesmo e-mail e senha desta conta. Não precisa instalar nada — o Decola Negócios
+            abre no navegador.
+          </p>
+        <div className="acoes" style={{ marginTop: 'var(--espaco-md)' }}>
+            <a className="botao" href={LINK_DO_APP}>
+              Entrar no Decola Negócios
+            </a>
+          </div>
         </div>
       </main>
     );

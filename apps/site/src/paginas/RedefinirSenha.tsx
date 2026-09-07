@@ -10,7 +10,7 @@
  * aparecer antes de aceitar a nova senha.
  */
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
-import { Aviso, CampoTexto, Carregando } from '@/componentes/Basicos';
+import { Aviso, CampoTexto, Carregando, LINK_DO_APP } from '@/componentes/Basicos';
 import { VEIO_DE_LINK_DE_EMAIL, supabase } from '@/lib/supabase';
 
 type Etapa =
@@ -126,10 +126,12 @@ export function RedefinirSenha() {
         <>
           <Aviso tom="sucesso" mensagem="Senha definida. Agora você já pode entrar." />
           <div className="card">
-            <p className="legenda">
-              Abra o aplicativo Decola Negócios e entre com o seu e-mail e a senha que acabou de
-              criar.
-            </p>
+            <p>Entre com o seu e-mail e a senha que você acabou de criar.</p>
+          <div className="acoes" style={{ marginTop: 'var(--espaco-md)' }}>
+            <a className="botao" href={LINK_DO_APP}>
+              Entrar no Decola Negócios
+            </a>
+          </div>
           </div>
         </>
       ) : null}

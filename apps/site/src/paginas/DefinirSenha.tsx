@@ -14,7 +14,7 @@
  */
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Aviso, CampoTexto, Carregando } from '@/componentes/Basicos';
+import { Aviso, CampoTexto, Carregando, LINK_DO_APP } from '@/componentes/Basicos';
 import { supabase } from '@/lib/supabase';
 
 type Etapa =
@@ -129,12 +129,16 @@ export function DefinirSenha() {
         <>
           <Aviso tom="sucesso" mensagem="Senha definida. Sua conta está pronta para uso." />
           <div className="card">
-            <h2>Como entrar</h2>
-            <ol className="legenda" style={{ lineHeight: 1.8 }}>
-              <li>Abra o aplicativo Decola Negócios no seu celular.</li>
-              <li>Toque em “Entrar”.</li>
-              <li>Use o seu e-mail e a senha que você acabou de criar.</li>
-            </ol>
+            <h2>Entrar agora</h2>
+            <p>
+              Use o seu e-mail e a senha que você acabou de criar. Não precisa instalar nada — o
+              Decola Negócios abre no navegador, no celular ou no computador.
+            </p>
+          <div className="acoes" style={{ marginTop: 'var(--espaco-md)' }}>
+            <a className="botao" href={LINK_DO_APP}>
+              Entrar no Decola Negócios
+            </a>
+          </div>
           </div>
         </>
       ) : null}

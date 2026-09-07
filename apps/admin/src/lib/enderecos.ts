@@ -16,7 +16,7 @@
  * `VITE_URL_CADASTRO` continua sendo lida pelo nome antigo, para uma
  * publicação existente não perder a configuração ao atualizar.
  */
-const PADRAO = 'https://decolanegocios.vercel.app';
+const PADRAO = 'https://site-kappa-five-66.vercel.app';
 
 export const URL_DO_SITE: string =
   import.meta.env.VITE_URL_SITE?.trim().replace(/\/$/, '') ||

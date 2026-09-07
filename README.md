@@ -292,7 +292,7 @@ Há uma divisão deliberada aqui, e vale entendê-la antes de "simplificar":
 | | Domínio | Onde aparece |
 |---|---|---|
 | **Envio de e-mail** | `decola.pro` | Só no remetente: `negocios@decola.pro` |
-| **Site público** | `decolanegocios.vercel.app` | Links de loja, de plano, de definir senha |
+| **Site público** | `site-kappa-five-66.vercel.app` | Links de loja, de plano, de definir senha |
 
 A razão é o que acontece quando um domínio comprado não é renovado. Endereço de
 loja é link que o lojista imprime no balcão, cola na bio do Instagram e manda no
@@ -434,10 +434,17 @@ endereço que vai dentro dos links de loja dos clientes.
 
 | Ajuste | Site | Painel |
 |---|---|---|
-| Nome do projeto | `decolanegocios` | `decolanegocios-painel` |
+| Nome do projeto | `site` | `decolanegocios` |
 | Root Directory | `apps/site` | raiz do repositório |
 | Production Branch | `main` | `main` |
-| Domínio | `decolanegocios.vercel.app` | `decolanegocios-painel.vercel.app` |
+| Domínio | `site-kappa-five-66.vercel.app` | `decolanegocios.vercel.app` |
+
+O nome `site` foi o que a Vercel recebeu na criação, e o sufixo aleatório do
+domínio veio de `site.vercel.app` já existir. Um nome melhor para o site seria
+`decolanegocios` — mas esse hoje é o painel, então a troca é em duas etapas
+(renomear o painel primeiro) e muda o endereço que vai nos links. Enquanto
+nenhum link estiver na mão de cliente, a troca é barata; depois, não é. O
+endereço em vigor está em UM lugar por aplicação, listado abaixo.
 
 A configuração de build vem de `apps/site/vercel.json`, que a Vercel lê por
 estar no Root Directory do projeto. Variáveis: `VITE_SUPABASE_URL` e
@@ -447,7 +454,7 @@ estar no Root Directory do projeto. Variáveis: `VITE_SUPABASE_URL` e
 
 Com ele publicado, três variáveis deixam de cair no esquema do app:
 
-- `VITE_URL_SITE` no **painel** → `https://decolanegocios.vercel.app`, e o link
+- `VITE_URL_SITE` no **painel** → `https://site-kappa-five-66.vercel.app`, e o link
   de plano vira `.../cadastro?plano=<slug>`, clicável em qualquer lugar. O nome
   antigo `VITE_URL_CADASTRO` continua sendo aceito.
 - `EXPO_PUBLIC_URL_SITE` no **app** → mesma base, usada no link da loja virtual
@@ -455,7 +462,7 @@ Com ele publicado, três variáveis deixam de cair no esquema do app:
 - `URL_SITE` nas **Edge Functions** → mesma base, usada nos links dos e-mails.
 - `URL_APP_BASE` na Edge Function `admin-criar-empresa` → mesma base.
 - `URL_CONVITE_BASE` na Edge Function `enviar-convite` →
-  `https://decolanegocios.vercel.app/convite`. Sem ela o convite sai no esquema do app, que
+  `https://site-kappa-five-66.vercel.app/convite`. Sem ela o convite sai no esquema do app, que
   vários webmails bloqueiam — e o convidado é justamente quem ainda não tem o
   aplicativo instalado.
 

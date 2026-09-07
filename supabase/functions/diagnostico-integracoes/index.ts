@@ -288,7 +288,7 @@ async function verificarSite(): Promise<Verificacao> {
   // Mesma constante de `enviar-acesso`, e pelo mesmo motivo: onde publicamos é
   // fato do repositório. Conferir um endereço vindo de secret seria conferir a
   // configuração, não o site que os clientes abrem.
-  const base = 'https://decolanegocios.vercel.app';
+  const base = 'https://site-kappa-five-66.vercel.app';
   const nome = 'Site público (links de e-mail)';
 
   // A referência do projeto: o "abc123" de https://abc123.supabase.co.

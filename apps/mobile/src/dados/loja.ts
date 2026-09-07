@@ -122,7 +122,7 @@ export async function contarProdutosNaVitrine(empresaId: string): Promise<number
  * recompilar a decisão; sem ela vale a produção.
  */
 export const URL_DO_SITE = (
-  process.env.EXPO_PUBLIC_URL_SITE ?? 'https://decolanegocios.vercel.app'
+  process.env.EXPO_PUBLIC_URL_SITE ?? 'https://site-kappa-five-66.vercel.app'
 ).replace(/\/$/, '');
 
 /** Só o miolo do endereço, para a tela mostrar sem o "https://" na frente. */

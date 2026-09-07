@@ -41,7 +41,7 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
 
 /** Onde o site público está publicado. Ver a nota acima sobre não ser secret. */
-const URL_DO_SITE = 'https://decolanegocios.vercel.app';
+const URL_DO_SITE = 'https://site-kappa-five-66.vercel.app';
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',

@@ -15,8 +15,35 @@
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from '@decola/types';
 
-const url = import.meta.env.VITE_SUPABASE_URL;
-const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+/**
+ * A conexão de produção vive AQUI, no código, e não só em variável de ambiente.
+ *
+ * Não é atalho, é a escolha certa para estes dois valores específicos:
+ *
+ *   - A anon key é PÚBLICA por definição. Ela é embutida no bundle e servida ao
+ *     navegador de todo visitante — já dá para lê-la abrindo o site. Guardá-la
+ *     em variável de ambiente nunca a tornou secreta; só a tornou fácil de
+ *     esquecer.
+ *   - Quem protege os dados é a RLS, não o sigilo desta chave. Com ela na mão e
+ *     sem sessão, o alcance é exatamente duas views (`vitrine_lojas` e
+ *     `vitrine_produtos`), que só mostram loja publicada e produto marcado como
+ *     visível. Nenhuma tabela do schema responde ao papel anônimo.
+ *
+ * O que se ganha: variável esquecida na publicação não derruba mais o site
+ * inteiro. Era o defeito real — o site subiu, respondeu 200 e não fazia nada,
+ * porque as variáveis entram em tempo de BUILD e ninguém as tinha definido.
+ *
+ * As variáveis continuam tendo prioridade, para apontar a outro projeto
+ * (homologação) sem mexer no código.
+ */
+const URL_PRODUCAO = 'https://nakqafnchwydfogcozvc.supabase.co';
+const CHAVE_PRODUCAO =
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5ha3' +
+  'FhZm5jaHd5ZGZvZ2NvenZjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU2NjkyNjQsImV4cCI6' +
+  'MjEwMTI0NTI2NH0.Zv95UlIYZWPW_LA18nmqbKQb-KG272wqjfTrfqMSbFw';
+
+const url = import.meta.env.VITE_SUPABASE_URL || URL_PRODUCAO;
+const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || CHAVE_PRODUCAO;
 
 /**
  * A página foi aberta por um link de e-mail?
@@ -35,6 +62,11 @@ export const VEIO_DE_LINK_DE_EMAIL =
   typeof window !== 'undefined' &&
   /(access_token|code|token_hash|error)=/.test(window.location.hash + window.location.search);
 
+/**
+ * Com a produção embutida acima, isto só é falso se alguém definir a variável
+ * com valor vazio de propósito. A tela "Em configuração" continua existindo
+ * como rede de segurança — mas deixou de ser o caminho normal.
+ */
 export const CONFIGURADO = Boolean(url && anonKey);
 
 export const supabase = createClient<Database>(

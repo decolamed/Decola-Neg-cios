@@ -16,8 +16,24 @@
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from '@decola/types';
 
-const url = import.meta.env.VITE_SUPABASE_URL;
-const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+/**
+ * Mesma decisão do site (ver `apps/site/src/lib/supabase.ts`): a conexão de
+ * produção fica no código porque a anon key é pública por definição — ela já é
+ * servida no bundle deste painel para qualquer um que abra o endereço — e quem
+ * protege os dados é a RLS, somada ao registro em `administradores_plataforma`
+ * que toda consulta daqui exige.
+ *
+ * O painel hoje tem as variáveis definidas na Vercel e funciona. Isto é rede:
+ * uma publicação futura sem elas deixaria de derrubar a ferramenta.
+ */
+const URL_PRODUCAO = 'https://nakqafnchwydfogcozvc.supabase.co';
+const CHAVE_PRODUCAO =
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5ha3' +
+  'FhZm5jaHd5ZGZvZ2NvenZjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU2NjkyNjQsImV4cCI6' +
+  'MjEwMTI0NTI2NH0.Zv95UlIYZWPW_LA18nmqbKQb-KG272wqjfTrfqMSbFw';
+
+const url = import.meta.env.VITE_SUPABASE_URL || URL_PRODUCAO;
+const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || CHAVE_PRODUCAO;
 
 export const CONFIGURADO = Boolean(url && anonKey);
 

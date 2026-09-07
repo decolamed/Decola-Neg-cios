@@ -19,7 +19,7 @@
  *
  * SECRETS lidos (todos opcionais — ausência é resultado, não erro):
  *   ASAAS_API_KEY, ASAAS_AMBIENTE, ASAAS_WEBHOOK_TOKEN,
- *   RESEND_API_KEY, EMAIL_REMETENTE, URL_SITE
+ *   RESEND_API_KEY, EMAIL_REMETENTE
  */
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
 
@@ -280,7 +280,10 @@ async function verificarResend(): Promise<Verificacao> {
  * baixando o bundle e procurando a referência do projeto.
  */
 async function verificarSite(): Promise<Verificacao> {
-  const base = (Deno.env.get('URL_SITE') ?? 'https://decolanegocios.vercel.app').replace(/\/$/, '');
+  // Mesma constante de `enviar-acesso`, e pelo mesmo motivo: onde publicamos é
+  // fato do repositório. Conferir um endereço vindo de secret seria conferir a
+  // configuração, não o site que os clientes abrem.
+  const base = 'https://decolanegocios.vercel.app';
   const nome = 'Site público (links de e-mail)';
 
   // A referência do projeto: o "abc123" de https://abc123.supabase.co.

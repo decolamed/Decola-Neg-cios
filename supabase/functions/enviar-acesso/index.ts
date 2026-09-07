@@ -23,16 +23,25 @@
  * verificador de quais e-mails têm cadastro.
  *
  * DOIS DOMÍNIOS, PAPÉIS DIFERENTES. O remetente sai de `decola.pro`, domínio
- * comprado e verificado no Resend. Já o LINK dentro do e-mail aponta para
- * `URL_SITE`, que é o domínio da Vercel — link de e-mail é clicado em minutos
- * e expira sozinho, então trocar o remetente um dia não deixa ninguém na mão;
- * link de loja e de cadastro o cliente salva e reusa, e esse não pode depender
- * de renovação anual.
+ * comprado e verificado no Resend. Já o LINK dentro do e-mail aponta para o
+ * site na Vercel — link de e-mail é clicado em minutos e expira sozinho, então
+ * trocar o remetente um dia não deixa ninguém na mão; link de loja e de
+ * cadastro o cliente salva e reusa, e esse não pode depender de renovação
+ * anual.
  *
- * SECRETS: RESEND_API_KEY, EMAIL_REMETENTE, URL_SITE (opcional, padrão
- * https://decolanegocios.vercel.app), SUPABASE_SERVICE_ROLE_KEY (do projeto).
+ * O ENDEREÇO DO SITE NÃO É MAIS SECRET. Era, e isso custou caro: um valor
+ * antigo guardado no painel manda todo mundo para o lugar errado, e nada no
+ * código denuncia — o link sai bonito e quebrado. Onde publicamos é fato do
+ * repositório, não configuração de ambiente. Mudou o endereço? Muda esta
+ * constante e republica, num lugar só, com histórico.
+ *
+ * SECRETS: RESEND_API_KEY, EMAIL_REMETENTE, SUPABASE_SERVICE_ROLE_KEY (do
+ * projeto).
  */
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
+
+/** Onde o site público está publicado. Ver a nota acima sobre não ser secret. */
+const URL_DO_SITE = 'https://decolanegocios.vercel.app';
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -198,11 +207,8 @@ Deno.serve(async (requisicao) => {
     return responder({ enviado: true });
   }
 
-  const base = (Deno.env.get('URL_SITE') ?? 'https://decolanegocios.vercel.app')
-    .trim()
-    .replace(/\/$/, '');
   const link =
-    `${base}/definir-senha` +
+    `${URL_DO_SITE}/definir-senha` +
     `?token=${encodeURIComponent(gerado.properties.hashed_token)}` +
     `&tipo=${tipo === 'primeiro_acesso' ? 'primeiro' : 'nova'}`;
 

@@ -56,10 +56,79 @@ export function urlDaImagemDaLoja(caminho: string): string {
 }
 
 /**
+ * MEDIDAS DO BANNER — e por que elas são fixas.
+ *
+ * O carrossel do site é `aspect-ratio: 16/7` com `object-fit: cover`. Isso
+ * significa que o navegador JÁ recorta qualquer imagem fora dessa proporção —
+ * ele só não avisa e não deixa escolher o que cortar. Uma foto de celular em
+ * pé perdia a metade de cima e a metade de baixo, e o lojista via o resultado
+ * na loja publicada, sem entender por quê.
+ *
+ * Recortando aqui, o lojista vê o enquadramento antes de publicar e decide
+ * qual parte da foto fica.
+ */
+export const LARGURA_DO_BANNER = 1400;
+export const ALTURA_DO_BANNER = 613; // 1400 × 7/16, arredondado
+export const PROPORCAO_DO_BANNER = 16 / 7;
+
+/** Onde fica a faixa que sobra quando a foto é mais alta que o banner. */
+export type Enquadramento = 'topo' | 'centro' | 'base';
+
+export const ENQUADRAMENTOS: { valor: Enquadramento; rotulo: string }[] = [
+  { valor: 'topo', rotulo: 'Parte de cima' },
+  { valor: 'centro', rotulo: 'Meio' },
+  { valor: 'base', rotulo: 'Parte de baixo' },
+];
+
+/**
+ * Maior retângulo 16:7 que cabe na imagem, deslocado conforme a escolha.
+ *
+ * Quando a foto é mais LARGA que 16:7 o corte é nas laterais, e aí o centro é
+ * sempre a resposta certa — ninguém fotografa o assunto no canto esquerdo. A
+ * escolha do lojista só muda o eixo vertical, que é onde ela faz diferença:
+ * numa foto de fachada, "parte de cima" guarda a placa; "parte de baixo",
+ * a vitrine.
+ */
+export function calcularRecorte(
+  largura: number,
+  altura: number,
+  enquadramento: Enquadramento,
+): { originX: number; originY: number; width: number; height: number } {
+  const proporcao = largura / altura;
+
+  if (proporcao > PROPORCAO_DO_BANNER) {
+    // Foto larga demais: corta nas laterais, mantendo o centro.
+    const novaLargura = Math.round(altura * PROPORCAO_DO_BANNER);
+    return {
+      originX: Math.round((largura - novaLargura) / 2),
+      originY: 0,
+      width: novaLargura,
+      height: altura,
+    };
+  }
+
+  // Foto alta demais: sobra faixa vertical, e é o lojista quem escolhe qual.
+  const novaAltura = Math.round(largura / PROPORCAO_DO_BANNER);
+  const sobra = altura - novaAltura;
+  const deslocamento =
+    enquadramento === 'topo' ? 0 : enquadramento === 'base' ? sobra : Math.round(sobra / 2);
+
+  return { originX: 0, originY: deslocamento, width: largura, height: novaAltura };
+}
+
+/** Dimensões reais do arquivo, que é do que o recorte precisa partir. */
+async function medir(uri: string): Promise<{ largura: number; altura: number }> {
+  const lida = await ImageManipulator.manipulateAsync(uri, [], {
+    format: ImageManipulator.SaveFormat.JPEG,
+  });
+  return { largura: lida.width, altura: lida.height };
+}
+
+/**
  * Sobe uma imagem da loja e devolve o CAMINHO.
  *
  * Logo e banner têm proporções muito diferentes — uma é quadrada e pequena, o
- * outro é largo e ocupa a primeira dobra —, então o lado máximo muda conforme
+ * outro é largo e ocupa a primeira dobra —, então o tratamento muda conforme
  * o uso. Redimensionar não é enfeite: foto de celular passa dos 5 MB que o
  * bucket aceita, e a vitrine é aberta no 4G pelo cliente do lojista.
  */
@@ -67,15 +136,25 @@ export async function enviarImagemDaLoja(params: {
   empresaId: string;
   tipo: 'logo' | 'banners';
   uriLocal: string;
+  /** Só usado em banner; ignorado na logo. Padrão: meio. */
+  enquadramento?: Enquadramento;
 }): Promise<string> {
   await exigirConexao();
 
-  const lado = params.tipo === 'logo' ? 512 : 1400;
-  const reduzida = await ImageManipulator.manipulateAsync(
-    params.uriLocal,
-    [{ resize: { width: lado } }],
-    { compress: 0.85, format: ImageManipulator.SaveFormat.JPEG },
-  );
+  const operacoes: ImageManipulator.Action[] = [];
+
+  if (params.tipo === 'banners') {
+    const { largura, altura } = await medir(params.uriLocal);
+    operacoes.push({ crop: calcularRecorte(largura, altura, params.enquadramento ?? 'centro') });
+    operacoes.push({ resize: { width: LARGURA_DO_BANNER, height: ALTURA_DO_BANNER } });
+  } else {
+    operacoes.push({ resize: { width: 512 } });
+  }
+
+  const reduzida = await ImageManipulator.manipulateAsync(params.uriLocal, operacoes, {
+    compress: 0.85,
+    format: ImageManipulator.SaveFormat.JPEG,
+  });
 
   const binario = await lerBinario(reduzida.uri);
 

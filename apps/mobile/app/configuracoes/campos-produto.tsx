@@ -46,6 +46,7 @@ export default function CamposDeProduto() {
   const [mensagem, setMensagem] = useState<string | null>(null);
   const [salvando, setSalvando] = useState<string | null>(null);
 
+  const [busca, setBusca] = useState('');
   const [criandoNovo, setCriandoNovo] = useState(false);
   const [nomeNovo, setNomeNovo] = useState('');
   const [tipoNovo, setTipoNovo] = useState<TipoCampo>('texto');
@@ -145,8 +146,27 @@ export default function CamposDeProduto() {
     return <TelaMensagem mensagem="Apenas o Gestor pode configurar o cadastro de produtos." />;
   }
 
-  const doSistema = campos.filter((c) => c.empresa_id === null);
-  const daEmpresa = campos.filter((c) => c.empresa_id !== null);
+  // Com mais de vinte campos no catálogo, rolar a lista inteira para achar
+  // "Numeração (calçado)" é pior do que digitar "cal".
+  const termo = busca
+    .trim()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
+
+  const combina = (campo: CampoConfigurado) => {
+    if (termo === '') return true;
+    const alvo = [campo.nome_exibicao, ...(campo.opcoes ?? [])]
+      .join(' ')
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '');
+    return alvo.includes(termo);
+  };
+
+  const visiveis = campos.filter(combina);
+  const doSistema = visiveis.filter((c) => c.empresa_id === null);
+  const daEmpresa = visiveis.filter((c) => c.empresa_id !== null);
 
   return (
     <SafeAreaView style={estilos.tela}>
@@ -162,7 +182,21 @@ export default function CamposDeProduto() {
           <Aviso tom="alerta" mensagem="Sua conta está em modo de consulta. As alterações estão bloqueadas." />
         ) : null}
 
-        <Text style={estilos.secao}>Campos disponíveis</Text>
+        <CampoTexto
+          rotulo="Procurar campo"
+          valor={busca}
+          aoMudar={setBusca}
+          placeholder="Ex.: tamanho, cor, garantia"
+        />
+
+        {visiveis.length === 0 ? (
+          <Aviso
+            tom="alerta"
+            mensagem={`Nenhum campo encontrado para "${busca.trim()}". Você pode criar um campo personalizado abaixo.`}
+          />
+        ) : null}
+
+        {doSistema.length > 0 ? <Text style={estilos.secao}>Campos disponíveis</Text> : null}
         {doSistema.map((campo) => (
           <LinhaDeCampo
             key={campo.id}
@@ -265,6 +299,14 @@ function LinhaDeCampo({
         <View style={estilos.linhaTexto}>
           <Text style={estilos.campoNome}>{campo.nome_exibicao}</Text>
           <Text style={estilos.campoTipo}>{tipo}</Text>
+          {/* Sem isto, saber o que tem dentro de "Tamanho (PP a XGG)" exigia
+              ligar o campo e ir até o formulário de produto para olhar. */}
+          {campo.opcoes && campo.opcoes.length > 0 ? (
+            <Text style={estilos.campoOpcoes} numberOfLines={2}>
+              {campo.opcoes.slice(0, 8).join(' · ')}
+              {campo.opcoes.length > 8 ? ` · +${campo.opcoes.length - 8}` : ''}
+            </Text>
+          ) : null}
         </View>
         <Switch
           value={campo.ativo}
@@ -316,6 +358,7 @@ const estilos = StyleSheet.create({
   linhaTexto: { flex: 1, marginRight: tema.espacamento.sm },
   campoNome: { ...tema.tipografia.corpoDestacado, color: tema.cores.texto },
   campoTipo: { ...tema.tipografia.legenda, color: tema.cores.textoSuave, marginTop: 2 },
+  campoOpcoes: { ...tema.tipografia.micro, color: tema.cores.textoSuave, marginTop: 4 },
   obrigatorioRotulo: {
     ...tema.tipografia.legenda,
     color: tema.cores.textoSuave,

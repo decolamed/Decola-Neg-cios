@@ -20,10 +20,14 @@ import { Botao } from '@/componentes/Botao';
 import { CampoTexto } from '@/componentes/CampoTexto';
 import { Checkbox } from '@/componentes/Checkbox';
 import { TelaCarregando, TelaMensagem } from '@/componentes/EstadoDaTela';
+import { Seletor } from '@/componentes/Seletor';
 import { useSessao } from '@/contexto/SessaoContexto';
 import { escolherImagem } from '@/dados/imagensProduto';
 import {
+  ALTURA_DO_BANNER,
   CORES_SUGERIDAS,
+  ENQUADRAMENTOS,
+  LARGURA_DO_BANNER,
   MAXIMO_DE_BANNERS,
   apagarImagemDaLoja,
   corValida,
@@ -32,6 +36,7 @@ import {
   salvarPersonalizacao,
   textoSobre,
   urlDaImagemDaLoja,
+  type Enquadramento,
 } from '@/dados/loja';
 import { Dialogo } from '@/lib/dialogo';
 import { textoDoErro } from '@/lib/erros';
@@ -43,6 +48,7 @@ export default function AparenciaDaLoja() {
   const [logo, setLogo] = useState<string | null>(null);
   const [cor, setCor] = useState<string | null>(null);
   const [banners, setBanners] = useState<BannerDaLoja[]>([]);
+  const [enquadramento, setEnquadramento] = useState<Enquadramento>('centro');
   const [bannersAtivos, setBannersAtivos] = useState(true);
 
   const [erro, setErro] = useState<string | null>(null);
@@ -98,6 +104,7 @@ export default function AparenciaDaLoja() {
           empresaId: conta.empresa.id,
           tipo,
           uriLocal: uri,
+          enquadramento,
         });
 
         if (tipo === 'logo') {
@@ -116,7 +123,7 @@ export default function AparenciaDaLoja() {
         setOcupado(false);
       }
     },
-    [conta, logo, banners, salvar],
+    [conta, logo, banners, enquadramento, salvar],
   );
 
   const removerBanner = useCallback(
@@ -284,6 +291,12 @@ export default function AparenciaDaLoja() {
           Aparecem em cima dos produtos, passando um a um. Bons para promoção, novidade ou horário
           de funcionamento.
         </Text>
+        <Text style={estilos.dica}>
+          O banner da loja tem {LARGURA_DO_BANNER} × {ALTURA_DO_BANNER} pixels (formato deitado,
+          16:7). Não precisa preparar a imagem nesse tamanho: qualquer foto é ajustada
+          automaticamente. O que você escolhe abaixo é QUAL PARTE dela fica, quando ela for mais
+          alta do que o banner.
+        </Text>
 
         <View style={estilos.espaco}>
           <Checkbox marcado={bannersAtivos} aoMudar={setBannersAtivos} bloqueado={!podeAlterar}>
@@ -320,13 +333,22 @@ export default function AparenciaDaLoja() {
             mensagem={`Você chegou ao limite de ${MAXIMO_DE_BANNERS} banners. Remova um para adicionar outro.`}
           />
         ) : (
-          <Botao
-            titulo="Adicionar banner"
-            variante="secundario"
-            aoPressionar={() => void adicionarImagem('banners')}
-            carregando={ocupado}
-            desabilitado={!podeAlterar}
-          />
+          <>
+            <Seletor
+              rotulo="Ao cortar a imagem, manter"
+              opcoes={ENQUADRAMENTOS.map((e) => ({ valor: e.valor, rotulo: e.rotulo }))}
+              selecionado={enquadramento}
+              aoSelecionar={(v) => setEnquadramento((v as Enquadramento) ?? 'centro')}
+              bloqueado={!podeAlterar}
+            />
+            <Botao
+              titulo="Adicionar banner"
+              variante="secundario"
+              aoPressionar={() => void adicionarImagem('banners')}
+              carregando={ocupado}
+              desabilitado={!podeAlterar}
+            />
+          </>
         )}
 
         <View style={estilos.espaco}>

@@ -268,8 +268,23 @@ async function verificarResend(): Promise<Verificacao> {
 // -----------------------------------------------------------------------------
 // Site público
 // -----------------------------------------------------------------------------
+/**
+ * "Respondeu 200" não é a pergunta certa aqui, e a primeira execução desta
+ * função provou isso: o site respondeu 200 exibindo "Em configuração", porque
+ * tinha sido publicado sem `VITE_SUPABASE_URL`. Verde, e nada funcionava.
+ *
+ * O que torna a checagem possível é o Vite substituir `import.meta.env.*` em
+ * tempo de BUILD. Publicado com a variável, o endereço do projeto Supabase
+ * aparece literalmente dentro do bundle; publicado sem ela, não aparece. Então
+ * dá para responder a pergunta real — "este site fala com o nosso banco?" —
+ * baixando o bundle e procurando a referência do projeto.
+ */
 async function verificarSite(): Promise<Verificacao> {
   const base = (Deno.env.get('URL_SITE') ?? 'https://decola.pro').replace(/\/$/, '');
+  const nome = 'Site público (links de e-mail)';
+
+  // A referência do projeto: o "abc123" de https://abc123.supabase.co.
+  const referencia = (Deno.env.get('SUPABASE_URL') ?? '').match(/https:\/\/([^.]+)\./)?.[1] ?? '';
 
   try {
     const resposta = await buscarComPrazo(base, { method: 'GET', redirect: 'follow' });
@@ -277,7 +292,7 @@ async function verificarSite(): Promise<Verificacao> {
     if (!resposta.ok) {
       return {
         chave: 'site',
-        nome: 'Site público (links de e-mail)',
+        nome,
         situacao: 'falha',
         resumo: `${base} respondeu ${resposta.status}.`,
         proximoPasso:
@@ -287,17 +302,53 @@ async function verificarSite(): Promise<Verificacao> {
       };
     }
 
+    const html = await resposta.text();
+    const script = html.match(/src="(\/assets\/[^"]+\.js)"/)?.[1];
+
+    // Sem bundle identificável não dá para afirmar nem negar. Dizer isso é
+    // melhor do que dar um verde que não foi verificado.
+    if (!script || !referencia) {
+      return {
+        chave: 'site',
+        nome,
+        situacao: 'ok',
+        resumo: `${base} está no ar.`,
+        proximoPasso:
+          'Não foi possível inspecionar a publicação para confirmar que o site está conectado ' +
+          'ao Supabase. Abra o endereço e veja se a página inicial carrega os planos.',
+        detalhes: { url: base },
+      };
+    }
+
+    const bundle = await buscarComPrazo(`${base}${script}`, { method: 'GET' });
+    const conectado = bundle.ok && (await bundle.text()).includes(referencia);
+
+    if (!conectado) {
+      return {
+        chave: 'site',
+        nome,
+        situacao: 'falha',
+        resumo: `${base} responde, mas foi publicado SEM as variáveis do Supabase.`,
+        proximoPasso:
+          'O site mostra "Em configuração" e nada funciona nele: nem os planos, nem o cadastro, ' +
+          'nem os links de definir senha, nem as lojas virtuais. Na Vercel, no projeto do site, ' +
+          'defina VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY e publique de novo — as variáveis ' +
+          'entram no código durante a publicação, então mudá-las exige um novo deploy.',
+        detalhes: { url: base, http: resposta.status },
+      };
+    }
+
     return {
       chave: 'site',
-      nome: 'Site público (links de e-mail)',
+      nome,
       situacao: 'ok',
-      resumo: `${base} está no ar.`,
+      resumo: `${base} está no ar e conectado ao Supabase.`,
       detalhes: { url: base },
     };
   } catch {
     return {
       chave: 'site',
-      nome: 'Site público (links de e-mail)',
+      nome,
       situacao: 'falha',
       resumo: `Não foi possível abrir ${base}.`,
       proximoPasso:

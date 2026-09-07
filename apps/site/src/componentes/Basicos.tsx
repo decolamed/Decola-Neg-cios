@@ -6,7 +6,7 @@
  * aparece em mais de uma tela.
  */
 import type { ReactNode } from 'react';
-import { useLocation } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 
 export function Aviso({
   mensagem,
@@ -115,7 +115,10 @@ export function Moldura({ children }: { children: ReactNode }) {
             Loja online feita com <strong>Decola Negócios</strong>
           </>
         ) : (
-          'Decola Negócios — gestão para pequenos e médios negócios.'
+          <>
+            Decola Negócios — gestão para pequenos e médios negócios.{' '}
+            <Link to="/como-funciona">Como funciona e como instalar</Link>
+          </>
         )}
       </footer>
     </>

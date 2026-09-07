@@ -11,6 +11,7 @@ import { Navigate, Route, Routes } from 'react-router-dom';
 import { Aviso, Moldura } from '@/componentes/Basicos';
 import { CONFIGURADO } from '@/lib/supabase';
 import { Cadastro } from '@/paginas/Cadastro';
+import { ComoFunciona } from '@/paginas/ComoFunciona';
 import { Carrinho } from '@/paginas/Carrinho';
 import { Checkout } from '@/paginas/Checkout';
 import { Convite } from '@/paginas/Convite';
@@ -50,6 +51,7 @@ export function App() {
       <Routes>
         <Route path="/" element={<Navigate to="/planos" replace />} />
         <Route path="/planos" element={<Planos />} />
+        <Route path="/como-funciona" element={<ComoFunciona />} />
         <Route path="/cadastro" element={<Cadastro />} />
         <Route path="/pagamento" element={<Pagamento />} />
         <Route path="/pronto" element={<Pronto />} />

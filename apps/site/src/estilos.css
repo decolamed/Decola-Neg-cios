@@ -757,3 +757,327 @@ a.botao {
   color: var(--cor-primaria);
   margin: 0 0 var(--espaco-md);
 }
+
+/* ========================================================= como funciona == */
+
+/* Storyboard: telinha à esquerda, explicação à direita. No celular a telinha
+   vai para cima, porque numa coluna estreita a imagem antes do texto é o que
+   faz a pessoa continuar lendo. */
+.cenas {
+  list-style: none;
+  margin: 0 0 var(--espaco-xl);
+  padding: 0;
+  display: grid;
+  gap: var(--espaco-lg);
+}
+
+.cena {
+  background: var(--cor-fundoCard);
+  border-radius: var(--raio-lg);
+  box-shadow: var(--sombra-card);
+  padding: var(--espaco-lg);
+  display: grid;
+  grid-template-columns: 132px 1fr;
+  gap: var(--espaco-lg);
+  align-items: center;
+}
+
+@media (max-width: 560px) {
+  .cena {
+    grid-template-columns: 1fr;
+    justify-items: center;
+    text-align: center;
+  }
+}
+
+.cena-texto h2 {
+  font-size: var(--fonte-h2-tamanho);
+  margin-bottom: var(--espaco-xs);
+}
+
+.cena-texto p {
+  margin: 0;
+  color: var(--cor-textoSuave);
+}
+
+.cena-numero {
+  display: inline-block;
+  min-width: 26px;
+  height: 26px;
+  line-height: 26px;
+  text-align: center;
+  border-radius: 999px;
+  background: var(--cor-acaoPrimaria);
+  color: var(--cor-textoSobreAcao);
+  font-weight: 700;
+  font-size: var(--fonte-legenda-tamanho);
+  margin-bottom: var(--espaco-xs);
+}
+
+/* ---- a telinha desenhada ---- */
+
+.cena-tela {
+  width: 132px;
+  height: 232px;
+  border-radius: 18px;
+  border: 3px solid var(--cor-primaria);
+  background: var(--cor-fundo);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.cena-topo {
+  background: var(--cor-primaria);
+  color: var(--cor-textoInverso);
+  font-size: 9px;
+  font-weight: 700;
+  padding: 5px 8px;
+  text-align: center;
+}
+
+.cena-corpo {
+  flex: 1;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.cena-linha {
+  background: var(--cor-borda);
+  border-radius: 4px;
+}
+
+.cena-linha.forte {
+  background: var(--cor-primaria);
+  opacity: 0.55;
+}
+
+.cena-marca {
+  width: 46px;
+  height: 46px;
+  border-radius: 12px;
+  background: var(--cor-acaoPrimaria);
+  margin: 10px auto 12px;
+}
+
+.cena-botao {
+  margin-top: auto;
+  height: 16px;
+  border-radius: 6px;
+  background: var(--cor-acaoPrimaria);
+}
+
+.cena-cartoes {
+  display: flex;
+  gap: 5px;
+}
+
+.cena-cartao {
+  flex: 1;
+  height: 30px;
+  border-radius: 6px;
+  background: var(--cor-borda);
+}
+
+.cena-cartao.destaque {
+  background: var(--tom-secundaria);
+  border: 1px solid var(--cor-secundaria);
+}
+
+.cena-grafico {
+  height: 42px;
+  border-radius: 6px;
+  background: linear-gradient(
+    to top,
+    var(--tom-secundaria) 0%,
+    var(--tom-secundaria) 55%,
+    transparent 55%
+  );
+  border-bottom: 2px solid var(--cor-secundaria);
+}
+
+.cena-menu {
+  margin-top: auto;
+  height: 18px;
+  border-radius: 6px;
+  background: var(--cor-bordaSuave);
+  position: relative;
+}
+
+.cena-menu.com-mais::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: -8px;
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  background: var(--cor-acaoPrimaria);
+  transform: translateX(-50%);
+}
+
+.cena-item {
+  height: 20px;
+  border-radius: 6px;
+  background: var(--cor-borda);
+}
+
+.cena-formas {
+  display: flex;
+  gap: 4px;
+}
+
+.cena-formas span {
+  flex: 1;
+  height: 20px;
+  border-radius: 5px;
+  background: var(--cor-bordaSuave);
+}
+
+.cena-formas span.ativa {
+  background: var(--tom-secundaria);
+  border: 1px solid var(--cor-secundaria);
+}
+
+/* Quadriculado de QR sem imagem: dois gradientes cruzados bastam para a
+   pessoa reconhecer a forma. */
+.cena-qr {
+  width: 62px;
+  height: 62px;
+  margin: 2px auto;
+  background-color: var(--cor-superficie);
+  background-image:
+    repeating-linear-gradient(0deg, var(--cor-primaria) 0 5px, transparent 5px 10px),
+    repeating-linear-gradient(90deg, var(--cor-primaria) 0 5px, transparent 5px 10px);
+  border: 2px solid var(--cor-primaria);
+}
+
+.cena-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.cena-chips span {
+  width: 22px;
+  height: 14px;
+  border-radius: 999px;
+  background: var(--cor-bordaSuave);
+}
+
+.cena-chips span.ativa {
+  background: var(--cor-primaria);
+}
+
+.cena-banner {
+  height: 34px;
+  border-radius: 6px;
+  background: var(--cor-acaoPrimaria);
+}
+
+.cena-vitrine {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 5px;
+}
+
+.cena-vitrine span {
+  height: 40px;
+  border-radius: 6px;
+  background: var(--cor-borda);
+}
+
+.cena-passos {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.cena-passos span {
+  flex: 1;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--cor-bordaSuave);
+}
+
+.cena-passos span.feito {
+  background: var(--cor-secundaria);
+}
+
+.cena-passos span.atual {
+  background: var(--cor-acaoPrimaria);
+}
+
+.cena-pessoa {
+  height: 26px;
+  border-radius: 6px;
+  background: var(--cor-borda);
+  position: relative;
+}
+
+.cena-pessoa::before {
+  content: '';
+  position: absolute;
+  left: 6px;
+  top: 5px;
+  width: 16px;
+  height: 16px;
+  border-radius: 999px;
+  background: var(--cor-bordaSuave);
+}
+
+/* ---- instalação ---- */
+
+.secao-instalar {
+  margin-top: var(--espaco-xl);
+}
+
+.instalar-intro {
+  margin: var(--espaco-sm) 0 var(--espaco-md);
+}
+
+.instalar {
+  background: var(--cor-fundoCard);
+  border-radius: var(--raio-lg);
+  box-shadow: var(--sombra-card);
+  padding: var(--espaco-md) var(--espaco-lg);
+  margin-bottom: var(--espaco-sm);
+}
+
+.instalar summary {
+  cursor: pointer;
+  font-weight: 700;
+  min-height: 32px;
+  display: flex;
+  align-items: center;
+  gap: var(--espaco-sm);
+}
+
+.instalar .marcador {
+  font-size: var(--fonte-legenda-tamanho);
+  font-weight: 400;
+  background: var(--tom-secundaria);
+  color: var(--cor-primaria);
+  border-radius: 999px;
+  padding: 2px 10px;
+}
+
+.passos {
+  margin: var(--espaco-md) 0 var(--espaco-xs);
+  padding-left: var(--espaco-lg);
+  display: grid;
+  gap: var(--espaco-sm);
+  color: var(--cor-textoSuave);
+}
+
+.acoes-finais {
+  margin-top: var(--espaco-xl);
+  display: grid;
+  gap: var(--espaco-sm);
+}
+
+.acoes-finais p {
+  margin: 0;
+}

@@ -33,9 +33,12 @@ export function Pronto() {
           </a>
         </div>
 
+        {/* O momento em que a pessoa mais precisa disto é agora: acabou de
+            pagar, ainda não viu nada e vai fechar a aba. */}
         <p className="legenda" style={{ marginTop: 'var(--espaco-md)' }}>
-          Dica: no celular, use “Adicionar à tela de início” pelo menu do navegador. O aplicativo
-          fica com ícone próprio, como se tivesse sido instalado.
+          Primeira vez por aqui?{' '}
+          <Link to="/como-funciona">Veja como o aplicativo funciona</Link> e como deixar o ícone
+          dele na tela do seu celular — leva dois minutos.
         </p>
       </div>
 

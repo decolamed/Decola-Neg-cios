@@ -95,8 +95,27 @@ export type Empresa = {
   loja_descricao: string | null;
   /** Horas que um pedido em aberto segura estoque. Nulo = reserva não expira. */
   reserva_horas: number | null;
+
+  // -- Personalização da vitrine (0043) ------------------------------------
+  /** Nome exibido na loja. Nulo significa usar `nome`. */
+  loja_nome: string | null;
+  /** Cor de destaque em #RRGGBB. Nula significa a cor da plataforma. */
+  loja_cor: string | null;
+  /** Banners do carrossel, em ordem. Caminhos no bucket `loja`. */
+  loja_banners: BannerDaLoja[];
+  /** Interruptor do carrossel, separado da lista: desligar não apaga. */
+  loja_banners_ativos: boolean;
+
   criado_em: string;
   atualizado_em: string;
+};
+
+/** Um banner do carrossel da vitrine (0043). */
+export type BannerDaLoja = {
+  /** Caminho no bucket `loja`, nunca URL. */
+  caminho: string;
+  /** Para onde o banner leva ao ser tocado. Ausente = não é clicável. */
+  link?: string;
 };
 
 export type Usuario = {
@@ -413,6 +432,13 @@ export type VitrineLojaRow = {
   endereco: string | null;
   /** Só o fato de existir chave Pix; a chave em si não sai daqui. */
   aceita_pix: boolean;
+  /** Cor de destaque escolhida pelo lojista (0043). */
+  loja_cor: string | null;
+  /**
+   * Banners a exibir. Já vem vazio quando o carrossel está desligado — quem
+   * desenha a página só precisa saber o que mostrar, não conferir bandeira.
+   */
+  banners: BannerDaLoja[];
 };
 
 /** View `vitrine_produtos` (0032) — a superfície pública do catálogo. */

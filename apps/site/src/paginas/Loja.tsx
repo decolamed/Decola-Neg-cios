@@ -8,7 +8,13 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { Aviso, Carregando } from '@/componentes/Basicos';
-import { BarraDoCarrinho, CapaDoProduto, CabecalhoDaLoja } from '@/componentes/Loja';
+import {
+  BarraDoCarrinho,
+  CabecalhoDaLoja,
+  CapaDoProduto,
+  CarrosselDaLoja,
+  CoresDaLoja,
+} from '@/componentes/Loja';
 import { adicionarAoCarrinho, totalDeItens } from '@/dados/carrinho';
 import { carregarLoja, listarProdutos, moeda, type Loja as TipoLoja, type ProdutoVitrine } from '@/dados/loja';
 
@@ -88,9 +94,10 @@ export function Loja() {
   const { loja, produtos } = estado;
 
   return (
-    <>
+    <CoresDaLoja loja={loja}>
       <main className="pagina com-barra">
         <CabecalhoDaLoja loja={loja} />
+        <CarrosselDaLoja loja={loja} />
 
         {produtos.length === 0 ? (
           <div className="card">
@@ -120,6 +127,6 @@ export function Loja() {
       </main>
 
       <BarraDoCarrinho slug={slug} quantidade={noCarrinho} />
-    </>
+    </CoresDaLoja>
   );
 }

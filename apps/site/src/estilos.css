@@ -228,6 +228,15 @@ a {
   background: var(--cor-acao-pressionada);
 }
 
+/* Dentro da vitrine, o botão veste a cor do lojista. Fora dela `--cor-loja`
+   não existe e tudo segue como antes. */
+.loja-carrossel ~ * .botao,
+.pagina.com-barra .botao,
+.barra-carrinho .botao {
+  background: var(--cor-loja, var(--cor-acaoPrimaria));
+  color: var(--cor-sobre-loja, var(--cor-textoSobreAcao));
+}
+
 /* O mesmo botão, quando é um link de verdade — caso do "Abrir o Decola
    Negócios", que sai deste site para o aplicativo e por isso precisa ser <a>. */
 a.botao {
@@ -350,11 +359,79 @@ a.botao {
   padding-bottom: 96px;
 }
 
+/* ------------------------------------------------ personalização da loja --
+ *
+ * `--cor-loja` é definida em linha pelo componente `CoresDaLoja`, só quando o
+ * lojista escolheu uma. O `var(..., padrão)` faz cada regra continuar valendo
+ * sem ela — nenhuma loja fica sem cor por não ter personalizado.
+ *
+ * `--cor-sobre-loja` vem calculada da luminância, no JS: é o que garante que
+ * uma cor clara receba texto escuro. Contraste não é escolha do lojista.
+ */
+
 .loja-cabecalho {
   display: flex;
   gap: var(--espaco-md);
   align-items: center;
   margin-bottom: var(--espaco-lg);
+}
+
+.loja-cabecalho h1 {
+  color: var(--cor-loja, var(--cor-primaria));
+}
+
+/* Carrossel: proporção fixa para a página não pular enquanto a imagem carrega
+   nem mudar de altura quando os banners trocam. */
+.loja-carrossel {
+  position: relative;
+  margin-bottom: var(--espaco-lg);
+  border-radius: var(--raio-lg);
+  overflow: hidden;
+  background: var(--cor-fundoCampo);
+}
+
+.loja-banner {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 7;
+  object-fit: cover;
+}
+
+.loja-carrossel-pontos {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: var(--espaco-sm);
+  display: flex;
+  justify-content: center;
+  gap: var(--espaco-xs);
+}
+
+/* Alvo de toque de 24px com ponto de 8px: o ponto precisa ser discreto, o
+   alvo não pode ser. */
+.loja-carrossel-pontos .ponto {
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+}
+
+.loja-carrossel-pontos .ponto::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.55);
+  box-shadow: 0 0 3px rgba(0, 0, 0, 0.45);
+}
+
+.loja-carrossel-pontos .ponto.ativo::before {
+  background: #fff;
+  transform: scale(1.25);
 }
 
 .loja-logo {
@@ -415,14 +492,17 @@ a.botao {
   margin-bottom: var(--espaco-md);
 }
 
+/* Produto sem foto vira um bloco com a inicial. Ele veste a cor do lojista:
+   um azul-Decola no meio de uma loja vermelha denunciaria a plataforma
+   justamente onde a página deveria ser dele. */
 .produto-capa.sem-imagem {
   display: flex;
   align-items: center;
   justify-content: center;
   font-family: var(--familia-titulo);
   font-size: 40px;
-  color: var(--cor-textoInverso);
-  background: var(--cor-primaria);
+  color: var(--cor-sobre-loja, var(--cor-textoInverso));
+  background: var(--cor-loja, var(--cor-primaria));
 }
 
 .produto-nome {

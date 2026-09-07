@@ -5,11 +5,20 @@
  * `empresas_edicao` já exige Gestor, e não há regra composta a revalidar —
  * ligar a loja é gravar uma coluna.
  *
- * O que NÃO está aqui, de propósito: logo, endereço, telefone e chave Pix já
- * existem em "Dados da empresa" e alimentam a vitrine de lá. Repetir os campos
- * criaria dois lugares para editar a mesma coisa.
+ * O que NÃO está aqui, de propósito: endereço, telefone e chave Pix já existem
+ * em "Dados da empresa" e alimentam a vitrine de lá. Repetir os campos criaria
+ * dois lugares para editar a mesma coisa.
+ *
+ * A LOGO é a exceção, e a exceção tem razão: ela deixou de ser um dado
+ * cadastral e virou a cara da vitrine, ao lado do nome, da cor e dos banners.
+ * Quem está escolhendo como a loja se parece precisa vê-la ali, não em outra
+ * tela. `empresas.logo_url` continua sendo a mesma coluna — o que mudou é onde
+ * se decide sobre ela.
  */
-import type { Empresa } from '@decola/types';
+import { decode } from 'base64-arraybuffer';
+import * as FileSystem from 'expo-file-system';
+import * as ImageManipulator from 'expo-image-manipulator';
+import type { BannerDaLoja, Empresa } from '@decola/types';
 import { supabase } from '@/lib/supabase';
 import { exigirConexao } from '@/lib/conectividade';
 import { mensagemDeErro } from '@/lib/erros';
@@ -21,6 +30,170 @@ export type ConfiguracaoDaLoja = {
   loja_descricao: string | null;
   reserva_horas: number | null;
 };
+
+/**
+ * A cara da loja — o que o cliente do lojista vê antes de ler qualquer coisa.
+ *
+ * Separado de `ConfiguracaoDaLoja` porque são decisões de naturezas
+ * diferentes: aquela define SE a loja existe e como ela funciona; esta define
+ * como ela se parece. Salvar uma não deveria exigir mexer na outra.
+ */
+export type PersonalizacaoDaLoja = {
+  loja_nome: string | null;
+  logo_url: string | null;
+  loja_cor: string | null;
+  loja_banners: BannerDaLoja[];
+  loja_banners_ativos: boolean;
+};
+
+export const MAXIMO_DE_BANNERS = 5;
+
+const BUCKET = 'loja';
+
+/** Caminho → URL pública. Guardamos caminho, nunca URL (ver 0043). */
+export function urlDaImagemDaLoja(caminho: string): string {
+  if (/^https?:\/\//.test(caminho)) return caminho;
+  return supabase.storage.from(BUCKET).getPublicUrl(caminho).data.publicUrl;
+}
+
+/**
+ * Sobe uma imagem da loja e devolve o CAMINHO.
+ *
+ * Logo e banner têm proporções muito diferentes — uma é quadrada e pequena, o
+ * outro é largo e ocupa a primeira dobra —, então o lado máximo muda conforme
+ * o uso. Redimensionar não é enfeite: foto de celular passa dos 5 MB que o
+ * bucket aceita, e a vitrine é aberta no 4G pelo cliente do lojista.
+ */
+export async function enviarImagemDaLoja(params: {
+  empresaId: string;
+  tipo: 'logo' | 'banners';
+  uriLocal: string;
+}): Promise<string> {
+  await exigirConexao();
+
+  const lado = params.tipo === 'logo' ? 512 : 1400;
+  const reduzida = await ImageManipulator.manipulateAsync(
+    params.uriLocal,
+    [{ resize: { width: lado } }],
+    { compress: 0.85, format: ImageManipulator.SaveFormat.JPEG },
+  );
+
+  const base64 = await FileSystem.readAsStringAsync(reduzida.uri, {
+    encoding: FileSystem.EncodingType.Base64,
+  });
+
+  const nome = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}.jpg`;
+  const caminho = `${params.empresaId}/${params.tipo}/${nome}`;
+
+  const { error } = await supabase.storage.from(BUCKET).upload(caminho, decode(base64), {
+    contentType: 'image/jpeg',
+    upsert: false,
+  });
+
+  if (error) {
+    const texto = error.message.toLowerCase();
+    if (texto.includes('row-level security') || texto.includes('unauthorized')) {
+      throw new Error('Só o Gestor pode alterar a aparência da loja.');
+    }
+    if (texto.includes('exceeded') || texto.includes('too large')) {
+      throw new Error('Esta imagem é grande demais. Tente outra.');
+    }
+    throw new Error(mensagemDeErro(error));
+  }
+
+  return caminho;
+}
+
+/**
+ * Apaga o arquivo do bucket.
+ *
+ * Falha aqui não interrompe quem chama: o que a vitrine mostra é a lista
+ * gravada em `empresas`. Arquivo órfão custa alguns KB; travar a remoção
+ * porque o Storage recusou custa o lojista não conseguir tirar do ar um banner
+ * errado.
+ */
+export async function apagarImagemDaLoja(caminho: string): Promise<void> {
+  if (/^https?:\/\//.test(caminho)) return;
+  const { error } = await supabase.storage.from(BUCKET).remove([caminho]);
+  if (error) console.warn('[loja] arquivo não removido:', error.message);
+}
+
+/** Sugestões prontas: escolher de uma paleta é mais fácil do que digitar hex. */
+export const CORES_SUGERIDAS = [
+  { nome: 'Azul Decola', valor: '#01395E' },
+  { nome: 'Vermelho', valor: '#C0392B' },
+  { nome: 'Laranja', valor: '#F47A20' },
+  { nome: 'Verde', valor: '#1E8449' },
+  { nome: 'Roxo', valor: '#6C3483' },
+  { nome: 'Rosa', valor: '#C2185B' },
+  { nome: 'Turquesa', valor: '#117A65' },
+  { nome: 'Grafite', valor: '#2C3E50' },
+] as const;
+
+export function corValida(valor: string): boolean {
+  return /^#[0-9A-Fa-f]{6}$/.test(valor.trim());
+}
+
+/**
+ * Texto legível sobre uma cor de fundo, decidido pela luminância.
+ *
+ * Existe para que o lojista não precise escolher isto. Ele escolhe a cor da
+ * fachada dele; amarelo recebe texto escuro e azul-marinho recebe texto claro
+ * sem que ninguém tenha de pensar no assunto — e sem que uma escolha inocente
+ * produza uma vitrine ilegível.
+ *
+ * Coeficientes da recomendação de luminância relativa da W3C.
+ */
+export function textoSobre(cor: string): string {
+  const hex = cor.replace('#', '');
+  const r = parseInt(hex.slice(0, 2), 16) / 255;
+  const g = parseInt(hex.slice(2, 4), 16) / 255;
+  const b = parseInt(hex.slice(4, 6), 16) / 255;
+  const luminancia = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  return luminancia > 0.6 ? '#01395E' : '#FFFFFF';
+}
+
+export function extrairPersonalizacao(empresa: Empresa): PersonalizacaoDaLoja {
+  return {
+    loja_nome: empresa.loja_nome,
+    logo_url: empresa.logo_url,
+    loja_cor: empresa.loja_cor,
+    loja_banners: Array.isArray(empresa.loja_banners) ? empresa.loja_banners : [],
+    loja_banners_ativos: empresa.loja_banners_ativos,
+  };
+}
+
+export async function salvarPersonalizacao(
+  empresaId: string,
+  dados: PersonalizacaoDaLoja,
+): Promise<void> {
+  await exigirConexao();
+
+  const { error } = await supabase
+    .from('empresas')
+    .update({
+      loja_nome: dados.loja_nome?.trim() || null,
+      logo_url: dados.logo_url,
+      loja_cor: dados.loja_cor,
+      loja_banners: dados.loja_banners,
+      loja_banners_ativos: dados.loja_banners_ativos,
+    })
+    .eq('id', empresaId);
+
+  if (error) {
+    const texto = error.message.toLowerCase();
+    if (texto.includes('empresas_loja_cor_formato')) {
+      throw new Error('A cor precisa estar no formato #RRGGBB.');
+    }
+    if (texto.includes('empresas_loja_banners_formato')) {
+      throw new Error(`A loja aceita no máximo ${MAXIMO_DE_BANNERS} banners.`);
+    }
+    if (texto.includes('empresas_loja_nome_nao_vazio')) {
+      throw new Error('O nome da loja não pode ficar em branco. Deixe vazio para usar o nome da empresa.');
+    }
+    throw new Error(mensagemDeErro(error));
+  }
+}
 
 /**
  * Converte um nome em endereço de loja.

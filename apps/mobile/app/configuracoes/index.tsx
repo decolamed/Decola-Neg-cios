@@ -81,6 +81,14 @@ export default function Configuracoes() {
       disponivel: true,
     },
     {
+      titulo: 'Aparência da loja',
+      descricao: 'Nome, logo, cor e banners que seus clientes veem na vitrine.',
+      destino: '/configuracoes/aparencia-da-loja',
+      icone: 'produtos',
+      cor: tema.cores.destaque,
+      disponivel: true,
+    },
+    {
       titulo: 'Funcionários e permissões',
       descricao: 'Convide colaboradores e defina o que cada um pode fazer.',
       destino: '/funcionarios',

@@ -333,7 +333,7 @@ export default function DetalhesDoProduto() {
             <Botao
               titulo="Editar produto"
               variante="secundario"
-              aoPressionar={() => router.push(`/produtos/${produto.id}/editar`)}
+              aoPressionar={() => router.push(`/produtos/editar/${produto.id}`)}
               estilo={{ marginTop: tema.espacamento.md }}
             />
             <Botao
@@ -343,7 +343,7 @@ export default function DetalhesDoProduto() {
                   : 'Adicionar fotos'
               }
               variante="secundario"
-              aoPressionar={() => router.push(`/produtos/${produto.id}/fotos`)}
+              aoPressionar={() => router.push(`/produtos/fotos/${produto.id}`)}
             />
           </>
         ) : null}

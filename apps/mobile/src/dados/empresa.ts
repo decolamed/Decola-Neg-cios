@@ -36,9 +36,30 @@ export type ContextoDaConta = {
  * mensagem explicativa e encerramento da sessão.
  */
 export async function carregarContextoDaConta(): Promise<ContextoDaConta | null> {
+  /**
+   * O FILTRO POR `usuario_id` NÃO É REDUNDANTE.
+   *
+   * A consulta antes dizia só `status = 'ativo'` e confiava na RLS para
+   * devolver apenas o vínculo de quem perguntou. Isso vale para um lojista —
+   * mas NÃO para o administrador da plataforma, que por desenho enxerga os
+   * vínculos de todas as empresas (é disso que o painel do SaaS vive).
+   *
+   * O resultado era que o administrador abria o aplicativo e recebia o vínculo
+   * de OUTRA PESSOA: virava "gestor" da primeira empresa da lista, entrava no
+   * painel do cliente e travava na abertura, porque o banco recusava tudo o
+   * que a tela pedia em seguida.
+   *
+   * "Qual é a minha empresa" é uma pergunta que precisa dizer de quem — a RLS
+   * responde "o que você pode ver", que é outra coisa.
+   */
+  const { data: sessao } = await supabase.auth.getUser();
+  const usuarioId = sessao.user?.id;
+  if (!usuarioId) return null;
+
   const { data: linhaVinculo, error: erroVinculo } = await supabase
     .from('empresa_usuarios')
     .select('*, usuarios(*)')
+    .eq('usuario_id', usuarioId)
     .eq('status', 'ativo')
     .maybeSingle();
 

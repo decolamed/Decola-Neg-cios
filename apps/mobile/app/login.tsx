@@ -19,6 +19,7 @@ import { Marca, AssinaturaDecola } from '@/componentes/Marca';
 import {
   AVISO_SEM_EMPRESA,
   ERRO_ENTRAR_GENERICO,
+  ehAdministradorDaPlataforma,
   emailValido,
   entrarComGoogle,
   entrarComSenha,
@@ -58,6 +59,18 @@ export default function Login() {
 
     if (conta) {
       router.replace(destinoDaConta(conta));
+      return;
+    }
+
+    /**
+     * Administrador da plataforma não tem empresa — e entrar por aqui é
+     * normal: o aplicativo e o painel dividem o mesmo endereço e a mesma
+     * sessão, e quem instalou o atalho de `/app` no celular chega sempre por
+     * esta tela. Sem esta pergunta ele caía no `sair()` lá embaixo e lia que
+     * não estava vinculado a nenhuma empresa — o que é verdade e é inútil.
+     */
+    if (Platform.OS === 'web' && (await ehAdministradorDaPlataforma())) {
+      window.location.replace('/');
       return;
     }
 

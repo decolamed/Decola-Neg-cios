@@ -27,13 +27,13 @@ colar de novo no painel.
 
 ## Sem estes três ajustes, o template bonito não resolve
 
-1. **Site URL** (Authentication → URL Configuration) = `https://decola.pro`.
+1. **Site URL** (Authentication → URL Configuration) = `https://decolanegocios.vercel.app`.
    É a base dos links. Enquanto for `http://localhost:3000`, o botão do e-mail
    leva a pessoa a uma página que não existe no computador dela — o link fica
    bonito e continua quebrado.
 
 2. **Redirect URLs**, na mesma tela:
-   - `https://decola.pro/**`
+   - `https://decolanegocios.vercel.app/**`
    - `decolanegocios://redefinir-senha`
 
    O primeiro cobre o site; o segundo, quem abre pelo aplicativo.

@@ -285,13 +285,33 @@ reenviado depois:
   (`decolanegocios://convite/<id>`), que funciona no dispositivo mas é
   bloqueado por vários webmails. O ideal é uma página web que redirecione.
 
-### O domínio
+### Os dois domínios, e por que não é um só
 
-`decola.pro` é o domínio dos dois produtos, e o Negócios envia de
-`negocios@decola.pro`. Antes dele o envio saía de `decolamed.online`, o domínio
-da Decola Med — o que funcionava, mas misturava numa reputação de envio só duas
-operações que não têm relação entre si. Com domínio próprio, um problema de
-entrega de um produto não contamina o outro.
+Há uma divisão deliberada aqui, e vale entendê-la antes de "simplificar":
+
+| | Domínio | Onde aparece |
+|---|---|---|
+| **Envio de e-mail** | `decola.pro` | Só no remetente: `negocios@decola.pro` |
+| **Site público** | `decolanegocios.vercel.app` | Links de loja, de plano, de definir senha |
+
+A razão é o que acontece quando um domínio comprado não é renovado. Endereço de
+loja é link que o lojista imprime no balcão, cola na bio do Instagram e manda no
+WhatsApp dos clientes dele; link de plano é link que fica salvo numa conversa
+até a pessoa decidir. Se o domínio vence, todos eles viram erro de uma vez — e
+quem sofre não é a plataforma, é o cliente do cliente.
+
+Remetente de e-mail não tem esse problema: o link dentro do e-mail é clicado em
+minutos e expira sozinho. Se um dia o domínio mudar, basta trocar o remetente;
+nenhum link antigo dependia dele.
+
+O domínio da Vercel, em troca, não vence nem exige renovação, e continua
+respondendo mesmo depois de um domínio próprio ser apontado para o projeto —
+ou seja, adotar `decola.pro` no site mais tarde é aditivo, não substitui.
+
+Sobre a escolha de `decola.pro` para o envio: antes dele o e-mail saía de
+`decolamed.online`, o domínio da Decola Med — o que funcionava, mas misturava
+numa reputação de envio só duas operações que não têm relação entre si. Com
+domínio próprio, um problema de entrega de um produto não contamina o outro.
 
 Um endereço por produto no mesmo domínio, e não um subdomínio por produto: a
 reputação segue sendo do domínio, e mantê-la única concentra o volume — o que
@@ -403,15 +423,21 @@ sessão criada primeiro, a RPC seguinte rodaria como anônimo e seria recusada.
 ### Deploy
 
 É um **segundo projeto na Vercel**, separado do painel — domínios diferentes e
-públicos diferentes: `decola.pro` é a porta do cliente, o painel é interno e
-marcado `noindex`. Não confundir com os projetos duplicados que já existiram:
-ali eram três projetos para a mesma coisa.
+públicos diferentes: o site é a porta do cliente, o painel é interno e marcado
+`noindex`. Não confundir com os projetos duplicados que já existiram: ali eram
+três projetos para a mesma coisa. Aqui são duas aplicações que se constroem de
+pastas diferentes e têm regras opostas de indexação — a Vercel só aceita uma
+pasta raiz e um build por projeto.
 
-| Ajuste | Valor |
-|---|---|
-| Root Directory | `apps/site` |
-| Production Branch | `main` |
-| Domínio | `decola.pro` |
+O nome do projeto na Vercel define o domínio, então ele não é detalhe: é o
+endereço que vai dentro dos links de loja dos clientes.
+
+| Ajuste | Site | Painel |
+|---|---|---|
+| Nome do projeto | `decolanegocios` | `decolanegocios-painel` |
+| Root Directory | `apps/site` | raiz do repositório |
+| Production Branch | `main` | `main` |
+| Domínio | `decolanegocios.vercel.app` | `decolanegocios-painel.vercel.app` |
 
 A configuração de build vem de `apps/site/vercel.json`, que a Vercel lê por
 estar no Root Directory do projeto. Variáveis: `VITE_SUPABASE_URL` e
@@ -421,11 +447,15 @@ estar no Root Directory do projeto. Variáveis: `VITE_SUPABASE_URL` e
 
 Com ele publicado, três variáveis deixam de cair no esquema do app:
 
-- `VITE_URL_CADASTRO` no **painel** → `https://decola.pro`, e o link de plano
-  vira `https://decola.pro/cadastro?plano=<slug>`, clicável em qualquer lugar.
-- `URL_APP_BASE` na Edge Function `admin-criar-empresa` → `https://decola.pro`.
+- `VITE_URL_SITE` no **painel** → `https://decolanegocios.vercel.app`, e o link
+  de plano vira `.../cadastro?plano=<slug>`, clicável em qualquer lugar. O nome
+  antigo `VITE_URL_CADASTRO` continua sendo aceito.
+- `EXPO_PUBLIC_URL_SITE` no **app** → mesma base, usada no link da loja virtual
+  que o lojista compartilha.
+- `URL_SITE` nas **Edge Functions** → mesma base, usada nos links dos e-mails.
+- `URL_APP_BASE` na Edge Function `admin-criar-empresa` → mesma base.
 - `URL_CONVITE_BASE` na Edge Function `enviar-convite` →
-  `https://decola.pro/convite`. Sem ela o convite sai no esquema do app, que
+  `https://decolanegocios.vercel.app/convite`. Sem ela o convite sai no esquema do app, que
   vários webmails bloqueiam — e o convidado é justamente quem ainda não tem o
   aplicativo instalado.
 

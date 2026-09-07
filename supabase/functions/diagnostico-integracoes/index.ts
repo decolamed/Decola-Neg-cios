@@ -280,7 +280,7 @@ async function verificarResend(): Promise<Verificacao> {
  * baixando o bundle e procurando a referência do projeto.
  */
 async function verificarSite(): Promise<Verificacao> {
-  const base = (Deno.env.get('URL_SITE') ?? 'https://decola.pro').replace(/\/$/, '');
+  const base = (Deno.env.get('URL_SITE') ?? 'https://decolanegocios.vercel.app').replace(/\/$/, '');
   const nome = 'Site público (links de e-mail)';
 
   // A referência do projeto: o "abc123" de https://abc123.supabase.co.

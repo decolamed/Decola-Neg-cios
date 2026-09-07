@@ -177,8 +177,9 @@ export type ResultadoCriacao = {
  * spam, expira, ou a conta é criada antes de o responsável existir de fato.
  * Sem um reenvio pelo painel, a única saída era mexer no Supabase.
  *
- * O destino é o site (`decola.pro/definir-senha`), não o app: quem recebe é
- * dono de loja e pode não ter instalado nada ainda.
+ * O destino é a página `/definir-senha` do site, não o app: quem recebe é dono
+ * de loja e pode não ter instalado nada ainda. Qual site é decidido pelo
+ * secret `URL_SITE` da Edge Function, não aqui.
  */
 export async function reenviarAcesso(email: string): Promise<void> {
   const resposta = await fetch(`${URL_FUNCOES}/enviar-acesso`, {

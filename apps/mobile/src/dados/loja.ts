@@ -109,8 +109,25 @@ export async function contarProdutosNaVitrine(empresaId: string): Promise<number
   return count ?? 0;
 }
 
-export const BASE_DA_LOJA = 'https://decola.pro/loja';
+/**
+ * Onde o site público mora — e, portanto, onde as lojas dos clientes moram.
+ *
+ * É o domínio da Vercel de propósito, e não um domínio comprado. Este endereço
+ * vai para dentro de link que o lojista imprime, salva e manda no WhatsApp:
+ * ele precisa durar mais do que uma renovação anual. `decola.pro` é usado
+ * SOMENTE como remetente de e-mail, onde o link é clicado em minutos e expira
+ * sozinho — lá, um domínio que muda não deixa cliente na mão.
+ *
+ * `EXPO_PUBLIC_URL_SITE` existe para apontar a um ambiente de teste sem
+ * recompilar a decisão; sem ela vale a produção.
+ */
+export const URL_DO_SITE = (
+  process.env.EXPO_PUBLIC_URL_SITE ?? 'https://decolanegocios.vercel.app'
+).replace(/\/$/, '');
+
+/** Só o miolo do endereço, para a tela mostrar sem o "https://" na frente. */
+export const BASE_DA_LOJA_VISIVEL = `${URL_DO_SITE.replace(/^https?:\/\//, '')}/loja`;
 
 export function enderecoCompleto(slug: string): string {
-  return `${BASE_DA_LOJA}/${slug}`;
+  return `${URL_DO_SITE}/loja/${slug}`;
 }

@@ -24,6 +24,7 @@ import { Checkbox } from '@/componentes/Checkbox';
 import { TelaCarregando, TelaMensagem } from '@/componentes/EstadoDaTela';
 import { useSessao } from '@/contexto/SessaoContexto';
 import {
+  BASE_DA_LOJA_VISIVEL,
   contarProdutosNaVitrine,
   enderecoCompleto,
   enderecoValido,
@@ -137,7 +138,7 @@ export default function ConfiguracoesDaLoja() {
         <Text style={estilos.dica}>
           Sua loja ficará em {'\n'}
           <Text style={estilos.link}>
-            decola.pro/loja/{endereco || 'sua-loja'}
+            {BASE_DA_LOJA_VISIVEL}/{endereco || 'sua-loja'}
           </Text>
         </Text>
 

@@ -6,13 +6,22 @@
  * arquivos é como duas delas continuam apontando para o domínio antigo depois
  * de uma troca.
  *
- * `VITE_URL_CADASTRO` sobrepõe quando o site vive em outro domínio (um
- * ambiente de homologação, por exemplo).
+ * O padrão é o domínio da Vercel, e não um domínio comprado. Estes endereços
+ * entram em link que o cliente salva e reusa — link de plano que você manda a
+ * um interessado, link de loja que o lojista imprime. Um domínio anual que
+ * vence transforma todos eles em erro de uma vez. `decola.pro` fica só no
+ * remetente dos e-mails, onde o link é clicado em minutos e expira sozinho.
+ *
+ * `VITE_URL_SITE` sobrepõe (homologação, ou um domínio próprio no futuro);
+ * `VITE_URL_CADASTRO` continua sendo lida pelo nome antigo, para uma
+ * publicação existente não perder a configuração ao atualizar.
  */
-const PADRAO = 'https://decola.pro';
+const PADRAO = 'https://decolanegocios.vercel.app';
 
 export const URL_DO_SITE: string =
-  import.meta.env.VITE_URL_CADASTRO?.trim().replace(/\/$/, '') || PADRAO;
+  import.meta.env.VITE_URL_SITE?.trim().replace(/\/$/, '') ||
+  import.meta.env.VITE_URL_CADASTRO?.trim().replace(/\/$/, '') ||
+  PADRAO;
 
 /** Página de contratação com o plano já escolhido. */
 export function linkDeContratacao(slug: string): string {

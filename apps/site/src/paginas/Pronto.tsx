@@ -1,28 +1,42 @@
 /**
- * Fim da contratação com trial (Seção 6.2).
+ * Fim da contratação (Seção 6.2).
  *
- * Sem pagamento a fazer, a conta já está liberada — mas o produto é um
- * aplicativo de celular, e é aqui que a pessoa descobre isso. Terminar o
- * cadastro sem dizer para onde ir deixaria o cliente parado numa página em
- * branco com a conta paga.
+ * Esta tela mandava baixar o aplicativo numa loja de aplicativos — onde ele
+ * nunca esteve. Quem terminava o cadastro ficava com a conta criada e nenhum
+ * lugar para usá-la, que era o furo mais caro do produto: o cliente pagava e
+ * não entrava.
+ *
+ * O aplicativo agora roda no navegador, publicado junto deste site em `/app`.
+ * Um clique, sem instalar nada.
  */
 import { Link } from 'react-router-dom';
+import { LINK_DO_APP } from '@/componentes/Basicos';
 
 export function Pronto() {
   return (
     <main className="pagina estreita">
       <div className="cabecalho-pagina">
         <h1>Conta criada</h1>
-        <p>Seu período de teste começou. Agora é só entrar pelo aplicativo.</p>
+        <p>Seu período de teste começou. Já pode entrar.</p>
       </div>
 
       <div className="card">
-        <h2>Como entrar</h2>
-        <ol className="legenda" style={{ lineHeight: 1.8 }}>
-          <li>Baixe o Decola Negócios na loja de aplicativos do seu celular.</li>
-          <li>Toque em “Entrar”.</li>
-          <li>Use o mesmo e-mail e a mesma senha que você acabou de cadastrar.</li>
-        </ol>
+        <h2>Entrar agora</h2>
+        <p>
+          Use o mesmo e-mail e a mesma senha que você acabou de cadastrar. Não precisa instalar
+          nada — o Decola Negócios abre no navegador, no celular ou no computador.
+        </p>
+
+        <div className="acoes" style={{ marginTop: 'var(--espaco-md)' }}>
+          <a className="botao" href={LINK_DO_APP}>
+            Abrir o Decola Negócios
+          </a>
+        </div>
+
+        <p className="legenda" style={{ marginTop: 'var(--espaco-md)' }}>
+          Dica: no celular, use “Adicionar à tela de início” pelo menu do navegador. O aplicativo
+          fica com ícone próprio, como se tivesse sido instalado.
+        </p>
       </div>
 
       <p className="legenda">

@@ -12,8 +12,13 @@
       "resizeMode": "contain",
       "backgroundColor": "#F2B532"
     },
-    "assetBundlePatterns": ["**/*"],
-    "ios": { "supportsTablet": true, "bundleIdentifier": "br.com.decolanegocios.app" },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "br.com.decolanegocios.app"
+    },
     "android": {
       "package": "br.com.decolanegocios.app",
       "adaptiveIcon": {
@@ -21,7 +26,11 @@
         "backgroundColor": "#F2B532"
       }
     },
-    "web": { "favicon": "./assets/favicon.png" },
+    "web": {
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro",
+      "output": "single"
+    },
     "plugins": [
       "expo-router",
       [
@@ -38,6 +47,9 @@
         }
       ]
     ],
-    "experiments": { "typedRoutes": false }
+    "experiments": {
+      "typedRoutes": false,
+      "baseUrl": "/app"
+    }
   }
 }

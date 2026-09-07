@@ -9,7 +9,7 @@
 import { NavLink, Navigate, Route, Routes } from 'react-router-dom';
 import { Aviso, Carregando } from '@/componentes/Basicos';
 import { useSessaoAdmin } from '@/contexto/SessaoAdmin';
-import { URL_DO_SITE } from '@/lib/enderecos';
+import { URL_DO_APP, URL_DO_SITE } from '@/lib/enderecos';
 import { CONFIGURADO } from '@/lib/supabase';
 import { Configuracoes } from '@/telas/Configuracoes';
 import { Dashboard } from '@/telas/Dashboard';
@@ -80,9 +80,14 @@ export function App() {
         </NavLink>
 
         {/* Sai do painel e entra no produto. Administrar sem nunca ver o que o
-            cliente vê é como se corrige o problema errado. */}
-        <a href={URL_DO_SITE} target="_blank" rel="noreferrer">
+            cliente vê é como se corrige o problema errado. São dois destinos
+            diferentes de propósito: o aplicativo é o que o cliente usa depois
+            de contratar; o site é o que ele vê antes. */}
+        <a href={URL_DO_APP} target="_blank" rel="noreferrer">
           Visualizar aplicativo ↗
+        </a>
+        <a href={URL_DO_SITE} target="_blank" rel="noreferrer">
+          Visualizar site ↗
         </a>
 
         <div className="rodape">

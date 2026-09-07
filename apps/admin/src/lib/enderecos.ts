@@ -28,6 +28,14 @@ export function linkDeContratacao(slug: string): string {
   return `${URL_DO_SITE}/cadastro?plano=${encodeURIComponent(slug)}`;
 }
 
+/**
+ * O aplicativo do cliente, servido junto do site em `/app`.
+ *
+ * É para cá que "Visualizar aplicativo" deve levar: quem clica quer ver o que
+ * o cliente vê ao entrar, não a página de vendas.
+ */
+export const URL_DO_APP = `${URL_DO_SITE}/app/`;
+
 /** Vitrine pública de uma empresa. */
 export function linkDaLoja(slug: string): string {
   return `${URL_DO_SITE}/loja/${slug}`;

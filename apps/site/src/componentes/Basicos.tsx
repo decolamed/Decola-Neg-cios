@@ -62,6 +62,16 @@ export function CampoTexto({
   );
 }
 
+/**
+ * Onde o aplicativo do cliente é servido.
+ *
+ * Mesma publicação deste site, sob `/app`: a versão web do aplicativo é
+ * exportada para `dist/app` durante o build. Um caminho, e não um domínio à
+ * parte, porque assim não há um segundo projeto para alguém esquecer de
+ * publicar — e porque o cliente já está aqui.
+ */
+export const LINK_DO_APP = '/app/';
+
 export function Moldura({ children }: { children: ReactNode }) {
   const { pathname } = useLocation();
 
@@ -80,6 +90,15 @@ export function Moldura({ children }: { children: ReactNode }) {
       {daLoja ? null : (
         <header className="topo">
           <img src="/marca/logo-nome-claro.png" alt="Decola Negócios" />
+
+          {/* Sem isto o cliente que já contratou não tem por onde voltar: ele
+              termina o cadastro, fecha a aba, e no dia seguinte chega ao site
+              sem nenhuma porta de entrada visível. `<a>` e não `<Link>` porque
+              /app é outra aplicação, servida ao lado desta, não uma rota do
+              roteador daqui. */}
+          <a className="entrar" href={LINK_DO_APP}>
+            Entrar
+          </a>
         </header>
       )}
 

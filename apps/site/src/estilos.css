@@ -44,12 +44,39 @@ a {
 .topo {
   background: var(--cor-primaria);
   padding: var(--espaco-md) var(--espaco-lg);
+
+  /* A marca à esquerda, a porta de entrada à direita. */
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--espaco-md);
 }
 
 .topo img {
   display: block;
   width: 140px;
   height: auto;
+}
+
+/* Contorno, e não preenchido: no topo escuro ele se lê bem sem competir com o
+   botão de ação da página, que é o que deve puxar o olho de quem ainda não é
+   cliente. */
+.topo .entrar {
+  flex-shrink: 0;
+  padding: 8px 18px;
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  border-radius: var(--raio-pill);
+  color: #fff;
+  font-weight: var(--fonte-rotulo-peso);
+  font-size: var(--fonte-rotulo-tamanho);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.topo .entrar:hover,
+.topo .entrar:focus-visible {
+  background: rgba(255, 255, 255, 0.14);
+  border-color: #fff;
 }
 
 .pagina {
@@ -199,6 +226,15 @@ a {
 
 .botao:hover:not(:disabled) {
   background: var(--cor-acao-pressionada);
+}
+
+/* O mesmo botão, quando é um link de verdade — caso do "Abrir o Decola
+   Negócios", que sai deste site para o aplicativo e por isso precisa ser <a>. */
+a.botao {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
 }
 
 .botao.discreto {

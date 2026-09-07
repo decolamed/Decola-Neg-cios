@@ -12,15 +12,26 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from '@decola/types';
 
-const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
-const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
+/**
+ * A conexão de produção vive aqui, no código — mesma decisão do site e do
+ * painel, e pelo mesmo motivo: a anon key é PÚBLICA por definição. Ela já vai
+ * embutida no binário do app e no bundle da versão web, então guardá-la em
+ * variável de ambiente nunca a tornou secreta; só a tornou fácil de esquecer,
+ * e um esquecimento desses derrubava o aplicativo inteiro na abertura.
+ *
+ * Quem protege os dados é a RLS (Seção 9.1), não o sigilo desta chave.
+ *
+ * As variáveis continuam tendo prioridade, para apontar a um projeto de
+ * homologação sem tocar no código.
+ */
+const URL_PRODUCAO = 'https://nakqafnchwydfogcozvc.supabase.co';
+const CHAVE_PRODUCAO =
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5ha3' +
+  'FhZm5jaHd5ZGZvZ2NvenZjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU2NjkyNjQsImV4cCI6' +
+  'MjEwMTI0NTI2NH0.Zv95UlIYZWPW_LA18nmqbKQb-KG272wqjfTrfqMSbFw';
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error(
-    'Variáveis EXPO_PUBLIC_SUPABASE_URL e EXPO_PUBLIC_SUPABASE_ANON_KEY não configuradas. ' +
-      'Copie apps/mobile/.env.example para .env e preencha.',
-  );
-}
+const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || URL_PRODUCAO;
+const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || CHAVE_PRODUCAO;
 
 /**
  * A anon key é pública por design — quem protege os dados é a RLS (Seção 9.1),

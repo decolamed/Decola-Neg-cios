@@ -38,6 +38,64 @@ function formaDePagamento(tipo: string | undefined): 'pix' | 'boleto' | 'cartao'
   }
 }
 
+/**
+ * O e-mail que fecha o ciclo da contratação.
+ *
+ * O cliente escolhe o plano, cria a conta e paga — SEM nunca ter escolhido uma
+ * senha. É aqui, no instante em que o dinheiro entra, que ele recebe o link
+ * para criar a dela. Antes disso não existe acesso nenhum, e é assim de
+ * propósito: o produto não é liberado por promessa de pagamento.
+ *
+ * Chamamos a função `enviar-acesso`, que já sabe gerar o token de recuperação
+ * e montar o e-mail da marca. Reaproveitar em vez de duplicar importa aqui:
+ * são dois caminhos para o MESMO e-mail (primeiro acesso pela compra, e o
+ * "esqueci minha senha"), e um corpo de e-mail só é um corpo só para manter.
+ *
+ * FALHAR AQUI NÃO PODE DERRUBAR O WEBHOOK. Se o Resend estiver fora do ar, o
+ * pagamento continua confirmado e a assinatura continua ativa — devolver erro
+ * ao Asaas faria ele reenviar o evento e reprocessar tudo por causa de um
+ * e-mail. O gestor sempre pode pedir o link de novo em "Esqueci minha senha",
+ * e o log abaixo diz o que houve.
+ */
+async function enviarPrimeiroAcesso(supabase: any, empresaId: string): Promise<void> {
+  try {
+    // O e-mail de quem contratou é o do Gestor Principal da empresa: é a linha
+    // que a própria RPC de criação escreve, com o e-mail da conta do Auth.
+    const { data: gestor } = await supabase
+      .from('empresa_usuarios')
+      .select('email_convite')
+      .eq('empresa_id', empresaId)
+      .eq('papel', 'gestor_principal')
+      .maybeSingle();
+
+    const email = gestor?.email_convite;
+    if (!email) {
+      console.error('primeiro acesso: empresa sem gestor principal', empresaId);
+      return;
+    }
+
+    const resposta = await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/enviar-acesso`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        // Chamada de servidor para servidor, dentro do mesmo projeto.
+        Authorization: `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''}`,
+        apikey: Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+      },
+      body: JSON.stringify({ email, tipo: 'primeiro_acesso' }),
+    });
+
+    if (!resposta.ok) {
+      console.error('primeiro acesso: envio recusado', resposta.status, await resposta.text());
+      return;
+    }
+
+    console.log('primeiro acesso enviado para a empresa', empresaId);
+  } catch (e) {
+    console.error('primeiro acesso: falha inesperada', e);
+  }
+}
+
 Deno.serve(async (requisicao) => {
   if (requisicao.method !== 'POST') {
     return new Response('Método não suportado.', { status: 405 });
@@ -118,6 +176,18 @@ Deno.serve(async (requisicao) => {
 
   // 2. Estado da assinatura.
   if (confirmado) {
+    /**
+     * É a PRIMEIRA vez que esta assinatura é paga?
+     *
+     * A pergunta precisa ser feita ANTES do update, porque logo abaixo o
+     * status vira 'ativa' e a informação se perde. E ela decide uma coisa que
+     * não dá para errar nos dois sentidos: o e-mail de "crie sua senha" sai
+     * na primeira confirmação e em nenhuma das mensalidades seguintes.
+     * Mandá-lo todo mês seria oferecer, uma vez por mês, um link que troca a
+     * senha de quem já entrou.
+     */
+    const primeiraConfirmacao = assinatura.status === 'pendente_pagamento';
+
     // Seção 6.6 — "o pagamento é regularizado → acesso completo é restaurado
     // automaticamente". Vale inclusive saindo do modo limitado.
     const proximo = new Date();
@@ -138,6 +208,10 @@ Deno.serve(async (requisicao) => {
       titulo: 'Pagamento confirmado',
       mensagem: 'Sua assinatura está ativa e o acesso completo foi liberado.',
     });
+
+    if (primeiraConfirmacao) {
+      await enviarPrimeiroAcesso(supabase, assinatura.empresa_id);
+    }
   } else if (vencido && ['ativa', 'trial'].includes(assinatura.status)) {
     // Seção 6.6 — "um pagamento recusado ou atrasado NÃO bloqueia o acesso
     // imediatamente": entra em carência, com todas as funcionalidades.

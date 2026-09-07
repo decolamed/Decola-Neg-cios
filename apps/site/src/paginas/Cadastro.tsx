@@ -31,7 +31,6 @@ export function Cadastro() {
 
   const [nome, setNome] = useState('');
   const [email, setEmail] = useState('');
-  const [senha, setSenha] = useState('');
   const [nomeEmpresa, setNomeEmpresa] = useState('');
   const [aceitouTermos, setAceitouTermos] = useState(false);
 
@@ -84,8 +83,6 @@ export function Cadastro() {
       const novosErros: Record<string, string | null> = {
         nome: nome.trim() ? null : 'Informe seu nome completo.',
         email: emailValido(email) ? null : 'Informe um e-mail válido.',
-        // Seção 5.5 — não há exigência de complexidade; só não pode ser vazia.
-        senha: senha.length > 0 ? null : 'Crie uma senha.',
         nomeEmpresa: nomeEmpresa.trim() ? null : 'Informe o nome do seu negócio.',
       };
       setErros(novosErros);
@@ -99,7 +96,7 @@ export function Cadastro() {
       setMensagem(null);
       setCriando(true);
       try {
-        await criarConta(nome, email, senha);
+        await criarConta(nome, email);
 
         const resultado = await criarEmpresaEAssinatura({
           nomeEmpresa,
@@ -108,8 +105,9 @@ export function Cadastro() {
           aceitouTermos,
         });
 
-        // Mesma bifurcação do app: com trial a conta já está liberada; sem
-        // ele, não há acesso até o pagamento ser confirmado (Seção 7.12).
+        // Sem trial, o caminho é um só: cadastro feito, agora paga. O acesso
+        // é liberado pelo webhook do Asaas quando o pagamento confirma, e a
+        // senha vai por e-mail nesse momento — não antes.
         navegar(resultado.assinatura_status === 'trial' ? '/pronto' : '/pagamento', {
           replace: true,
         });
@@ -119,7 +117,7 @@ export function Cadastro() {
         setCriando(false);
       }
     },
-    [preparacao, nome, email, senha, nomeEmpresa, aceitouTermos, navegar],
+    [preparacao, nome, email, nomeEmpresa, aceitouTermos, navegar],
   );
 
   if (preparacao.nome === 'carregando') {
@@ -148,7 +146,11 @@ export function Cadastro() {
     <main className="pagina estreita">
       <div className="cabecalho-pagina">
         <h1>Criar conta</h1>
-        <p>Leva menos de um minuto. Depois é só baixar o aplicativo e entrar.</p>
+        <p>
+          Leva menos de um minuto. No passo seguinte você escolhe como pagar — Pix, boleto ou
+          cartão. Assim que o pagamento for confirmado, enviamos um e-mail para você criar sua
+          senha e entrar.
+        </p>
       </div>
 
       <div className="resumo-plano">
@@ -179,15 +181,6 @@ export function Cadastro() {
           bloqueado={criando}
           autoComplete="email"
           placeholder="voce@exemplo.com"
-        />
-        <CampoTexto
-          rotulo="Crie uma senha"
-          valor={senha}
-          aoMudar={setSenha}
-          tipo="password"
-          erro={erros.senha}
-          bloqueado={criando}
-          autoComplete="new-password"
         />
         <CampoTexto
           rotulo="Nome do seu negócio"

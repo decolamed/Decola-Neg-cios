@@ -1081,3 +1081,17 @@ a.botao {
 .acoes-finais p {
   margin: 0;
 }
+
+/* Prazos de confirmação de pagamento: lista sem marcador, com respiro entre
+   as linhas — quem lê está ansioso e precisa achar a própria forma rápido. */
+.prazos {
+  list-style: none;
+  margin: var(--espaco-sm) 0 var(--espaco-md);
+  padding: 0;
+  display: grid;
+  gap: var(--espaco-sm);
+}
+
+.prazos strong {
+  color: var(--cor-primaria);
+}

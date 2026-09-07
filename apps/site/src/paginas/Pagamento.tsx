@@ -22,8 +22,8 @@ export function Pagamento() {
     setErro(null);
     setIndo(true);
     try {
-      const { url } = await iniciarCheckout();
-      window.location.href = url;
+      const { url_checkout } = await iniciarCheckout();
+      window.location.href = url_checkout;
     } catch (e) {
       setErro(e instanceof Error ? e.message : 'Não foi possível iniciar o pagamento.');
       setIndo(false);
@@ -35,8 +35,8 @@ export function Pagamento() {
       <div className="cabecalho-pagina">
         <h1>Falta só o pagamento</h1>
         <p>
-          Sua conta e sua empresa já foram criadas. O acesso é liberado assim que o pagamento for
-          confirmado.
+          Sua conta e sua empresa já foram criadas. Assim que o pagamento for confirmado, enviamos
+          um e-mail para você criar sua senha — e o acesso é liberado na hora.
         </p>
       </div>
 
@@ -52,9 +52,14 @@ export function Pagamento() {
         </button>
       </div>
 
+      {/* Sem senha escolhida no cadastro, "volte e faça login" deixou de ser
+          uma instrução possível. O caminho de volta real é o mesmo e-mail de
+          acesso, pedido por "Esqueci minha senha" — ele funciona mesmo com o
+          pagamento pendente, e leva de volta exatamente a esta tela. */}
       <p className="legenda">
-        Se você fechar esta página, pode voltar depois: abra o aplicativo e entre com o e-mail e a
-        senha que acabou de criar — ele retoma exatamente daqui.
+        Se fechar esta página antes de pagar, dá para voltar: abra o aplicativo, toque em "Esqueci
+        minha senha" e informe este mesmo e-mail. Você recebe o link, cria sua senha e volta
+        direto para o pagamento.
       </p>
     </main>
   );

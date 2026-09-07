@@ -19,11 +19,34 @@ export function emailValido(email: string): boolean {
   return /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email.trim());
 }
 
+/**
+ * Senha que existe só para o Auth aceitar a criação da conta — e que ninguém
+ * jamais usa.
+ *
+ * O cliente não escolhe senha ao contratar. Ele paga, e SÓ ENTÃO recebe o
+ * e-mail com o link para definir a dele. Mas `signUp` exige uma senha, e é
+ * essa sessão recém-criada que autoriza os dois passos seguintes (a RPC que
+ * cria a empresa e a função que abre a cobrança) — sem ela, ambas rodariam
+ * como anônimo e seriam recusadas.
+ *
+ * Então geramos uma senha aleatória forte, usamos para nascer a sessão e a
+ * descartamos: ela não é mostrada, não é guardada e não volta. Na prática a
+ * conta fica sem senha utilizável até o link do e-mail, que é exatamente o
+ * comportamento desejado — ninguém entra antes de pagar.
+ *
+ * `crypto.getRandomValues` e não `Math.random`: a segunda é previsível.
+ */
+function senhaDescartavel(): string {
+  const bytes = new Uint8Array(32);
+  crypto.getRandomValues(bytes);
+  return Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
+}
+
 /** Passo 2 da Seção 7.12 — a conta no Supabase Auth. */
-export async function criarConta(nome: string, email: string, senha: string): Promise<void> {
+export async function criarConta(nome: string, email: string): Promise<void> {
   const { data, error } = await supabase.auth.signUp({
     email: email.trim(),
-    password: senha,
+    password: senhaDescartavel(),
     options: { data: { nome: nome.trim() } },
   });
 
@@ -68,7 +91,19 @@ export async function criarEmpresaEAssinatura(params: {
   return data as unknown as ResultadoCriacaoEmpresa;
 }
 
-export type CheckoutIniciado = { url: string };
+export type CheckoutIniciado = {
+  /**
+   * O NOME DO CAMPO IMPORTA. A função `asaas-checkout` responde
+   * `url_checkout`, e aqui estava escrito `url` — `window.location.href`
+   * recebia `undefined` e o pagamento pelo site simplesmente não saía do
+   * lugar. O aplicativo lia certo, então o defeito só existia na web, que é
+   * justamente por onde o cliente novo chega.
+   */
+  url_checkout: string;
+  cobranca_id: string;
+  vencimento: string;
+  valor: number;
+};
 
 /**
  * Seções 6.4 e 7.12 — a cobrança nasce no backend e o site recebe só a URL do

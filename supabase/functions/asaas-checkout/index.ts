@@ -16,6 +16,13 @@
  */
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
 
+/**
+ * Onde o site público está publicado — fato do repositório, não secret.
+ * Mesma decisão de `enviar-acesso`: um endereço antigo guardado no painel
+ * manda todo mundo para o lugar errado e nada no código denuncia.
+ */
+const URL_DO_SITE = 'https://site-kappa-five-66.vercel.app';
+
 const CORS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -132,6 +139,13 @@ Deno.serve(async (requisicao) => {
       dueDate: vencimento.toISOString().slice(0, 10),
       description: `Assinatura ${plano?.nome ?? ''} — Decola Negócios`.trim(),
       externalReference: assinatura.id,
+      // Sem isto o cliente termina de pagar e fica parado numa tela do Asaas,
+      // sem saber que o próximo passo é esperar um e-mail. O retorno é para
+      // uma página NOSSA, que explica exatamente o que vem agora.
+      callback: {
+        successUrl: `${URL_DO_SITE}/pronto`,
+        autoRedirect: true,
+      },
     });
 
     // 3. Persiste com a service key: `assinaturas` e `cobrancas` não têm

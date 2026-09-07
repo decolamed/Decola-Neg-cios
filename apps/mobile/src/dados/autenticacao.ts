@@ -22,6 +22,27 @@ export const AVISO_SEM_EMPRESA =
   'Você não está vinculado a nenhuma empresa ativa no momento. ' +
   'Entre em contato com o Gestor da sua empresa, ou crie uma nova conta.';
 
+/**
+ * Quem entrou é administrador da PLATAFORMA, e não cliente?
+ *
+ * A pergunta existe porque painel e aplicativo passaram a dividir a sessão do
+ * navegador. Sem ela, o administrador que abre o aplicativo cai no caminho de
+ * "conta sem empresa" — que encerra a sessão — e derruba o próprio painel de
+ * onde acabou de vir.
+ *
+ * A RLS de `administradores_plataforma` só deixa cada administrador enxergar a
+ * própria linha, então esta consulta é segura para qualquer conta: um cliente
+ * simplesmente não recebe nada.
+ */
+export async function ehAdministradorDaPlataforma(): Promise<boolean> {
+  const { data } = await supabase
+    .from('administradores_plataforma')
+    .select('id')
+    .maybeSingle();
+
+  return Boolean(data);
+}
+
 export class ErroAutenticacao extends Error {}
 
 export function emailValido(email: string): boolean {

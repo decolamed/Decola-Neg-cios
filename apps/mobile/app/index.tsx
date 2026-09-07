@@ -7,18 +7,24 @@
  *
  * Roteamento (automático, sem ação do usuário):
  *   sessão válida + vínculo ativo ............ Dashboard
+ *   sessão válida, administrador da plataforma  Painel administrativo (na web)
  *   sessão válida, sem empresa ativa ......... Login, encerrando a sessão,
  *                                              com mensagem explicativa
  *   sem sessão válida ........................ Login
  */
 import { useCallback, useEffect, useState } from 'react';
 import { router } from 'expo-router';
-import { ActivityIndicator, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Platform, StyleSheet, View } from 'react-native';
 import tema from '@decola/theme';
 import { Marca, AssinaturaDecola } from '@/componentes/Marca';
 import { TelaMensagem } from '@/componentes/EstadoDaTela';
 import { estaConectado, MENSAGENS_SEM_CONEXAO } from '@/lib/conectividade';
-import { AVISO_SEM_EMPRESA, sair, sessaoAtual } from '@/dados/autenticacao';
+import {
+  AVISO_SEM_EMPRESA,
+  ehAdministradorDaPlataforma,
+  sair,
+  sessaoAtual,
+} from '@/dados/autenticacao';
 import { carregarContextoDaConta, destinoDaConta } from '@/dados/empresa';
 
 const ERRO_INICIAR = 'Não foi possível iniciar o app.';
@@ -49,6 +55,21 @@ export default function Splash() {
       const conta = await carregarContextoDaConta();
 
       if (!conta) {
+        /**
+         * Administrador da plataforma não tem empresa — e não é um erro.
+         *
+         * Ele chega aqui ao clicar "Visualizar aplicativo" no painel, já
+         * autenticado, porque as duas partes dividem a sessão. Sem esta
+         * verificação ele cairia no `sair()` abaixo e perderia também a sessão
+         * do painel de onde veio: um clique de curiosidade custando o login.
+         *
+         * Só vale na web, que é onde o painel existe.
+         */
+        if (Platform.OS === 'web' && (await ehAdministradorDaPlataforma())) {
+          window.location.replace('/');
+          return;
+        }
+
         // Encerra a sessão para não deixar o usuário preso numa tela sem
         // saída, e para que ele não crie uma segunda empresa sem perceber
         // que já teve acesso a uma (Seção 7.10).

@@ -10,7 +10,7 @@
   "scripts": {
     "mobile": "npm run start --workspace @decola/mobile",
     "painel": "npm run dev --workspace @decola/admin",
-    "painel:build": "npm run build --workspace @decola/admin",
+    "painel:build": "npm run build --workspace @decola/admin && npm run exportar:web --workspace @decola/mobile",
     "site": "npm run dev --workspace @decola/site",
     "site:build": "npm run build --workspace @decola/site"
   }

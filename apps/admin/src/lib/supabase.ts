@@ -5,8 +5,18 @@
  * administrador é a linha em `administradores_plataforma`, reconhecida pelas
  * políticas de RLS. Não existe um segundo sistema de login.
  *
- * `storageKey` próprio: o painel e o app não compartilham sessão nem quando
- * abertos no mesmo navegador.
+ * SESSÃO COMPARTILHADA com o aplicativo do cliente, de propósito.
+ *
+ * Os dois são servidos na mesma publicação (o app em `/app`), então dividem a
+ * origem e a mesma chave de armazenamento. É isso que permite haver UM login:
+ * quem entra por esta tela e não é administrador é encaminhado ao aplicativo
+ * já autenticado, sem digitar a senha de novo.
+ *
+ * Antes eram chaves separadas, para que abrir o painel não derrubasse uma
+ * sessão de cliente na outra aba. Aquilo fazia sentido quando eram endereços
+ * diferentes; agora são o mesmo produto, e uma pessoa é uma coisa só — ou
+ * administrador, ou cliente. Duas sessões simultâneas do mesmo navegador não
+ * é um caso real, e o preço delas era um segundo login.
  *
  * Configuração ausente NÃO derruba o módulo: um `throw` aqui em cima virava
  * tela branca com erro só no console, que é o pior jeito de comunicar
@@ -42,7 +52,7 @@ export const supabase = createClient<Database>(
   anonKey || 'configuracao-ausente',
   {
     auth: {
-      storageKey: 'decola-painel-admin',
+      storageKey: 'decola-negocios',
       autoRefreshToken: true,
       persistSession: true,
     },

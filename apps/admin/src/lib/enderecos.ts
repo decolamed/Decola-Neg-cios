@@ -29,12 +29,17 @@ export function linkDeContratacao(slug: string): string {
 }
 
 /**
- * O aplicativo do cliente, servido junto do site em `/app`.
+ * O aplicativo do cliente — servido nesta MESMA publicação, sob `/app`.
  *
- * É para cá que "Visualizar aplicativo" deve levar: quem clica quer ver o que
- * o cliente vê ao entrar, não a página de vendas.
+ * Caminho relativo, e não endereço absoluto, e isso é o que faz o desenho
+ * funcionar: painel e aplicativo dividem a origem, e portanto dividem a sessão
+ * do navegador. Quem entra por uma porta não digita a senha de novo do outro
+ * lado — que é justamente o que permite haver UM login decidindo o destino
+ * pelo tipo de conta.
+ *
+ * Em endereços diferentes, o encaminhamento viraria um segundo login.
  */
-export const URL_DO_APP = `${URL_DO_SITE}/app/`;
+export const CAMINHO_DO_APP = '/app/';
 
 /** Vitrine pública de uma empresa. */
 export function linkDaLoja(slug: string): string {

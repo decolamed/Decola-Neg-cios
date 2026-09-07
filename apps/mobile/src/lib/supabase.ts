@@ -9,6 +9,7 @@
  */
 import 'react-native-url-polyfill/auto';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Platform } from 'react-native';
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from '@decola/types';
 
@@ -40,7 +41,19 @@ const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || CHAVE_PRODU
  */
 export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
   auth: {
-    storage: AsyncStorage,
+    /**
+     * No navegador, o localStorage direto — e a MESMA chave do painel.
+     *
+     * Os dois são servidos na mesma publicação (o painel na raiz, este app em
+     * `/app`), então dividem a origem. Compartilhar a chave é o que faz o
+     * encaminhamento por tipo de conta funcionar sem pedir a senha duas vezes:
+     * o administrador que cai aqui, ou o cliente que entrou pela tela do
+     * painel, chegam já autenticados.
+     *
+     * `AsyncStorage` continua valendo no celular, onde não há localStorage.
+     */
+    storage: Platform.OS === 'web' ? undefined : AsyncStorage,
+    storageKey: 'decola-negocios',
     autoRefreshToken: true,
     persistSession: true,
     // React Native não tem URL de callback com fragmento como o navegador.

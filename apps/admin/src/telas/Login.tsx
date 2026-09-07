@@ -9,10 +9,11 @@
  *
  * Por isso esta tela tem exatamente três controles: e-mail, senha e Entrar.
  */
-import { useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { Aviso, CampoTexto } from '@/componentes/Basicos';
 import { useSessaoAdmin } from '@/contexto/SessaoAdmin';
-import { entrar, NAO_E_ADMINISTRADOR, sair } from '@/dados/sessao';
+import { entrar, LEVANDO_AO_APLICATIVO, sair } from '@/dados/sessao';
+import { CAMINHO_DO_APP } from '@/lib/enderecos';
 
 export function Login() {
   const { administrador, autenticado, recarregar } = useSessaoAdmin();
@@ -22,8 +23,26 @@ export function Login() {
   const [entrando, setEntrando] = useState(false);
 
   // Autenticado mas sem registro de administrador: credencial válida no mesmo
-  // Supabase Auth, acesso nenhum aqui (Seção 11.1).
-  const contaSemAcesso = autenticado && !administrador;
+  // Supabase Auth, acesso nenhum AQUI (Seção 11.1) — mas acesso total ao
+  // aplicativo do cliente, que é onde essa pessoa quer estar.
+  const contaDeCliente = autenticado && !administrador;
+
+  /**
+   * Um endereço, um login, e o destino decidido pelo tipo de conta.
+   *
+   * O aplicativo é servido na mesma publicação, sob `/app`, e as duas partes
+   * compartilham a sessão do navegador — então a pessoa não digita a senha de
+   * novo do outro lado. Se fossem endereços diferentes, isto seria um segundo
+   * login, e o encaminhamento pioraria a vida em vez de melhorar.
+   */
+  useEffect(() => {
+    if (contaDeCliente) {
+      const relogio = setTimeout(() => {
+        window.location.replace(CAMINHO_DO_APP);
+      }, 1200);
+      return () => clearTimeout(relogio);
+    }
+  }, [contaDeCliente]);
 
   const enviar = async (evento: FormEvent) => {
     evento.preventDefault();
@@ -40,15 +59,23 @@ export function Login() {
     }
   };
 
-  if (contaSemAcesso) {
+  if (contaDeCliente) {
     return (
       <div className="centralizado">
-        <h1>Painel Administrativo</h1>
+        <h1>Decola Negócios</h1>
         <div style={{ maxWidth: 420 }}>
-          <Aviso mensagem={NAO_E_ADMINISTRADOR} tom="alerta" />
+          <Aviso mensagem={LEVANDO_AO_APLICATIVO} tom="sucesso" />
+
+          {/* O redirecionamento é automático; este link cobre o caso de ele
+              ser barrado, e dá à pessoa algo em que clicar durante a espera. */}
+          <a className="botao" href={CAMINHO_DO_APP}>
+            Abrir o aplicativo
+          </a>
+
           <button
             type="button"
             className="botao discreto"
+            style={{ marginTop: 'var(--espaco-sm)' }}
             onClick={async () => {
               await sair();
               await recarregar();
@@ -68,7 +95,12 @@ export function Login() {
         alt="Decola Negócios"
         style={{ width: 200, height: 'auto' }}
       />
-      <p className="legenda">Painel Administrativo</p>
+      {/* Já não é "Painel Administrativo": esta virou a porta de todo mundo.
+          Quem digita e-mail e senha aqui é encaminhado pelo tipo da conta —
+          dono de negócio vai para o aplicativo, administrador da plataforma
+          fica. Anunciar "acesso restrito" mandaria o cliente embora achando
+          que errou o endereço, que era exatamente o beco de antes. */}
+      <p className="legenda">Entre com sua conta</p>
 
       <form className="card" style={{ width: 380, textAlign: 'left' }} onSubmit={enviar}>
         {erro ? <Aviso mensagem={erro} /> : null}
@@ -99,8 +131,11 @@ export function Login() {
       </form>
 
       <p className="legenda" style={{ maxWidth: 380 }}>
-        Acesso restrito à equipe da plataforma. Contas de administrador são criadas internamente —
-        não há cadastro nem recuperação de senha por autoatendimento.
+        Se você é cliente do Decola Negócios, entre com o mesmo e-mail e senha de sempre — nós te
+        levamos ao aplicativo.{' '}
+        <a href={CAMINHO_DO_APP}>
+          Esqueceu a senha, quer entrar com Google ou ainda não tem conta?
+        </a>
       </p>
 
       <img

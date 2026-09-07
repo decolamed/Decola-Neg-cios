@@ -63,14 +63,19 @@ export function CampoTexto({
 }
 
 /**
- * Onde o aplicativo do cliente é servido.
+ * Onde se entra no Decola Negócios.
  *
- * Mesma publicação deste site, sob `/app`: a versão web do aplicativo é
- * exportada para `dist/app` durante o build. Um caminho, e não um domínio à
- * parte, porque assim não há um segundo projeto para alguém esquecer de
- * publicar — e porque o cliente já está aqui.
+ * É UM endereço para todo mundo: o login é o mesmo, e o destino é decidido
+ * pelo tipo da conta — dono de negócio vai para o aplicativo, administrador da
+ * plataforma vai para o painel. Quem entra não precisa saber qual é qual.
+ *
+ * Este site é só a parte pública: planos, contratação e as lojas dos clientes.
+ * Por isso aqui o link é absoluto, e não um caminho — são publicações
+ * diferentes, com finalidades diferentes.
  */
-export const LINK_DO_APP = '/app/';
+export const LINK_DO_APP =
+  import.meta.env.VITE_URL_APP?.trim().replace(/\/$/, '') ||
+  'https://decolanegocios.vercel.app';
 
 export function Moldura({ children }: { children: ReactNode }) {
   const { pathname } = useLocation();

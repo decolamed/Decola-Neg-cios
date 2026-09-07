@@ -16,7 +16,7 @@
  */
 import { useCallback, useEffect, useState } from 'react';
 import { router, useLocalSearchParams } from 'expo-router';
-import { Alert, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import tema from '@decola/theme';
 import { Aviso } from '@/componentes/Aviso';
@@ -34,6 +34,8 @@ import {
 } from '@/dados/planos';
 import { SemConexaoError } from '@/lib/conectividade';
 import { moeda, rotuloDeFuncionalidade } from '@/lib/formato';
+import { Dialogo } from '@/lib/dialogo';
+import { textoDoErro } from '@/lib/erros';
 
 type Estado =
   | { nome: 'carregando' }
@@ -115,7 +117,7 @@ export default function EscolhaDoPlano() {
       // RPC devolve a lista exata do que precisa ser ajustado. Repassamos o
       // texto dela sem reescrever.
       setAviso({
-        texto: e instanceof Error ? e.message : 'Não foi possível trocar de plano.',
+        texto: textoDoErro(e, 'Não foi possível trocar de plano.'),
         tom: 'erro',
       });
     } finally {
@@ -127,7 +129,7 @@ export default function EscolhaDoPlano() {
     const atual = conta?.assinatura?.valor_contratado ?? 0;
     const upgrade = item.plano.valor_mensal > atual;
 
-    Alert.alert(
+    Dialogo.alert(
       `Trocar para ${item.plano.nome}?`,
       upgrade
         ? `A troca vale imediatamente e o novo valor passa a ser ${moeda(

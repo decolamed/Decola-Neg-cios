@@ -19,6 +19,7 @@ import { MenuInferior } from '@/componentes/MenuInferior';
 import { Seletor } from '@/componentes/Seletor';
 import { ROTULO_STATUS, listarPedidos } from '@/dados/pedidos';
 import { moeda } from '@/lib/formato';
+import { textoDoErro } from '@/lib/erros';
 
 /** Estados em que o pedido está parado esperando o gestor. */
 const PEDE_ACAO = new Set(['aguardando_pagamento', 'aguardando_negociacao']);
@@ -44,7 +45,7 @@ export default function ListaDePedidos() {
     try {
       setPedidos(await listarPedidos(filtro));
     } catch (e) {
-      setErro(e instanceof Error ? e.message : 'Não foi possível carregar os pedidos.');
+      setErro(textoDoErro(e, 'Não foi possível carregar os pedidos.'));
       setPedidos([]);
     }
   }, [filtro]);

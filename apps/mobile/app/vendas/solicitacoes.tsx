@@ -9,7 +9,7 @@
  */
 import { useCallback, useEffect, useState } from 'react';
 import { router, useFocusEffect } from 'expo-router';
-import { Alert, FlatList, StyleSheet, Text, View } from 'react-native';
+import { FlatList, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import tema from '@decola/theme';
 import { Aviso } from '@/componentes/Aviso';
@@ -23,6 +23,8 @@ import {
   type SolicitacaoPendente,
 } from '@/dados/vendas';
 import { moeda } from '@/lib/formato';
+import { Dialogo } from '@/lib/dialogo';
+import { textoDoErro } from '@/lib/erros';
 
 export default function Solicitacoes() {
   const { conta, temPermissao, podeEscrever } = useSessao();
@@ -40,7 +42,7 @@ export default function Solicitacoes() {
       setSolicitacoes(await listarSolicitacoesPendentes());
       setErro(null);
     } catch (e) {
-      setErro(e instanceof Error ? e.message : 'Não foi possível carregar as solicitações.');
+      setErro(textoDoErro(e, 'Não foi possível carregar as solicitações.'));
     } finally {
       setCarregando(false);
     }
@@ -71,7 +73,7 @@ export default function Solicitacoes() {
             : 'Solicitação rejeitada. A venda permanece confirmada.',
         );
       } catch (e) {
-        setMensagem(e instanceof Error ? e.message : 'Não foi possível registrar a decisão.');
+        setMensagem(textoDoErro(e, 'Não foi possível registrar a decisão.'));
       } finally {
         setProcessando(null);
       }
@@ -81,7 +83,7 @@ export default function Solicitacoes() {
 
   const confirmarAprovacao = useCallback(
     (solicitacao: SolicitacaoPendente) => {
-      Alert.alert(
+      Dialogo.alert(
         'Aprovar cancelamento',
         `A venda de ${moeda(solicitacao.venda_total)} será cancelada.\n\n` +
           'Os produtos voltam ao estoque e um lançamento de estorno é gerado no financeiro.',

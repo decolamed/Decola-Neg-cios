@@ -19,6 +19,7 @@ import { useSessao } from '@/contexto/SessaoContexto';
 import { listarCamposAtivos, type CampoConfigurado } from '@/dados/camposProduto';
 import { listarCategorias, type Categoria } from '@/dados/categorias';
 import { criarProduto } from '@/dados/produtos';
+import { textoDoErro } from '@/lib/erros';
 
 export default function NovoProduto() {
   const { conta, temPermissao, podeEscrever } = useSessao();
@@ -46,7 +47,7 @@ export default function NovoProduto() {
       setCampos(ativos);
       setErroDeCarga(null);
     } catch (e) {
-      setErroDeCarga(e instanceof Error ? e.message : 'Não foi possível carregar o formulário.');
+      setErroDeCarga(textoDoErro(e, 'Não foi possível carregar o formulário.'));
     } finally {
       setCarregando(false);
     }
@@ -96,7 +97,7 @@ export default function NovoProduto() {
       });
       router.replace(`/produtos/${id}`);
     } catch (e) {
-      setMensagem(e instanceof Error ? e.message : 'Não foi possível salvar o produto.');
+      setMensagem(textoDoErro(e, 'Não foi possível salvar o produto.'));
     } finally {
       setSalvando(false);
     }

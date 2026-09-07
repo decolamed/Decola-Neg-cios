@@ -6,7 +6,7 @@
  * elas podem estar referenciadas em produtos com histórico de vendas.
  */
 import { useCallback, useEffect, useState } from 'react';
-import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import tema from '@decola/theme';
 import { Aviso } from '@/componentes/Aviso';
@@ -21,6 +21,8 @@ import {
   renomearCategoria,
   type Categoria,
 } from '@/dados/categorias';
+import { Dialogo } from '@/lib/dialogo';
+import { textoDoErro } from '@/lib/erros';
 
 export default function Categorias() {
   const { conta, podeEscrever } = useSessao();
@@ -45,7 +47,7 @@ export default function Categorias() {
       setCategorias(await listarCategorias(empresaId, true));
       setErro(null);
     } catch (e) {
-      setErro(e instanceof Error ? e.message : 'Não foi possível carregar as categorias.');
+      setErro(textoDoErro(e, 'Não foi possível carregar as categorias.'));
     } finally {
       setCarregando(false);
     }
@@ -71,7 +73,7 @@ export default function Categorias() {
       setNova('');
       await carregar();
     } catch (e) {
-      setErroNova(e instanceof Error ? e.message : 'Não foi possível criar a categoria.');
+      setErroNova(textoDoErro(e, 'Não foi possível criar a categoria.'));
     } finally {
       setCriando(false);
     }
@@ -86,7 +88,7 @@ export default function Categorias() {
         setEditandoId(null);
         await carregar();
       } catch (e) {
-        setMensagem(e instanceof Error ? e.message : 'Não foi possível renomear.');
+        setMensagem(textoDoErro(e, 'Não foi possível renomear.'));
       } finally {
         setProcessando(false);
       }
@@ -102,7 +104,7 @@ export default function Categorias() {
         await alterarCicloDeVidaCategoria(categoria.id, destino);
         await carregar();
       } catch (e) {
-        setMensagem(e instanceof Error ? e.message : 'Não foi possível alterar a categoria.');
+        setMensagem(textoDoErro(e, 'Não foi possível alterar a categoria.'));
       } finally {
         setProcessando(false);
       }
@@ -210,7 +212,7 @@ export default function Categorias() {
                     titulo="Excluir"
                     variante="texto"
                     aoPressionar={() =>
-                      Alert.alert(
+                      Dialogo.alert(
                         'Excluir categoria',
                         `"${categoria.nome}" sairá de todas as listas e não poderá ser restaurada pelo aplicativo.\n\n` +
                           'Os produtos que a usavam continuam existindo, sem categoria.',

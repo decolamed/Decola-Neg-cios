@@ -15,11 +15,10 @@
  * tela. `empresas.logo_url` continua sendo a mesma coluna — o que mudou é onde
  * se decide sobre ela.
  */
-import { decode } from 'base64-arraybuffer';
-import * as FileSystem from 'expo-file-system';
 import * as ImageManipulator from 'expo-image-manipulator';
 import type { BannerDaLoja, Empresa } from '@decola/types';
 import { supabase } from '@/lib/supabase';
+import { lerBinario } from '@/lib/arquivos';
 import { exigirConexao } from '@/lib/conectividade';
 import { mensagemDeErro } from '@/lib/erros';
 
@@ -78,14 +77,12 @@ export async function enviarImagemDaLoja(params: {
     { compress: 0.85, format: ImageManipulator.SaveFormat.JPEG },
   );
 
-  const base64 = await FileSystem.readAsStringAsync(reduzida.uri, {
-    encoding: FileSystem.EncodingType.Base64,
-  });
+  const binario = await lerBinario(reduzida.uri);
 
   const nome = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}.jpg`;
   const caminho = `${params.empresaId}/${params.tipo}/${nome}`;
 
-  const { error } = await supabase.storage.from(BUCKET).upload(caminho, decode(base64), {
+  const { error } = await supabase.storage.from(BUCKET).upload(caminho, binario, {
     contentType: 'image/jpeg',
     upsert: false,
   });

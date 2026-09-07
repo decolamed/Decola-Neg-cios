@@ -13,6 +13,7 @@ import { Aviso } from '@/componentes/Aviso';
 import { Botao } from '@/componentes/Botao';
 import { CampoTexto } from '@/componentes/CampoTexto';
 import { emailValido, enviarLinkDeRecuperacao } from '@/dados/autenticacao';
+import { textoDoErro } from '@/lib/erros';
 
 export default function RecuperarSenha() {
   const [email, setEmail] = useState('');
@@ -35,7 +36,7 @@ export default function RecuperarSenha() {
       await enviarLinkDeRecuperacao(email);
       setEnviado(true);
     } catch (e) {
-      setErro(e instanceof Error ? e.message : null);
+      setErro(textoDoErro(e, 'Não foi possível enviar o e-mail de recuperação. Tente novamente.'));
     } finally {
       setEnviando(false);
     }

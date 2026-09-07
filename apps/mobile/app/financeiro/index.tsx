@@ -29,6 +29,7 @@ import {
 } from '@/dados/financeiro';
 import { moeda } from '@/lib/formato';
 import { descreverPeriodo, periodoDe, ROTULOS_DE_PERIODO, type Periodo } from '@/lib/periodo';
+import { textoDoErro } from '@/lib/erros';
 
 const ROTULO_ORIGEM: Record<string, string> = {
   venda: 'Venda',
@@ -58,7 +59,7 @@ export default function Financeiro() {
       setMovimentacoes(lista);
       setErro(null);
     } catch (e) {
-      setErro(e instanceof Error ? e.message : 'Não foi possível carregar o financeiro.');
+      setErro(textoDoErro(e, 'Não foi possível carregar o financeiro.'));
     } finally {
       setCarregando(false);
       setAtualizando(false);

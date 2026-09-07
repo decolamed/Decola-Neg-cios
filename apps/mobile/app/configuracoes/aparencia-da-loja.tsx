@@ -11,7 +11,7 @@
  * vai ver, e é o que permite decidir em segundos.
  */
 import { useCallback, useEffect, useState } from 'react';
-import { Alert, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import tema from '@decola/theme';
 import type { BannerDaLoja } from '@decola/types';
@@ -33,6 +33,8 @@ import {
   textoSobre,
   urlDaImagemDaLoja,
 } from '@/dados/loja';
+import { Dialogo } from '@/lib/dialogo';
+import { textoDoErro } from '@/lib/erros';
 
 export default function AparenciaDaLoja() {
   const { carregando, conta, podeEscrever, recarregar } = useSessao();
@@ -74,7 +76,7 @@ export default function AparenciaDaLoja() {
         await recarregar();
         setSucesso('Aparência salva. Sua loja já mudou para quem abrir o link.');
       } catch (e) {
-        setErro(e instanceof Error ? e.message : 'Não foi possível salvar.');
+        setErro(textoDoErro(e, 'Não foi possível salvar.'));
       } finally {
         setOcupado(false);
       }
@@ -109,7 +111,7 @@ export default function AparenciaDaLoja() {
           await salvar({ banners: novos });
         }
       } catch (e) {
-        setErro(e instanceof Error ? e.message : 'Não foi possível enviar a imagem.');
+        setErro(textoDoErro(e, 'Não foi possível enviar a imagem.'));
       } finally {
         setOcupado(false);
       }
@@ -119,7 +121,7 @@ export default function AparenciaDaLoja() {
 
   const removerBanner = useCallback(
     (caminho: string) => {
-      Alert.alert('Remover banner', 'Ele sai do carrossel da sua loja.', [
+      Dialogo.alert('Remover banner', 'Ele sai do carrossel da sua loja.', [
         { text: 'Cancelar', style: 'cancel' },
         {
           text: 'Remover',

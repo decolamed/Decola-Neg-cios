@@ -23,6 +23,7 @@ import { useSessao } from '@/contexto/SessaoContexto';
 import { listarCamposAtivos, type CampoConfigurado } from '@/dados/camposProduto';
 import { listarCategorias, type Categoria } from '@/dados/categorias';
 import { buscarProduto, editarProduto } from '@/dados/produtos';
+import { textoDoErro } from '@/lib/erros';
 
 export default function EditarProduto() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -66,7 +67,7 @@ export default function EditarProduto() {
       setCampos(ativos);
       setErroDeCarga(null);
     } catch (e) {
-      setErroDeCarga(e instanceof Error ? e.message : 'Não foi possível carregar o produto.');
+      setErroDeCarga(textoDoErro(e, 'Não foi possível carregar o produto.'));
     } finally {
       setCarregando(false);
     }
@@ -111,7 +112,7 @@ export default function EditarProduto() {
       });
       router.back();
     } catch (e) {
-      setMensagem(e instanceof Error ? e.message : 'Não foi possível salvar as alterações.');
+      setMensagem(textoDoErro(e, 'Não foi possível salvar as alterações.'));
     } finally {
       setSalvando(false);
     }

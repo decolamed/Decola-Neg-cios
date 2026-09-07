@@ -77,7 +77,11 @@ export function MenuInferior() {
 function ItemDoMenu({ item, ativo }: { item: Item; ativo: boolean }) {
   return (
     <Pressable
-      onPress={() => router.push(item.destino)}
+      // `navigate`, e não `push`. Item de menu não é "avançar": tocar em Início
+      // estando no Início empilhava uma segunda cópia da mesma tela, e a pilha
+      // crescia a cada toque até a rota repetida subir em branco. Com
+      // `navigate` o aplicativo volta para a tela que já existe.
+      onPress={() => router.navigate(item.destino)}
       accessibilityRole="tab"
       accessibilityState={{ selected: ativo }}
       style={({ pressed }) => [estilos.item, pressed && { opacity: 0.7 }]}

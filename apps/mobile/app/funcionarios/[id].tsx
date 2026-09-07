@@ -10,7 +10,7 @@
  */
 import { useCallback, useEffect, useState } from 'react';
 import { router, useLocalSearchParams } from 'expo-router';
-import { Alert, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import type { ChavePermissao, MapaPermissoes } from '@decola/types';
 import tema from '@decola/theme';
@@ -29,6 +29,8 @@ import {
   ROTULO_PAPEL,
   type Funcionario,
 } from '@/dados/funcionarios';
+import { Dialogo } from '@/lib/dialogo';
+import { textoDoErro } from '@/lib/erros';
 
 export default function DetalhesDoFuncionario() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -50,7 +52,7 @@ export default function DetalhesDoFuncionario() {
       setPermissoes(encontrado?.permissoes ?? {});
       setErro(encontrado ? null : 'Funcionário não encontrado.');
     } catch (e) {
-      setErro(e instanceof Error ? e.message : 'Não foi possível carregar o funcionário.');
+      setErro(textoDoErro(e, 'Não foi possível carregar o funcionário.'));
     } finally {
       setCarregando(false);
     }
@@ -70,7 +72,7 @@ export default function DetalhesDoFuncionario() {
         await carregar();
         setSucesso(textoSucesso);
       } catch (e) {
-        setMensagem(e instanceof Error ? e.message : 'Não foi possível concluir a ação.');
+        setMensagem(textoDoErro(e, 'Não foi possível concluir a ação.'));
       } finally {
         setProcessando(false);
       }
@@ -194,7 +196,7 @@ export default function DetalhesDoFuncionario() {
                   carregando={processando}
                   desabilitado={bloqueado}
                   aoPressionar={() =>
-                    Alert.alert('Promover a Gestor', `${funcionario.nome} passará a ter acesso total à empresa.`, [
+                    Dialogo.alert('Promover a Gestor', `${funcionario.nome} passará a ter acesso total à empresa.`, [
                       { text: 'Cancelar', style: 'cancel' },
                       {
                         text: 'Promover',
@@ -219,7 +221,7 @@ export default function DetalhesDoFuncionario() {
                   carregando={processando}
                   desabilitado={bloqueado}
                   aoPressionar={() =>
-                    Alert.alert(
+                    Dialogo.alert(
                       'Rebaixar a Funcionário',
                       `${funcionario.nome} perderá o acesso de Gestor e voltará às permissões padrão.`,
                       [
@@ -249,7 +251,7 @@ export default function DetalhesDoFuncionario() {
             carregando={processando}
             desabilitado={bloqueado}
             aoPressionar={() =>
-              Alert.alert(
+              Dialogo.alert(
                 'Remover acesso',
                 `${funcionario.nome} não conseguirá mais entrar no ambiente da empresa.\n\n` +
                   'Todo o histórico dele é mantido: vendas antigas continuam identificadas com o nome dele.',

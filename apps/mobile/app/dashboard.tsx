@@ -21,6 +21,7 @@ import { MenuInferior } from '@/componentes/MenuInferior';
 import { useSessao } from '@/contexto/SessaoContexto';
 import { carregarResumo, observarAvisos, type ResumoDoDashboard } from '@/dados/dashboard';
 import { moeda } from '@/lib/formato';
+import { textoDoErro } from '@/lib/erros';
 
 /** Seções 6.5, 6.6 e 6.9 — cada estado que o usuário precisa entender. */
 function avisoDaConta(
@@ -74,7 +75,7 @@ export default function Dashboard() {
       setResumo(await carregarResumo());
       setErroResumo(null);
     } catch (e) {
-      setErroResumo(e instanceof Error ? e.message : 'Não foi possível carregar o resumo.');
+      setErroResumo(textoDoErro(e, 'Não foi possível carregar o resumo.'));
     }
   }, [empresaId]);
 

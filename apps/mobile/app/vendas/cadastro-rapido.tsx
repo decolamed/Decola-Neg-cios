@@ -29,6 +29,7 @@ import { useSessao } from '@/contexto/SessaoContexto';
 import { listarCamposAtivos, type CampoConfigurado } from '@/dados/camposProduto';
 import { listarCategorias, type Categoria } from '@/dados/categorias';
 import { buscarProduto, criarProduto } from '@/dados/produtos';
+import { textoDoErro } from '@/lib/erros';
 
 export default function CadastroRapido() {
   // `termo` vem da busca por nome; `codigo`, do scanner.
@@ -68,7 +69,7 @@ export default function CadastroRapido() {
         setObrigatorios(ativos.filter((campo) => campo.obrigatorio));
       } catch (e) {
         if (!cancelado) {
-          setMensagem(e instanceof Error ? e.message : 'Não foi possível carregar o formulário.');
+          setMensagem(textoDoErro(e, 'Não foi possível carregar o formulário.'));
         }
       } finally {
         if (!cancelado) setCarregando(false);
@@ -129,7 +130,7 @@ export default function CadastroRapido() {
 
       router.replace('/vendas/nova');
     } catch (e) {
-      setMensagem(e instanceof Error ? e.message : 'Não foi possível cadastrar o produto.');
+      setMensagem(textoDoErro(e, 'Não foi possível cadastrar o produto.'));
     } finally {
       setSalvando(false);
     }

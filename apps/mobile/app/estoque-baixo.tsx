@@ -22,6 +22,7 @@ import { TelaCarregando, TelaMensagem } from '@/componentes/EstadoDaTela';
 import { LadrilhoDeIcone } from '@/componentes/Icone';
 import { useSessao } from '@/contexto/SessaoContexto';
 import { ajustarEstoque, listarProdutos, observarProdutos, type ProdutoComStatus } from '@/dados/produtos';
+import { textoDoErro } from '@/lib/erros';
 
 export default function EstoqueBaixo() {
   const { conta, temPermissao, podeEscrever } = useSessao();
@@ -43,7 +44,7 @@ export default function EstoqueBaixo() {
       setProdutos(await listarProdutos({ apenasEmAlerta: true }));
       setErro(null);
     } catch (e) {
-      setErro(e instanceof Error ? e.message : 'Não foi possível carregar os alertas.');
+      setErro(textoDoErro(e, 'Não foi possível carregar os alertas.'));
     } finally {
       setCarregando(false);
     }
@@ -79,7 +80,7 @@ export default function EstoqueBaixo() {
         setQuantidade('');
         await carregar();
       } catch (e) {
-        setMensagem(e instanceof Error ? e.message : 'Não foi possível repor o estoque.');
+        setMensagem(textoDoErro(e, 'Não foi possível repor o estoque.'));
       } finally {
         setProcessando(false);
       }

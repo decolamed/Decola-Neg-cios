@@ -28,6 +28,7 @@ import {
   type DetalheDaAssinatura,
 } from '@/dados/assinatura';
 import { moeda, rotuloDeFuncionalidade } from '@/lib/formato';
+import { textoDoErro } from '@/lib/erros';
 
 type Estado =
   | { nome: 'carregando' }
@@ -62,7 +63,7 @@ export default function MeuPlano() {
     } catch (e) {
       setEstado({
         nome: 'erro',
-        mensagem: e instanceof Error ? e.message : ERRO_CARREGAR_ASSINATURA,
+        mensagem: textoDoErro(e, ERRO_CARREGAR_ASSINATURA),
       });
     }
   }, [empresaId]);
@@ -101,7 +102,7 @@ export default function MeuPlano() {
       setMensagem('Troca de plano cancelada. Você continua no plano atual.');
       await carregar();
     } catch (e) {
-      setMensagem(e instanceof Error ? e.message : 'Não foi possível cancelar a troca.');
+      setMensagem(textoDoErro(e, 'Não foi possível cancelar a troca.'));
     } finally {
       setSalvando(false);
     }

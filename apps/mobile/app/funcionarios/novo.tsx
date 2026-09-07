@@ -21,6 +21,7 @@ import { TelaMensagem } from '@/componentes/EstadoDaTela';
 import { useSessao } from '@/contexto/SessaoContexto';
 import { emailValido } from '@/dados/autenticacao';
 import { convidarFuncionario, enviarEmailDeConvite } from '@/dados/funcionarios';
+import { textoDoErro } from '@/lib/erros';
 
 export default function NovoFuncionario() {
   const { conta, podeEscrever } = useSessao();
@@ -60,7 +61,7 @@ export default function NovoFuncionario() {
     } catch (e) {
       // Limite do plano, e-mail já vinculado a outra empresa, convite duplicado
       // — a RPC devolve a mensagem pronta (Seções 5.1, 5.2, 6.8).
-      setMensagem(e instanceof Error ? e.message : 'Não foi possível enviar o convite.');
+      setMensagem(textoDoErro(e, 'Não foi possível enviar o convite.'));
     } finally {
       setEnviando(false);
     }

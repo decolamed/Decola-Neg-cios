@@ -18,6 +18,7 @@ import { CampoTexto } from '@/componentes/CampoTexto';
 import { Marca, AssinaturaDecola } from '@/componentes/Marca';
 import {
   AVISO_SEM_EMPRESA,
+  ERRO_ENTRAR_GENERICO,
   emailValido,
   entrarComGoogle,
   entrarComSenha,
@@ -25,6 +26,7 @@ import {
 } from '@/dados/autenticacao';
 import { carregarContextoDaConta, destinoDaConta } from '@/dados/empresa';
 import { assinarMudancaDeConexao, MENSAGENS_SEM_CONEXAO } from '@/lib/conectividade';
+import { textoDoErro } from '@/lib/erros';
 
 export default function Login() {
   const params = useLocalSearchParams<{ aviso?: string; convite?: string }>();
@@ -101,7 +103,7 @@ export default function Login() {
       await entrarComSenha(email, senha);
       await rotearAposLogin(false);
     } catch (e) {
-      setMensagem(e instanceof Error ? e.message : null);
+      setMensagem(textoDoErro(e, ERRO_ENTRAR_GENERICO));
     } finally {
       setEntrando(false);
     }
@@ -115,7 +117,7 @@ export default function Login() {
       await rotearAposLogin(true);
     } catch (e) {
       // Cancelamento do usuário volta com mensagem vazia: não é erro.
-      const texto = e instanceof Error ? e.message : '';
+      const texto = textoDoErro(e, '');
       if (texto) setMensagem(texto);
     } finally {
       setEntrandoComGoogle(false);

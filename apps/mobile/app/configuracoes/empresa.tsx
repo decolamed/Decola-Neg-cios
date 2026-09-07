@@ -11,7 +11,7 @@
  * `empresas.status` NÃO aparece aqui: é do administrador da plataforma
  * (Seção 6.9) e a coluna nem consta no GRANT do cliente.
  */
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, Text } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import tema from '@decola/theme';
@@ -21,6 +21,8 @@ import { CampoTexto } from '@/componentes/CampoTexto';
 import { TelaCarregando, TelaMensagem } from '@/componentes/EstadoDaTela';
 import { useSessao } from '@/contexto/SessaoContexto';
 import { salvarDadosDaEmpresa } from '@/dados/configuracoesEmpresa';
+import { ErroChavePix, ROTULO_DO_TIPO, normalizarChavePix } from '@/lib/chavePix';
+import { textoDoErro } from '@/lib/erros';
 
 export default function DadosDaEmpresa() {
   const { carregando, conta, podeEscrever, recarregar } = useSessao();
@@ -54,6 +56,16 @@ export default function DadosDaEmpresa() {
       return;
     }
 
+    // A chave é conferida ANTES de salvar. Chave malformada não é um detalhe
+    // de cadastro: é um QR Code que o cliente paga e o dinheiro não chega.
+    let chaveNormalizada: string | null;
+    try {
+      chaveNormalizada = normalizarChavePix(chavePix)?.valor ?? null;
+    } catch (e) {
+      setErro(e instanceof ErroChavePix ? e.message : 'Chave Pix inválida.');
+      return;
+    }
+
     setSalvando(true);
     try {
       await salvarDadosDaEmpresa(conta.empresa.id, {
@@ -61,16 +73,31 @@ export default function DadosDaEmpresa() {
         cnpj,
         endereco,
         telefone,
-        chave_pix: chavePix,
+        chave_pix: chaveNormalizada,
       });
+      if (chaveNormalizada) setChavePix(chaveNormalizada);
       await recarregar();
       setSucesso(true);
     } catch (e) {
-      setErro(e instanceof Error ? e.message : 'Não foi possível salvar os dados da empresa.');
+      setErro(textoDoErro(e, 'Não foi possível salvar os dados da empresa.'));
     } finally {
       setSalvando(false);
     }
   }, [conta, nome, cnpj, endereco, telefone, chavePix, recarregar]);
+
+  const conferenciaDaChave = useMemo(() => {
+    if (chavePix.trim() === '') return null;
+    try {
+      const chave = normalizarChavePix(chavePix);
+      if (!chave) return null;
+      return {
+        ok: true,
+        texto: `Reconhecida como ${ROTULO_DO_TIPO[chave.tipo]}: ${chave.exibicao}`,
+      };
+    } catch (e) {
+      return { ok: false, texto: e instanceof ErroChavePix ? e.message : 'Chave Pix inválida.' };
+    }
+  }, [chavePix]);
 
   if (carregando) return <TelaCarregando />;
   if (!conta) return <TelaMensagem mensagem="Não foi possível carregar os dados da empresa." />;
@@ -132,7 +159,8 @@ export default function DadosDaEmpresa() {
         <Text style={estilos.subtitulo}>Recebimento por Pix</Text>
         <Text style={estilos.descricao}>
           Chave usada para gerar o QR Code na tela de Finalizar Venda. Pode ser CPF, CNPJ, e-mail,
-          telefone ou chave aleatória. Sem ela, a opção "Gerar Pix" não funciona.
+          telefone com DDD ou a chave aleatória do seu banco. Sem ela, a opção "Gerar Pix" não
+          funciona.
         </Text>
 
         <CampoTexto
@@ -142,6 +170,15 @@ export default function DadosDaEmpresa() {
           bloqueado={salvando || !podeEscrever}
           placeholder="CPF, CNPJ, e-mail, telefone ou chave aleatória"
         />
+
+        {/* Confirmação imediata do que o sistema entendeu. Telefone digitado
+            como "74999300306" é gravado como "+5574999300306" — a pessoa
+            precisa ver isso antes de um cliente pagar no QR errado. */}
+        {conferenciaDaChave ? (
+          <Text style={conferenciaDaChave.ok ? estilos.notaOk : estilos.notaErro}>
+            {conferenciaDaChave.texto}
+          </Text>
+        ) : null}
 
         <Text style={estilos.nota}>
           O Pix da venda é independente da cobrança da assinatura: ele gera um QR Code para o seu
@@ -179,5 +216,15 @@ const estilos = StyleSheet.create({
     ...tema.tipografia.legenda,
     color: tema.cores.textoSuave,
     marginTop: tema.espacamento.sm,
+  },
+  notaOk: {
+    ...tema.tipografia.legenda,
+    color: tema.cores.positivo,
+    marginTop: tema.espacamento.xs,
+  },
+  notaErro: {
+    ...tema.tipografia.legenda,
+    color: tema.cores.negativo,
+    marginTop: tema.espacamento.xs,
   },
 });

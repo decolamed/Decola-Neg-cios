@@ -25,6 +25,7 @@ import { listarCategorias, type Categoria } from '@/dados/categorias';
 import { urlDaImagem } from '@/dados/imagensProduto';
 import { listarProdutos, observarProdutos, type ProdutoComStatus } from '@/dados/produtos';
 import { moeda } from '@/lib/formato';
+import { textoDoErro } from '@/lib/erros';
 
 export default function TelaEstoque() {
   const { conta, temPermissao, podeEscrever } = useSessao();
@@ -63,7 +64,7 @@ export default function TelaEstoque() {
         setCampos(camposAtivos);
         setErro(null);
       } catch (e) {
-        setErro(e instanceof Error ? e.message : 'Não foi possível carregar o estoque.');
+        setErro(textoDoErro(e, 'Não foi possível carregar o estoque.'));
       } finally {
         setCarregando(false);
         setAtualizando(false);

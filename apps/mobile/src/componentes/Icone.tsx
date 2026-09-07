@@ -25,6 +25,7 @@ export type NomeDeIcone =
   | 'sino'
   | 'busca'
   | 'seta'
+  | 'voltar'
   | 'plano'
   | 'senha'
   | 'sair'
@@ -152,6 +153,15 @@ export function Icone({ nome, cor = tema.cores.primaria, tamanho = 22 }: Props) 
       ) : null}
 
       {nome === 'seta' ? <Path d="M9.5 5.5 16 12l-6.5 6.5" {...comum} /> : null}
+
+      {/* Seta para a esquerda com a haste: sem a haste, a ponta sozinha lê
+          como "anterior" e não como "voltar". */}
+      {nome === 'voltar' ? (
+        <>
+          <Path d="M14 5.5 7.5 12l6.5 6.5" {...comum} />
+          <Path d="M7.8 12h9.4" {...comum} />
+        </>
+      ) : null}
 
       {nome === 'plano' ? (
         <>

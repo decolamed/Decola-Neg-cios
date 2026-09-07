@@ -26,6 +26,7 @@ import {
   type Aviso as AvisoDaEmpresa,
   type CategoriaDoAviso,
 } from '@/dados/dashboard';
+import { textoDoErro } from '@/lib/erros';
 
 type Estado =
   | { nome: 'carregando' }
@@ -72,7 +73,7 @@ export default function Notificacoes() {
     } catch (e) {
       setEstado({
         nome: 'erro',
-        mensagem: e instanceof Error ? e.message : 'Não foi possível carregar as notificações.',
+        mensagem: textoDoErro(e, 'Não foi possível carregar as notificações.'),
       });
     }
   }, []);
@@ -104,7 +105,7 @@ export default function Notificacoes() {
         await carregar();
       } catch (e) {
         // Não impede a navegação: marcar como lido é secundário ao destino.
-        setErroAcao(e instanceof Error ? e.message : 'Não foi possível marcar como lido.');
+        setErroAcao(textoDoErro(e, 'Não foi possível marcar como lido.'));
       }
     }
 
@@ -118,7 +119,7 @@ export default function Notificacoes() {
       await marcarTodosComoLidos(estado.avisos, usuarioId);
       await carregar();
     } catch (e) {
-      setErroAcao(e instanceof Error ? e.message : 'Não foi possível marcar tudo como lido.');
+      setErroAcao(textoDoErro(e, 'Não foi possível marcar tudo como lido.'));
     }
   };
 

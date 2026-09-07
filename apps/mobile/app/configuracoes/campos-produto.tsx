@@ -26,6 +26,7 @@ import {
   type CampoConfigurado,
   type TipoCampo,
 } from '@/dados/camposProduto';
+import { textoDoErro } from '@/lib/erros';
 
 const TIPOS: { valor: TipoCampo; rotulo: string }[] = [
   { valor: 'texto', rotulo: 'Texto' },
@@ -58,7 +59,7 @@ export default function CamposDeProduto() {
       setCampos(await listarCamposConfiguraveis(empresaId));
       setErro(null);
     } catch (e) {
-      setErro(e instanceof Error ? e.message : 'Não foi possível carregar os campos.');
+      setErro(textoDoErro(e, 'Não foi possível carregar os campos.'));
     } finally {
       setCarregando(false);
     }
@@ -94,7 +95,7 @@ export default function CamposDeProduto() {
         });
         await carregar();
       } catch (e) {
-        setMensagem(e instanceof Error ? e.message : 'Não foi possível salvar a alteração.');
+        setMensagem(textoDoErro(e, 'Não foi possível salvar a alteração.'));
         await carregar();
       } finally {
         setSalvando(null);
@@ -131,7 +132,7 @@ export default function CamposDeProduto() {
       setTipoNovo('texto');
       await carregar();
     } catch (e) {
-      setErroNovo(e instanceof Error ? e.message : 'Não foi possível criar o campo.');
+      setErroNovo(textoDoErro(e, 'Não foi possível criar o campo.'));
     } finally {
       setCriando(false);
     }

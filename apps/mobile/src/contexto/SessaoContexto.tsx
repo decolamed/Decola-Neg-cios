@@ -28,6 +28,7 @@ import {
   observarContextoDaConta,
   type ContextoDaConta,
 } from '@/dados/empresa';
+import { textoDoErro } from '@/lib/erros';
 
 type EstadoSessao = {
   carregando: boolean;
@@ -63,7 +64,7 @@ export function ProvedorDeSessao({ children }: { children: ReactNode }) {
       setErro(null);
     } catch (e) {
       setConta(null);
-      setErro(e instanceof Error ? e.message : 'Não foi possível carregar sua conta.');
+      setErro(textoDoErro(e, 'Não foi possível carregar sua conta.'));
     }
   }, []);
 
@@ -74,7 +75,7 @@ export function ProvedorDeSessao({ children }: { children: ReactNode }) {
       setSessao(atual);
       await carregarConta(atual);
     } catch (e) {
-      setErro(e instanceof Error ? e.message : 'Não foi possível iniciar o app.');
+      setErro(textoDoErro(e, 'Não foi possível iniciar o app.'));
     } finally {
       setCarregando(false);
     }

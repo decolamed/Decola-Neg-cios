@@ -33,6 +33,7 @@ import {
   salvarConfiguracaoDaLoja,
   sugerirEndereco,
 } from '@/dados/loja';
+import { textoDoErro } from '@/lib/erros';
 
 export default function ConfiguracoesDaLoja() {
   const { carregando, conta, podeEscrever, recarregar } = useSessao();
@@ -97,7 +98,7 @@ export default function ConfiguracoesDaLoja() {
       await recarregar();
       setSucesso(ativa ? 'Sua loja está no ar.' : 'Configurações salvas. A loja está desligada.');
     } catch (e) {
-      setErro(e instanceof Error ? e.message : 'Não foi possível salvar.');
+      setErro(textoDoErro(e, 'Não foi possível salvar.'));
     } finally {
       setSalvando(false);
     }

@@ -21,6 +21,7 @@ import {
   type VendaResumo,
 } from '@/dados/vendas';
 import { moeda } from '@/lib/formato';
+import { textoDoErro } from '@/lib/erros';
 
 const ROTULO_PAGAMENTO: Record<string, string> = {
   dinheiro: 'Dinheiro',
@@ -66,7 +67,7 @@ export default function HistoricoDeVendas() {
       setPendentes(solicitacoes.length);
       setErro(null);
     } catch (e) {
-      setErro(e instanceof Error ? e.message : 'Não foi possível carregar as vendas.');
+      setErro(textoDoErro(e, 'Não foi possível carregar as vendas.'));
     } finally {
       setCarregando(false);
       setAtualizando(false);

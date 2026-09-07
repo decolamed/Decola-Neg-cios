@@ -15,7 +15,7 @@
  */
 import { useCallback, useState } from 'react';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
-import { Alert, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import tema from '@decola/theme';
 import { Aviso } from '@/componentes/Aviso';
@@ -33,6 +33,8 @@ import {
   urlDaImagem,
 } from '@/dados/imagensProduto';
 import { buscarProduto, type ProdutoComStatus } from '@/dados/produtos';
+import { Dialogo } from '@/lib/dialogo';
+import { textoDoErro } from '@/lib/erros';
 
 export default function FotosDoProduto() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -53,7 +55,7 @@ export default function FotosDoProduto() {
       setProduto(dados ?? 'inexistente');
       setImagens(caminhos);
     } catch (e) {
-      setErro(e instanceof Error ? e.message : 'Não foi possível carregar as fotos.');
+      setErro(textoDoErro(e, 'Não foi possível carregar as fotos.'));
     }
   }, [id]);
 
@@ -73,7 +75,7 @@ export default function FotosDoProduto() {
         await salvarImagensDoProduto(id, novas);
         setImagens(novas);
       } catch (e) {
-        setErro(e instanceof Error ? e.message : 'Não foi possível salvar a alteração.');
+        setErro(textoDoErro(e, 'Não foi possível salvar a alteração.'));
       } finally {
         setOcupado(false);
       }
@@ -98,7 +100,7 @@ export default function FotosDoProduto() {
         });
         await aplicar([...imagens, caminho]);
       } catch (e) {
-        setErro(e instanceof Error ? e.message : 'Não foi possível adicionar a foto.');
+        setErro(textoDoErro(e, 'Não foi possível adicionar a foto.'));
       } finally {
         setOcupado(false);
       }
@@ -108,7 +110,7 @@ export default function FotosDoProduto() {
 
   const remover = useCallback(
     (caminho: string) => {
-      Alert.alert('Remover foto', 'A foto sai da loja e do cadastro do produto.', [
+      Dialogo.alert('Remover foto', 'A foto sai da loja e do cadastro do produto.', [
         { text: 'Cancelar', style: 'cancel' },
         {
           text: 'Remover',

@@ -12,7 +12,7 @@
  */
 import { useCallback, useEffect, useState } from 'react';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
-import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import tema from '@decola/theme';
 import { Aviso } from '@/componentes/Aviso';
@@ -31,6 +31,8 @@ import {
   type ProdutoComStatus,
 } from '@/dados/produtos';
 import { moeda } from '@/lib/formato';
+import { Dialogo } from '@/lib/dialogo';
+import { textoDoErro } from '@/lib/erros';
 
 export default function DetalhesDoProduto() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -61,7 +63,7 @@ export default function DetalhesDoProduto() {
       setCampos(ativos);
       setErro(encontrado ? null : 'Produto não encontrado.');
     } catch (e) {
-      setErro(e instanceof Error ? e.message : 'Não foi possível carregar o produto.');
+      setErro(textoDoErro(e, 'Não foi possível carregar o produto.'));
     } finally {
       setCarregando(false);
     }
@@ -121,7 +123,7 @@ export default function DetalhesDoProduto() {
         fecharPainel();
         await carregar();
       } catch (e) {
-        setMensagem(e instanceof Error ? e.message : 'Não foi possível ajustar o estoque.');
+        setMensagem(textoDoErro(e, 'Não foi possível ajustar o estoque.'));
       } finally {
         setProcessando(false);
       }
@@ -129,7 +131,7 @@ export default function DetalhesDoProduto() {
 
     if (painel === 'reduzir') {
       // Seção 7.5 — a redução exige confirmação antes de aplicar.
-      Alert.alert(
+      Dialogo.alert(
         'Confirmar redução de estoque',
         `Reduzir ${numero} unidade(s) de "${produto.nome}"?\n\nMotivo: ${motivo.trim()}`,
         [
@@ -145,7 +147,7 @@ export default function DetalhesDoProduto() {
 
   const confirmarArquivar = useCallback(() => {
     if (!produto) return;
-    Alert.alert(
+    Dialogo.alert(
       'Arquivar produto',
       `"${produto.nome}" deixará de aparecer nas vendas, mas todo o histórico é mantido e você pode restaurá-lo depois.`,
       [
@@ -158,7 +160,7 @@ export default function DetalhesDoProduto() {
               await arquivarProduto(produto.id);
               await carregar();
             } catch (e) {
-              setMensagem(e instanceof Error ? e.message : 'Não foi possível arquivar.');
+              setMensagem(textoDoErro(e, 'Não foi possível arquivar.'));
             } finally {
               setProcessando(false);
             }
@@ -171,7 +173,7 @@ export default function DetalhesDoProduto() {
   const confirmarExcluir = useCallback(() => {
     if (!produto) return;
     // Seção 8.4 — a confirmação deve deixar claro que não há desfazer.
-    Alert.alert(
+    Dialogo.alert(
       'Excluir produto',
       `"${produto.nome}" sairá de todas as listas e NÃO poderá ser restaurado pelo aplicativo.\n\n` +
         'O histórico de vendas é preservado. Se você só quer parar de vender por um tempo, use Arquivar.',
@@ -186,7 +188,7 @@ export default function DetalhesDoProduto() {
               await excluirProduto(produto.id);
               router.back();
             } catch (e) {
-              setMensagem(e instanceof Error ? e.message : 'Não foi possível excluir.');
+              setMensagem(textoDoErro(e, 'Não foi possível excluir.'));
               setProcessando(false);
             }
           },
@@ -359,7 +361,7 @@ export default function DetalhesDoProduto() {
                     await restaurarProduto(produto.id);
                     await carregar();
                   } catch (e) {
-                    setMensagem(e instanceof Error ? e.message : 'Não foi possível restaurar.');
+                    setMensagem(textoDoErro(e, 'Não foi possível restaurar.'));
                   } finally {
                     setProcessando(false);
                   }

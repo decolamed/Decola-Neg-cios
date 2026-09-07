@@ -14,11 +14,10 @@
  * clientes no 4G. O que sobe é o que a loja precisa mostrar, não o arquivo
  * original da câmera.
  */
-import { decode } from 'base64-arraybuffer';
-import * as FileSystem from 'expo-file-system';
 import * as ImageManipulator from 'expo-image-manipulator';
 import * as ImagePicker from 'expo-image-picker';
 import { supabase } from '@/lib/supabase';
+import { lerBinario } from '@/lib/arquivos';
 import { exigirConexao } from '@/lib/conectividade';
 import { mensagemDeErro } from '@/lib/erros';
 
@@ -89,16 +88,15 @@ export async function enviarImagem(params: {
     { compress: QUALIDADE, format: ImageManipulator.SaveFormat.JPEG },
   );
 
-  const base64 = await FileSystem.readAsStringAsync(reduzida.uri, {
-    encoding: FileSystem.EncodingType.Base64,
-  });
-
   // `Blob` em React Native chega ao Storage vazio em vários aparelhos; o
-  // ArrayBuffer é o caminho que funciona nas duas plataformas.
+  // ArrayBuffer é o caminho que funciona nas duas plataformas — e `lerBinario`
+  // é quem sabe obtê-lo em cada uma delas.
+  const binario = await lerBinario(reduzida.uri);
+
   const nome = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}.jpg`;
   const caminho = `${params.empresaId}/${params.produtoId}/${nome}`;
 
-  const { error } = await supabase.storage.from(BUCKET).upload(caminho, decode(base64), {
+  const { error } = await supabase.storage.from(BUCKET).upload(caminho, binario, {
     contentType: 'image/jpeg',
     upsert: false,
   });

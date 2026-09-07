@@ -8,9 +8,7 @@
  * (Seção 10.3). A RPC de agregação recusa quem não tem.
  */
 import { useCallback, useEffect, useState } from 'react';
-import * as FileSystem from 'expo-file-system';
-import * as Sharing from 'expo-sharing';
-import { ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
+import { Platform, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import tema from '@decola/theme';
 import { Aviso } from '@/componentes/Aviso';
@@ -32,6 +30,7 @@ import {
   type ColunasDoRelatorio,
   type Relatorio,
 } from '@/dados/financeiro';
+import { entregarArquivo } from '@/lib/arquivos';
 import { moeda } from '@/lib/formato';
 import {
   dataDeTexto,
@@ -42,6 +41,7 @@ import {
   type Periodo,
   type TipoDePeriodo,
 } from '@/lib/periodo';
+import { textoDoErro } from '@/lib/erros';
 
 const ROTULO_PAGAMENTO: Record<string, string> = {
   dinheiro: 'Dinheiro',
@@ -79,7 +79,7 @@ export default function Relatorios() {
       setRelatorio(await carregarRelatorio(periodo.desde, periodo.ate));
       setErro(null);
     } catch (e) {
-      setErro(e instanceof Error ? e.message : 'Não foi possível carregar o relatório.');
+      setErro(textoDoErro(e, 'Não foi possível carregar o relatório.'));
     } finally {
       setCarregando(false);
     }
@@ -122,21 +122,23 @@ export default function Relatorios() {
           colunas,
         });
 
-        const caminho = `${FileSystem.cacheDirectory}${arquivo.nomeArquivo}`;
-        await FileSystem.writeAsStringAsync(caminho, arquivo.conteudo, {
-          encoding: formato === 'pdf' ? FileSystem.EncodingType.Base64 : FileSystem.EncodingType.UTF8,
+        // No celular grava e abre a folha de compartilhamento; no navegador
+        // dispara o download. Antes isto chamava `expo-file-system` direto e
+        // o botão simplesmente não fazia nada na web, onde esse módulo não
+        // existe.
+        await entregarArquivo({
+          nomeArquivo: arquivo.nomeArquivo,
+          conteudo: arquivo.conteudo,
+          codificacao: formato === 'pdf' ? 'base64' : 'texto',
+          mimeType: arquivo.mimeType,
+          titulo: 'Relatório de vendas',
         });
 
-        if (await Sharing.isAvailableAsync()) {
-          await Sharing.shareAsync(caminho, {
-            mimeType: arquivo.mimeType,
-            dialogTitle: 'Relatório de vendas',
-          });
-        } else {
-          setMensagem(`Relatório salvo em ${caminho}`);
+        if (Platform.OS === 'web') {
+          setMensagem(`${arquivo.nomeArquivo} foi baixado.`);
         }
       } catch (e) {
-        setMensagem(e instanceof Error ? e.message : 'Não foi possível exportar o relatório.');
+        setMensagem(textoDoErro(e, 'Não foi possível exportar o relatório.'));
       } finally {
         setExportando(null);
       }

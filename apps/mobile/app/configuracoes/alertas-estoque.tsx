@@ -15,6 +15,7 @@ import { TelaCarregando, TelaMensagem } from '@/componentes/EstadoDaTela';
 import { Seletor } from '@/componentes/Seletor';
 import { useSessao } from '@/contexto/SessaoContexto';
 import { definirPercentualDeAlerta, PERCENTUAIS_DE_ALERTA } from '@/dados/configuracoesEmpresa';
+import { textoDoErro } from '@/lib/erros';
 
 export default function AlertasDeEstoque() {
   const { conta, podeEscrever, recarregar, carregando } = useSessao();
@@ -37,7 +38,7 @@ export default function AlertasDeEstoque() {
       await recarregar();
       setSucesso(true);
     } catch (e) {
-      setMensagem(e instanceof Error ? e.message : 'Não foi possível salvar a configuração.');
+      setMensagem(textoDoErro(e, 'Não foi possível salvar a configuração.'));
     } finally {
       setSalvando(false);
     }

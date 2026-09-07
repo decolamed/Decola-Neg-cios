@@ -11,7 +11,7 @@
  */
 import { useCallback, useState } from 'react';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
-import { Alert, Linking, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Linking, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import tema from '@decola/theme';
 import { Aviso } from '@/componentes/Aviso';
@@ -30,6 +30,8 @@ import {
   type PedidoComItens,
 } from '@/dados/pedidos';
 import { moeda } from '@/lib/formato';
+import { Dialogo } from '@/lib/dialogo';
+import { textoDoErro } from '@/lib/erros';
 
 export default function DetalheDoPedido() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -49,7 +51,7 @@ export default function DetalheDoPedido() {
       const dados = await carregarPedido(id);
       setPedido(dados ?? 'inexistente');
     } catch (e) {
-      setErro(e instanceof Error ? e.message : 'Não foi possível carregar o pedido.');
+      setErro(textoDoErro(e, 'Não foi possível carregar o pedido.'));
     }
   }, [id]);
 
@@ -67,7 +69,7 @@ export default function DetalheDoPedido() {
         await acao();
         await carregar();
       } catch (e) {
-        setErro(e instanceof Error ? e.message : 'Não foi possível concluir a ação.');
+        setErro(textoDoErro(e, 'Não foi possível concluir a ação.'));
       } finally {
         setProcessando(false);
       }
@@ -85,7 +87,7 @@ export default function DetalheDoPedido() {
     !encerrado && pedido.status !== 'aguardando_pagamento' && podeEscrever;
 
   const confirmar = (titulo: string, mensagem: string, aoConfirmar: () => void) =>
-    Alert.alert(titulo, mensagem, [
+    Dialogo.alert(titulo, mensagem, [
       { text: 'Cancelar', style: 'cancel' },
       { text: 'Confirmar', onPress: aoConfirmar },
     ]);

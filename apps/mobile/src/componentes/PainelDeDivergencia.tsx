@@ -21,6 +21,7 @@ import { Botao } from './Botao';
 import { CampoTexto } from './CampoTexto';
 import { AVISO_ESTOQUE_INSUFICIENTE } from '@/dados/vendas';
 import { ajustarEstoque } from '@/dados/produtos';
+import { textoDoErro } from '@/lib/erros';
 
 type Props = {
   produtoId: string;
@@ -69,7 +70,7 @@ export function PainelDeDivergencia({
       });
       aoAjustar(resultado.estoque_atual);
     } catch (e) {
-      setMensagem(e instanceof Error ? e.message : 'Não foi possível ajustar o estoque.');
+      setMensagem(textoDoErro(e, 'Não foi possível ajustar o estoque.'));
     } finally {
       setSalvando(false);
     }

@@ -11,15 +11,7 @@
  */
 import { useCallback, useEffect, useState } from 'react';
 import { router, useLocalSearchParams } from 'expo-router';
-import {
-  Alert,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import tema from '@decola/theme';
 import { Aviso } from '@/componentes/Aviso';
@@ -38,6 +30,8 @@ import {
   type TipoMovimentacao,
 } from '@/dados/financeiro';
 import { dataDeTexto } from '@/lib/periodo';
+import { Dialogo } from '@/lib/dialogo';
+import { textoDoErro } from '@/lib/erros';
 
 function hojeIso(): string {
   return new Date().toISOString().slice(0, 10);
@@ -81,7 +75,7 @@ export default function Lancamento() {
         setData(existente.data_movimentacao);
       }
     } catch (e) {
-      setMensagem(e instanceof Error ? e.message : 'Não foi possível carregar o lançamento.');
+      setMensagem(textoDoErro(e, 'Não foi possível carregar o lançamento.'));
     } finally {
       setCarregando(false);
     }
@@ -131,7 +125,7 @@ export default function Lancamento() {
 
       router.back();
     } catch (e) {
-      setMensagem(e instanceof Error ? e.message : 'Não foi possível salvar o lançamento.');
+      setMensagem(textoDoErro(e, 'Não foi possível salvar o lançamento.'));
     } finally {
       setSalvando(false);
     }
@@ -139,7 +133,7 @@ export default function Lancamento() {
 
   const confirmarExclusao = useCallback(() => {
     if (!id) return;
-    Alert.alert(
+    Dialogo.alert(
       'Excluir lançamento',
       'Este lançamento será removido do financeiro. A exclusão fica registrada na auditoria.',
       [
@@ -153,7 +147,7 @@ export default function Lancamento() {
               await excluirLancamento(id);
               router.back();
             } catch (e) {
-              setMensagem(e instanceof Error ? e.message : 'Não foi possível excluir.');
+              setMensagem(textoDoErro(e, 'Não foi possível excluir.'));
               setSalvando(false);
             }
           },

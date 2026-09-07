@@ -16,6 +16,7 @@ import { Aviso } from '@/componentes/Aviso';
 import { Botao } from '@/componentes/Botao';
 import { CampoTexto } from '@/componentes/CampoTexto';
 import { alterarSenha } from '@/dados/autenticacao';
+import { textoDoErro } from '@/lib/erros';
 
 export default function AlterarSenha() {
   const [atual, setAtual] = useState('');
@@ -46,7 +47,7 @@ export default function AlterarSenha() {
       // A confirmação fica em Perfil, como manda a Seção 7.14.
       setTimeout(() => router.back(), 1200);
     } catch (e) {
-      setErro(e instanceof Error ? e.message : 'Não foi possível alterar sua senha.');
+      setErro(textoDoErro(e, 'Não foi possível alterar sua senha.'));
     } finally {
       setSalvando(false);
     }

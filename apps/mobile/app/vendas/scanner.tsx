@@ -17,6 +17,7 @@ import { useCarrinho } from '@/contexto/CarrinhoContexto';
 import { useSessao } from '@/contexto/SessaoContexto';
 import { buscarProdutoPorCodigo } from '@/dados/produtos';
 import { AVISO_PRODUTO_NAO_CADASTRADO } from '@/dados/vendas';
+import { textoDoErro } from '@/lib/erros';
 
 export default function Scanner() {
   const [permissao, pedirPermissao] = useCameraPermissions();
@@ -60,7 +61,7 @@ export default function Scanner() {
         carrinho.adicionar(produto, 1);
         router.back();
       } catch (e) {
-        setErro(e instanceof Error ? e.message : 'Não foi possível consultar o produto.');
+        setErro(textoDoErro(e, 'Não foi possível consultar o produto.'));
       } finally {
         setProcessando(false);
       }

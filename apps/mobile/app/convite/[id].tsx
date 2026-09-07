@@ -20,6 +20,7 @@ import { TelaCarregando } from '@/componentes/EstadoDaTela';
 import { useSessao } from '@/contexto/SessaoContexto';
 import { sessaoAtual } from '@/dados/autenticacao';
 import { aceitarConvite } from '@/dados/funcionarios';
+import { textoDoErro } from '@/lib/erros';
 
 export default function AceitarConvite() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -52,7 +53,7 @@ export default function AceitarConvite() {
     } catch (e) {
       // A RPC recusa convite expirado, e-mail diferente, convite já aceito e
       // conta já vinculada a outra empresa — com a mensagem pronta.
-      setMensagem(e instanceof Error ? e.message : 'Não foi possível aceitar o convite.');
+      setMensagem(textoDoErro(e, 'Não foi possível aceitar o convite.'));
     } finally {
       setAceitando(false);
     }

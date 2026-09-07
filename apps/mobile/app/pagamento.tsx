@@ -28,6 +28,7 @@ import { TelaCarregando } from '@/componentes/EstadoDaTela';
 import { useSessao } from '@/contexto/SessaoContexto';
 import { iniciarCheckout } from '@/dados/assinatura';
 import { moeda } from '@/lib/formato';
+import { textoDoErro } from '@/lib/erros';
 
 /** Estados em que o acesso está liberado — a tela de pagamento sai de cena. */
 const STATUS_LIBERADOS = ['ativa', 'trial'];
@@ -90,7 +91,7 @@ export default function Pagamento() {
       setAguardando(true);
       await recarregar();
     } catch (e) {
-      setErro(e instanceof Error ? e.message : 'Não foi possível iniciar o pagamento.');
+      setErro(textoDoErro(e, 'Não foi possível iniciar o pagamento.'));
     } finally {
       setAbrindo(false);
     }

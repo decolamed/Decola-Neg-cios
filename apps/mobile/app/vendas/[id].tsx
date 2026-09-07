@@ -10,7 +10,7 @@
  */
 import { useCallback, useEffect, useState } from 'react';
 import { router, useLocalSearchParams } from 'expo-router';
-import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import tema from '@decola/theme';
 import { Aviso } from '@/componentes/Aviso';
@@ -28,6 +28,8 @@ import {
   type VendaDetalhada,
 } from '@/dados/vendas';
 import { moeda } from '@/lib/formato';
+import { Dialogo } from '@/lib/dialogo';
+import { textoDoErro } from '@/lib/erros';
 
 const ROTULO_PAGAMENTO: Record<string, string> = {
   dinheiro: 'Dinheiro',
@@ -70,7 +72,7 @@ export default function DetalhesDaVenda() {
       setTemSolicitacaoPendente(pendente);
       setErro(encontrada ? null : 'Venda não encontrada.');
     } catch (e) {
-      setErro(e instanceof Error ? e.message : 'Não foi possível carregar a venda.');
+      setErro(textoDoErro(e, 'Não foi possível carregar a venda.'));
     } finally {
       setCarregando(false);
     }
@@ -85,7 +87,7 @@ export default function DetalhesDaVenda() {
   const confirmarCancelamento = useCallback(() => {
     if (!venda) return;
 
-    Alert.alert(
+    Dialogo.alert(
       'Cancelar venda',
       `A venda de ${moeda(venda.total)} será cancelada.\n\n` +
         'Os produtos voltam ao estoque e um lançamento de estorno é gerado no financeiro. ' +
@@ -105,7 +107,7 @@ export default function DetalhesDaVenda() {
               await carregar();
               setSucesso('Venda cancelada. Estoque e financeiro foram revertidos.');
             } catch (e) {
-              setMensagem(e instanceof Error ? e.message : 'Não foi possível cancelar a venda.');
+              setMensagem(textoDoErro(e, 'Não foi possível cancelar a venda.'));
             } finally {
               setProcessando(false);
             }
@@ -126,7 +128,7 @@ export default function DetalhesDaVenda() {
       await carregar();
       setSucesso('Solicitação enviada. O Gestor vai avaliar o cancelamento.');
     } catch (e) {
-      setMensagem(e instanceof Error ? e.message : 'Não foi possível enviar a solicitação.');
+      setMensagem(textoDoErro(e, 'Não foi possível enviar a solicitação.'));
     } finally {
       setProcessando(false);
     }

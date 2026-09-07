@@ -13,7 +13,7 @@ export const ERRO_CARREGAR_PLANOS = 'Não foi possível carregar os planos. Tent
 export const NENHUM_PLANO = 'Nenhum plano disponível no momento. Tente novamente mais tarde.';
 
 /** Seção 7.14 — canal de suporte da V1 é e-mail. */
-export const EMAIL_SUPORTE = 'suporte@decolanegocios.com.br';
+export const EMAIL_SUPORTE = 'decolanegocios0001@gmail.com';
 
 export type PlanoComTrial = {
   plano: Plano;

@@ -21,6 +21,8 @@ import { useSessao } from '@/contexto/SessaoContexto';
 import { registrarVenda, type FormaPagamento } from '@/dados/vendas';
 import { moeda } from '@/lib/formato';
 import { gerarPayloadPix } from '@/lib/pix';
+import { normalizarChavePix } from '@/lib/chavePix';
+import { textoDoErro } from '@/lib/erros';
 
 const FORMAS: { valor: FormaPagamento; rotulo: string; icone: NomeDeIcone }[] = [
   { valor: 'dinheiro', rotulo: 'Dinheiro', icone: 'dinheiro' },
@@ -39,14 +41,26 @@ export default function FinalizarVenda() {
   const [mensagem, setMensagem] = useState<string | null>(null);
   const [confirmando, setConfirmando] = useState(false);
 
+  // Sem chave cadastrada não existe "gerar mesmo assim": um BR Code montado em
+  // cima de chave vazia ou inválida abre bonitinho no banco do cliente e o
+  // dinheiro não chega em lugar nenhum. Melhor não oferecer o botão.
+  const chavePix = useMemo(() => {
+    if (!conta?.empresa.chave_pix) return null;
+    try {
+      return normalizarChavePix(conta.empresa.chave_pix);
+    } catch {
+      return null;
+    }
+  }, [conta?.empresa.chave_pix]);
+
   const gerarPix = useCallback(() => {
     setErroPix(null);
-    if (!conta) return;
+    if (!conta || !chavePix) return;
 
     try {
       setPixGerado(
         gerarPayloadPix({
-          chave: conta.empresa.chave_pix ?? '',
+          chave: chavePix.valor,
           valor: carrinho.total,
           nomeRecebedor: conta.empresa.nome,
           descricao: `Venda ${new Date().toLocaleDateString('pt-BR')}`,
@@ -54,9 +68,9 @@ export default function FinalizarVenda() {
       );
     } catch (e) {
       setPixGerado(null);
-      setErroPix(e instanceof Error ? e.message : 'Não foi possível gerar o QR Code Pix.');
+      setErroPix(textoDoErro(e, 'Não foi possível gerar o QR Code Pix.'));
     }
-  }, [conta, carrinho.total]);
+  }, [conta, chavePix, carrinho.total]);
 
   const confirmar = useCallback(async () => {
     setMensagem(null);
@@ -75,7 +89,7 @@ export default function FinalizarVenda() {
       carrinho.limpar();
       router.replace(`/vendas/${resultado.venda_id}`);
     } catch (e) {
-      setMensagem(e instanceof Error ? e.message : 'Não foi possível registrar a venda.');
+      setMensagem(textoDoErro(e, 'Não foi possível registrar a venda.'));
     } finally {
       setConfirmando(false);
     }
@@ -186,7 +200,32 @@ export default function FinalizarVenda() {
 
             {erroPix ? <Aviso mensagem={erroPix} tom="alerta" /> : null}
 
-            {pixGerado ? (
+            {!chavePix ? (
+              <>
+                <Aviso
+                  tom="alerta"
+                  mensagem={
+                    conta.empresa.chave_pix
+                      ? 'A chave Pix cadastrada não está em um formato válido, então o QR Code ' +
+                        'geraria uma cobrança que ninguém recebe. Corrija a chave para usar o Pix.'
+                      : 'Esta empresa ainda não cadastrou uma chave Pix. Sem ela não é possível ' +
+                        'gerar o QR Code — o cliente pagaria e o dinheiro não chegaria a você.'
+                  }
+                />
+                {conta.ehGestor ? (
+                  <Botao
+                    titulo="Cadastrar chave Pix"
+                    variante="secundario"
+                    aoPressionar={() => router.push('/configuracoes/empresa')}
+                  />
+                ) : (
+                  <Text style={estilos.notaPix}>
+                    Peça ao Gestor para cadastrar a chave em Configurações → Dados da empresa. Você
+                    pode registrar a venda normalmente escolhendo outra forma de pagamento.
+                  </Text>
+                )}
+              </>
+            ) : pixGerado ? (
               <>
                 <View style={estilos.qrcode}>
                   <QRCode value={pixGerado} size={200} />

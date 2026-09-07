@@ -8,7 +8,7 @@
  */
 import { useState } from 'react';
 import { router } from 'expo-router';
-import { Alert, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import tema from '@decola/theme';
 import { Aviso } from '@/componentes/Aviso';
@@ -18,6 +18,7 @@ import { AssinaturaDecola } from '@/componentes/Marca';
 import { useSessao } from '@/contexto/SessaoContexto';
 import { ROTULO_PAPEL } from '@/dados/funcionarios';
 import { EMAIL_SUPORTE } from '@/dados/planos';
+import { Dialogo } from '@/lib/dialogo';
 
 type Item = {
   titulo: string;
@@ -59,7 +60,7 @@ export default function Perfil() {
 
   const confirmarSaida = () => {
     // Seção 7.14 — "Exibe confirmação ('Tem certeza que deseja sair?')".
-    Alert.alert('Sair da conta', 'Tem certeza que deseja sair?', [
+    Dialogo.alert('Sair da conta', 'Tem certeza que deseja sair?', [
       { text: 'Cancelar', style: 'cancel' },
       {
         text: 'Sair',

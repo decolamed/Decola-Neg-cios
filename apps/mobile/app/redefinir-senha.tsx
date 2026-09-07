@@ -32,6 +32,7 @@ import { Aviso } from '@/componentes/Aviso';
 import { Botao } from '@/componentes/Botao';
 import { CampoTexto } from '@/componentes/CampoTexto';
 import { abrirSessaoDeRecuperacao, definirNovaSenha } from '@/dados/autenticacao';
+import { textoDoErro } from '@/lib/erros';
 
 type Etapa =
   | { nome: 'validando' }
@@ -75,7 +76,7 @@ export default function RedefinirSenha() {
           setEtapa({
             nome: 'linkInvalido',
             mensagem:
-              e instanceof Error ? e.message : 'Não foi possível validar o link de redefinição.',
+              textoDoErro(e, 'Não foi possível validar o link de redefinição.'),
           });
         }
       }
@@ -107,7 +108,7 @@ export default function RedefinirSenha() {
       // Já autenticado pela sessão da recuperação: entra direto.
       router.replace('/dashboard');
     } catch (e) {
-      setErro(e instanceof Error ? e.message : 'Não foi possível definir sua senha.');
+      setErro(textoDoErro(e, 'Não foi possível definir sua senha.'));
     } finally {
       setSalvando(false);
     }

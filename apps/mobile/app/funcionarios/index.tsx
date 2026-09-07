@@ -23,6 +23,7 @@ import {
   ROTULO_PAPEL,
   type Funcionario,
 } from '@/dados/funcionarios';
+import { textoDoErro } from '@/lib/erros';
 
 export default function Funcionarios() {
   const { conta, podeEscrever } = useSessao();
@@ -39,7 +40,7 @@ export default function Funcionarios() {
       setFuncionarios(await listarFuncionarios(empresaId));
       setErro(null);
     } catch (e) {
-      setErro(e instanceof Error ? e.message : 'Não foi possível carregar os funcionários.');
+      setErro(textoDoErro(e, 'Não foi possível carregar os funcionários.'));
     } finally {
       setCarregando(false);
       setAtualizando(false);

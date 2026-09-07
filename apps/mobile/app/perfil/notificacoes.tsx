@@ -23,6 +23,7 @@ import {
   salvarPreferencias,
   type CategoriaNotificacao,
 } from '@/dados/preferencias';
+import { textoDoErro } from '@/lib/erros';
 
 type Estado =
   | { nome: 'carregando' }
@@ -48,7 +49,7 @@ export default function PreferenciasDeNotificacao() {
       setEstado({
         nome: 'erro',
         mensagem:
-          e instanceof Error ? e.message : 'Não foi possível carregar suas preferências.',
+          textoDoErro(e, 'Não foi possível carregar suas preferências.'),
       });
     }
   }, [usuarioId]);
@@ -82,7 +83,7 @@ export default function PreferenciasDeNotificacao() {
     } catch (e) {
       setPreferencias(anterior);
       setAviso({
-        texto: e instanceof Error ? e.message : 'Não foi possível salvar suas preferências.',
+        texto: textoDoErro(e, 'Não foi possível salvar suas preferências.'),
         tom: 'erro',
       });
     }

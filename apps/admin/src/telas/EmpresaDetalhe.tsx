@@ -32,6 +32,7 @@ import {
   type DetalheDaEmpresa,
 } from '@/dados/empresas';
 import { listarPlanos } from '@/dados/planos';
+import { linkDaLoja } from '@/lib/enderecos';
 import { dataBR, dataHoraBR, moeda, paraCampoData } from '@/lib/formato';
 
 type Estado =
@@ -121,9 +122,23 @@ export function EmpresaDetalhe() {
             {empresa.encerrada_em ? ` em ${dataBR(empresa.encerrada_em)}` : ''}
           </p>
         </div>
-        <button type="button" className="botao discreto" onClick={() => navegar('/empresas')}>
-          Voltar
-        </button>
+        <div style={{ display: 'flex', gap: 'var(--espaco-sm)', alignItems: 'center' }}>
+          {/* Ver a loja da empresa é o jeito mais rápido de conferir uma
+              reclamação de cliente: abre exatamente o que ele está vendo. */}
+          {empresa.loja_ativa && empresa.loja_slug ? (
+            <a
+              className="botao discreto"
+              href={linkDaLoja(empresa.loja_slug)}
+              target="_blank"
+              rel="noreferrer"
+            >
+              Ver loja virtual ↗
+            </a>
+          ) : null}
+          <button type="button" className="botao discreto" onClick={() => navegar('/empresas')}>
+            Voltar
+          </button>
+        </div>
       </div>
 
       {aviso ? <Aviso mensagem={aviso.texto} tom={aviso.tom} /> : null}

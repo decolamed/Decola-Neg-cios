@@ -9,11 +9,13 @@
 import { NavLink, Navigate, Route, Routes } from 'react-router-dom';
 import { Aviso, Carregando } from '@/componentes/Basicos';
 import { useSessaoAdmin } from '@/contexto/SessaoAdmin';
+import { URL_DO_SITE } from '@/lib/enderecos';
 import { CONFIGURADO } from '@/lib/supabase';
 import { Configuracoes } from '@/telas/Configuracoes';
 import { Dashboard } from '@/telas/Dashboard';
 import { EmpresaDetalhe } from '@/telas/EmpresaDetalhe';
 import { Empresas } from '@/telas/Empresas';
+import { Integracoes } from '@/telas/Integracoes';
 import { Login } from '@/telas/Login';
 import { Planos } from '@/telas/Planos';
 
@@ -73,6 +75,15 @@ export function App() {
         <NavLink to="/configuracoes" className={({ isActive }) => (isActive ? 'ativo' : '')}>
           Configurações SaaS
         </NavLink>
+        <NavLink to="/integracoes" className={({ isActive }) => (isActive ? 'ativo' : '')}>
+          Integrações
+        </NavLink>
+
+        {/* Sai do painel e entra no produto. Administrar sem nunca ver o que o
+            cliente vê é como se corrige o problema errado. */}
+        <a href={URL_DO_SITE} target="_blank" rel="noreferrer">
+          Visualizar aplicativo ↗
+        </a>
 
         <div className="rodape">
           <div className="destaque">{administrador.nome}</div>
@@ -97,6 +108,7 @@ export function App() {
           <Route path="/empresas/:id" element={<EmpresaDetalhe />} />
           <Route path="/planos" element={<Planos />} />
           <Route path="/configuracoes" element={<Configuracoes />} />
+          <Route path="/integracoes" element={<Integracoes />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>

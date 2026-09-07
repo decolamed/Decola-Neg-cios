@@ -12,6 +12,7 @@
  * valor vive em `assinaturas.valor_contratado`, e nada aqui o toca.
  */
 import type { ConfiguracaoPlataforma, Json, Plano } from '@decola/types';
+import { linkDeContratacao } from '@/lib/enderecos';
 import { supabase } from '@/lib/supabase';
 
 export type DadosDoPlano = {
@@ -96,8 +97,7 @@ export async function definirPlanoAtivo(id: string, ativo: boolean): Promise<voi
  * o padrão é o site oficial.
  */
 export function linkDoPlano(slug: string): string {
-  const base = import.meta.env.VITE_URL_CADASTRO?.trim().replace(/\/$/, '') || 'https://decola.pro';
-  return `${base}/cadastro?plano=${encodeURIComponent(slug)}`;
+  return linkDeContratacao(slug);
 }
 
 

@@ -1,33 +1,54 @@
 /**
  * Vitrine de um negócio — `/loja/:slug`.
  *
- * Pública e sem login. O que aparece aqui é exatamente o que a view
- * `vitrine_produtos` devolve: produto visível, ativo, de loja no ar e com
- * assinatura vigente. A tela não filtra nada por conta própria.
+ * Pública e sem login. O que aparece aqui é exatamente o que as views
+ * `vitrine_*` devolvem: produto visível, ativo, de loja no ar e com assinatura
+ * vigente. A tela não filtra nada por conta própria.
+ *
+ * A ORDEM DA PÁGINA É UMA DECISÃO. Banner (o que a loja quer anunciar), quem
+ * ela é, busca, categorias, destaques e só então o catálogo inteiro. Quem
+ * chega sabendo o que quer usa a busca na terceira dobra; quem chega olhando
+ * desce pelas categorias. Antes só existia a última dessas coisas, e com
+ * duzentos produtos ela é uma parede.
  */
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { Aviso, Carregando } from '@/componentes/Basicos';
 import {
-  BarraDoCarrinho,
+  BuscaDeProdutos,
   CabecalhoDaLoja,
-  CapaDoProduto,
+  CartaoDeProduto,
   CarrosselDaLoja,
-  CoresDaLoja,
+  CirculosDeCategoria,
+  LinhaDeProduto,
 } from '@/componentes/Loja';
-import { adicionarAoCarrinho, totalDeItens } from '@/dados/carrinho';
-import { carregarLoja, listarProdutos, moeda, type Loja as TipoLoja, type ProdutoVitrine } from '@/dados/loja';
+import { MolduraDaLoja } from '@/componentes/MolduraDaLoja';
+import { adicionarAoCarrinho } from '@/dados/carrinho';
+import {
+  carregarLoja,
+  filtrarProdutos,
+  listarCategorias,
+  listarProdutos,
+  type CategoriaVitrine,
+  type Loja as TipoLoja,
+  type ProdutoVitrine,
+} from '@/dados/loja';
 
 type Estado =
   | { nome: 'carregando' }
-  | { nome: 'pronto'; loja: TipoLoja; produtos: ProdutoVitrine[] }
+  | {
+      nome: 'pronto';
+      loja: TipoLoja;
+      produtos: ProdutoVitrine[];
+      categorias: CategoriaVitrine[];
+    }
   | { nome: 'inexistente' }
   | { nome: 'erro'; mensagem: string };
 
 export function Loja() {
   const { slug = '' } = useParams<{ slug: string }>();
   const [estado, setEstado] = useState<Estado>({ nome: 'carregando' });
-  const [noCarrinho, setNoCarrinho] = useState(0);
+  const [busca, setBusca] = useState('');
 
   const carregar = useCallback(async () => {
     setEstado({ nome: 'carregando' });
@@ -37,7 +58,15 @@ export function Loja() {
         setEstado({ nome: 'inexistente' });
         return;
       }
-      setEstado({ nome: 'pronto', loja, produtos: await listarProdutos(slug) });
+
+      // Em paralelo: a loja já foi encontrada, e esperar uma consulta terminar
+      // para começar a outra só adiciona latência no 4G do cliente.
+      const [produtos, categorias] = await Promise.all([
+        listarProdutos(slug),
+        listarCategorias(slug),
+      ]);
+
+      setEstado({ nome: 'pronto', loja, produtos, categorias });
     } catch (e) {
       setEstado({
         nome: 'erro',
@@ -48,13 +77,24 @@ export function Loja() {
 
   useEffect(() => {
     void carregar();
-    setNoCarrinho(totalDeItens(slug));
-  }, [carregar, slug]);
+  }, [carregar]);
 
-  const adicionar = (produtoId: string) => {
-    adicionarAoCarrinho(slug, produtoId, 1);
-    setNoCarrinho(totalDeItens(slug));
-  };
+  const adicionar = useCallback(
+    (produtoId: string) => adicionarAoCarrinho(slug, produtoId, 1),
+    [slug],
+  );
+
+  const pronto = estado.nome === 'pronto' ? estado : null;
+
+  const resultados = useMemo(
+    () => (pronto ? filtrarProdutos(pronto.produtos, busca) : []),
+    [pronto, busca],
+  );
+
+  const destaques = useMemo(
+    () => (pronto ? pronto.produtos.filter((p) => p.destaque) : []),
+    [pronto],
+  );
 
   if (estado.nome === 'carregando') {
     return (
@@ -91,42 +131,102 @@ export function Loja() {
     );
   }
 
-  const { loja, produtos } = estado;
+  const { loja, produtos, categorias } = estado;
+  const buscando = busca.trim().length > 0;
 
   return (
-    <CoresDaLoja loja={loja}>
-      <main className="pagina com-barra">
-        <CabecalhoDaLoja loja={loja} />
+    <MolduraDaLoja loja={loja}>
+      <main className="pagina">
         <CarrosselDaLoja loja={loja} />
+        <CabecalhoDaLoja loja={loja} />
 
-        {produtos.length === 0 ? (
-          <div className="card">
-            <p>Esta loja ainda não publicou produtos. Volte em breve.</p>
-          </div>
+        <BuscaDeProdutos valor={busca} aoMudar={setBusca} />
+
+        {/* Buscando, a página inteira vira o resultado: categorias e
+            destaques abaixo de uma busca ativa são ruído entre a pessoa e o
+            que ela acabou de pedir. */}
+        {buscando ? (
+          <section className="loja-secao">
+            <h2 className="loja-secao-titulo">
+              {resultados.length === 0
+                ? 'Nenhum produto encontrado'
+                : `${resultados.length} ${resultados.length === 1 ? 'resultado' : 'resultados'}`}
+            </h2>
+
+            {resultados.length === 0 ? (
+              <p className="legenda">
+                Tente outra palavra, ou use as categorias para ver tudo o que a loja tem.
+              </p>
+            ) : (
+              <div className="lista-produtos">
+                {resultados.map((produto) => (
+                  <LinhaDeProduto
+                    key={produto.id}
+                    slug={slug}
+                    produto={produto}
+                    aoAdicionar={adicionar}
+                  />
+                ))}
+              </div>
+            )}
+          </section>
         ) : (
-          <div className="grade-produtos">
-            {produtos.map((produto) => (
-              <article className="produto" key={produto.id}>
-                <Link to={`/loja/${slug}/produto/${produto.id}`} className="produto-link">
-                  <CapaDoProduto produto={produto} />
-                  <span className="produto-nome">{produto.nome}</span>
-                  <span className="produto-preco">{moeda(produto.preco)}</span>
-                </Link>
+          <>
+            <CirculosDeCategoria slug={slug} categorias={categorias} />
 
-                {produto.disponivel > 0 ? (
-                  <button type="button" className="botao pequeno" onClick={() => adicionar(produto.id)}>
-                    Adicionar
-                  </button>
-                ) : (
-                  <span className="esgotado">Sem estoque</span>
-                )}
-              </article>
-            ))}
-          </div>
+            {destaques.length > 0 ? (
+              <section className="loja-secao">
+                <div className="loja-secao-cabecalho">
+                  <h2 className="loja-secao-titulo">Produtos em destaque</h2>
+                </div>
+                {/* Faixa que rola de lado: destaque é convite, não catálogo.
+                    Empilhados, os destaques empurrariam o resto da loja para
+                    fora da tela. */}
+                <div className="faixa-produtos">
+                  {destaques.map((produto) => (
+                    <CartaoDeProduto
+                      key={produto.id}
+                      slug={slug}
+                      produto={produto}
+                      aoAdicionar={adicionar}
+                    />
+                  ))}
+                </div>
+              </section>
+            ) : null}
+
+            <section className="loja-secao">
+              <div className="loja-secao-cabecalho">
+                <h2 className="loja-secao-titulo">
+                  {destaques.length > 0 ? 'Todos os produtos' : 'Produtos'}
+                </h2>
+                {categorias.length > 0 ? (
+                  <Link className="loja-secao-link" to={`/loja/${slug}/categorias`}>
+                    Ver categorias →
+                  </Link>
+                ) : null}
+              </div>
+
+              {produtos.length === 0 ? (
+                <div className="card">
+                  <p>Esta loja ainda não publicou produtos. Volte em breve.</p>
+                </div>
+              ) : (
+                <div className="grade-produtos">
+                  {produtos.map((produto) => (
+                    <CartaoDeProduto
+                      key={produto.id}
+                      slug={slug}
+                      produto={produto}
+                      aoAdicionar={adicionar}
+                    />
+                  ))}
+                </div>
+              )}
+            </section>
+          </>
         )}
       </main>
-
-      <BarraDoCarrinho slug={slug} quantidade={noCarrinho} />
-    </CoresDaLoja>
+    </MolduraDaLoja>
   );
 }

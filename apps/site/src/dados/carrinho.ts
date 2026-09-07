@@ -27,12 +27,38 @@ function ler(): Guardado {
   }
 }
 
+/**
+ * Aviso de que o carrinho mudou.
+ *
+ * A barra inferior mostra o contador em TODAS as telas da loja, e ela não é
+ * filha de quem adiciona o item. Sem este aviso, tocar em "+" num produto
+ * deixava o número da barra parado até a próxima navegação — e um contador
+ * parado é indistinguível de um botão que não funcionou.
+ *
+ * Evento do próprio documento, e não um contexto do React, porque o carrinho
+ * já vive fora do React (no `localStorage`) e inventar um provedor só para
+ * espelhá-lo seria manter duas verdades.
+ */
+const EVENTO = 'decola:carrinho';
+
 function gravar(dados: Guardado): void {
   try {
     localStorage.setItem(CHAVE, JSON.stringify(dados));
   } catch {
     /* idem */
   }
+  if (typeof document !== 'undefined') document.dispatchEvent(new Event(EVENTO));
+}
+
+/** Assina as mudanças do carrinho. Devolve a função que cancela a assinatura. */
+export function observarCarrinho(aoMudar: () => void): () => void {
+  document.addEventListener(EVENTO, aoMudar);
+  // `storage` cobre a mesma loja aberta em outra aba do mesmo navegador.
+  window.addEventListener('storage', aoMudar);
+  return () => {
+    document.removeEventListener(EVENTO, aoMudar);
+    window.removeEventListener('storage', aoMudar);
+  };
 }
 
 export function itensDoCarrinho(slug: string): ItemCarrinho[] {

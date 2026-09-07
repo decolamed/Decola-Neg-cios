@@ -32,6 +32,8 @@ export type ProdutoComStatus = {
   percentual_restante: number | null;
   descricao: string | null;
   visivel_na_loja: boolean;
+  /** Faixa "Produtos em destaque" da vitrine. */
+  destaque: boolean;
   /** Unidades comprometidas com pedidos abertos da loja virtual. */
   estoque_reservado: number;
   /**
@@ -130,6 +132,8 @@ export type DadosDeProduto = {
   descricao: string | null;
   /** Vitrine — se o produto aparece na loja. */
   visivelNaLoja: boolean;
+  /** Vitrine — se entra na faixa "Produtos em destaque". */
+  destaque: boolean;
 };
 
 /**
@@ -157,6 +161,7 @@ export async function criarProduto(
       atributos: dados.atributos as Json,
       descricao: dados.descricao?.trim() || null,
       visivel_na_loja: dados.visivelNaLoja,
+      destaque: dados.destaque,
       criado_por: dados.criadoPor,
     })
     .select('id')
@@ -184,6 +189,7 @@ export async function editarProduto(id: string, dados: DadosDeProduto): Promise<
       atributos: dados.atributos as Json,
       descricao: dados.descricao?.trim() || null,
       visivel_na_loja: dados.visivelNaLoja,
+      destaque: dados.destaque,
     })
     .eq('id', id);
 

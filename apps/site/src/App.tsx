@@ -13,10 +13,13 @@ import { CONFIGURADO } from '@/lib/supabase';
 import { Cadastro } from '@/paginas/Cadastro';
 import { ComoFunciona } from '@/paginas/ComoFunciona';
 import { Carrinho } from '@/paginas/Carrinho';
+import { Categoria } from '@/paginas/Categoria';
+import { Categorias } from '@/paginas/Categorias';
 import { Checkout } from '@/paginas/Checkout';
 import { Convite } from '@/paginas/Convite';
 import { DefinirSenha } from '@/paginas/DefinirSenha';
 import { Loja } from '@/paginas/Loja';
+import { MeusPedidos } from '@/paginas/MeusPedidos';
 import { Pedido } from '@/paginas/Pedido';
 import { Produto } from '@/paginas/Produto';
 import { Pagamento } from '@/paginas/Pagamento';
@@ -65,8 +68,11 @@ export function App() {
             propósito: o link vai por WhatsApp e sobrevive a uma eventual troca
             de endereço da loja. */}
         <Route path="/loja/:slug" element={<Loja />} />
+        <Route path="/loja/:slug/categorias" element={<Categorias />} />
+        <Route path="/loja/:slug/categoria/:id" element={<Categoria />} />
         <Route path="/loja/:slug/produto/:id" element={<Produto />} />
         <Route path="/loja/:slug/carrinho" element={<Carrinho />} />
+        <Route path="/loja/:slug/pedidos" element={<MeusPedidos />} />
         <Route path="/loja/:slug/checkout" element={<Checkout />} />
         <Route path="/pedido/:token" element={<Pedido />} />
         {/* Qualquer outro caminho cai na vitrine: um link de plano antigo ou

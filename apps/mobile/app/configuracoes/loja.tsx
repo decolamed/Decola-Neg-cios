@@ -29,6 +29,8 @@ import {
   enderecoCompleto,
   enderecoValido,
   extrairConfiguracao,
+  instagramValido,
+  normalizarInstagram,
   normalizarWhatsapp,
   salvarConfiguracaoDaLoja,
   sugerirEndereco,
@@ -41,6 +43,7 @@ export default function ConfiguracoesDaLoja() {
   const [endereco, setEndereco] = useState('');
   const [ativa, setAtiva] = useState(false);
   const [whatsapp, setWhatsapp] = useState('');
+  const [instagram, setInstagram] = useState('');
   const [descricao, setDescricao] = useState('');
 
   const [naVitrine, setNaVitrine] = useState<number | null>(null);
@@ -54,6 +57,7 @@ export default function ConfiguracoesDaLoja() {
     setEndereco(atual.loja_slug ?? sugerirEndereco(conta.empresa.nome));
     setAtiva(atual.loja_ativa);
     setWhatsapp(atual.whatsapp ?? conta.empresa.telefone ?? '');
+    setInstagram(atual.loja_instagram ?? '');
     setDescricao(atual.loja_descricao ?? '');
 
     void contarProdutosNaVitrine(conta.empresa.id)
@@ -86,12 +90,21 @@ export default function ConfiguracoesDaLoja() {
       return;
     }
 
+    // Vale colar o link inteiro: o que sobra é o usuário, que é o que o banco
+    // aceita. Só reclamamos do que nem assim vira um usuário válido.
+    const usuario = normalizarInstagram(instagram);
+    if (usuario && !instagramValido(usuario)) {
+      setErro('O Instagram aceita apenas letras, números, ponto e sublinhado — sem espaços.');
+      return;
+    }
+
     setSalvando(true);
     try {
       await salvarConfiguracaoDaLoja(conta.empresa.id, {
         loja_slug: slug || null,
         loja_ativa: ativa,
         whatsapp: normalizarWhatsapp(whatsapp),
+        loja_instagram: normalizarInstagram(instagram),
         loja_descricao: descricao.trim() || null,
         reserva_horas: conta.empresa.reserva_horas,
       });
@@ -102,7 +115,7 @@ export default function ConfiguracoesDaLoja() {
     } finally {
       setSalvando(false);
     }
-  }, [conta, endereco, ativa, whatsapp, descricao, recarregar]);
+  }, [conta, endereco, ativa, whatsapp, instagram, descricao, recarregar]);
 
   if (carregando) return <TelaCarregando />;
   if (!conta) return <TelaMensagem mensagem="Sua conta não está disponível no momento." />;
@@ -149,6 +162,14 @@ export default function ConfiguracoesDaLoja() {
           aoMudar={setWhatsapp}
           bloqueado={salvando || !podeEscrever}
           placeholder="(11) 98888-7777"
+        />
+
+        <CampoTexto
+          rotulo="Instagram (opcional)"
+          valor={instagram}
+          aoMudar={setInstagram}
+          bloqueado={salvando || !podeEscrever}
+          placeholder="@sualoja"
         />
         <Text style={estilos.dica}>
           É por aqui que o cliente combina a entrega e o valor do frete com você.

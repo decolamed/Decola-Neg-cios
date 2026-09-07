@@ -27,6 +27,7 @@ export type ValoresDoProduto = {
   descricao: string;
   /** Vitrine: o produto aparece na loja. Nasce desmarcado. */
   visivelNaLoja: boolean;
+  destaque: boolean;
 };
 
 export const VALORES_INICIAIS: ValoresDoProduto = {
@@ -40,6 +41,7 @@ export const VALORES_INICIAIS: ValoresDoProduto = {
   // Desmarcado por padrão: publicar um produto é decisão de quem cadastra,
   // não consequência de cadastrar.
   visivelNaLoja: false,
+  destaque: false,
 };
 
 type Props = {
@@ -194,13 +196,26 @@ export function FormularioDeProduto({
       </Checkbox>
 
       {valores.visivelNaLoja ? (
-        <CampoTexto
-          rotulo="Descrição para o cliente"
-          valor={valores.descricao}
-          aoMudar={(v) => definir('descricao', v)}
-          bloqueado={bloqueado}
-          placeholder="O que o cliente precisa saber sobre o produto"
-        />
+        <>
+          <CampoTexto
+            rotulo="Descrição para o cliente"
+            valor={valores.descricao}
+            aoMudar={(v) => definir('descricao', v)}
+            bloqueado={bloqueado}
+            placeholder="O que o cliente precisa saber sobre o produto"
+          />
+
+          {/* A faixa "Produtos em destaque" é a primeira coisa que o cliente
+              vê depois do banner. Destacar tudo é o mesmo que não destacar
+              nada, então isto é uma escolha, não um padrão. */}
+          <Checkbox
+            marcado={valores.destaque}
+            aoMudar={(v) => definir('destaque', v)}
+            bloqueado={bloqueado}
+          >
+            Mostrar em "Produtos em destaque"
+          </Checkbox>
+        </>
       ) : null}
 
       <Botao

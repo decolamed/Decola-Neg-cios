@@ -62,6 +62,7 @@ export default function EditarProduto() {
         atributos: (produto.atributos ?? {}) as Record<string, unknown>,
         descricao: produto.descricao ?? '',
         visivelNaLoja: produto.visivel_na_loja,
+        destaque: produto.destaque,
       });
       setCategorias(cats);
       setCampos(ativos);
@@ -109,6 +110,7 @@ export default function EditarProduto() {
         atributos: valores.atributos,
         descricao: valores.descricao,
         visivelNaLoja: valores.visivelNaLoja,
+        destaque: valores.destaque,
       });
       router.back();
     } catch (e) {

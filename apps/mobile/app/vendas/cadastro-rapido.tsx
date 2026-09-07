@@ -122,6 +122,7 @@ export default function CadastroRapido() {
         // outra decisão, tomada com calma na tela do produto.
         descricao: null,
         visivelNaLoja: false,
+        destaque: false,
       });
 
       // Volta ao carrinho já com o produto adicionado (Seção 8.2, item 6).

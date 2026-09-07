@@ -15,6 +15,7 @@ import { Aviso, CampoTexto, Carregando } from '@/componentes/Basicos';
 import { itensDoCarrinho, limparCarrinho } from '@/dados/carrinho';
 import { carregarLoja, listarProdutos, moeda, type Loja } from '@/dados/loja';
 import { criarPedido, type FormaPagamento, type Modalidade } from '@/dados/pedido';
+import { lembrarPedido } from '@/dados/pedidosDoCliente';
 
 type Resumo = { nome: string; quantidade: number; subtotal: number };
 
@@ -103,6 +104,15 @@ export function Checkout() {
         });
 
         limparCarrinho(slug);
+        // Guarda o pedido neste aparelho ANTES de navegar: é o que faz a aba
+        // "Pedidos" encontrá-lo depois, sem depender do link do WhatsApp.
+        lembrarPedido({
+          token: criado.token,
+          numero: criado.numero,
+          slug,
+          criadoEm: new Date().toISOString(),
+        });
+
         navegar(`/pedido/${criado.token}`, { replace: true });
       } catch (e) {
         setErro(e instanceof Error ? e.message : 'Não foi possível enviar seu pedido.');

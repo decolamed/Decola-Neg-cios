@@ -71,18 +71,29 @@ export default function CamposDeProduto() {
   }, [carregar]);
 
   const alternar = useCallback(
-    async (campo: CampoConfigurado, mudanca: { ativo?: boolean; obrigatorio?: boolean }) => {
+    async (
+      campo: CampoConfigurado,
+      mudanca: { ativo?: boolean; obrigatorio?: boolean; visivelNaLoja?: boolean },
+    ) => {
       if (!empresaId) return;
       setMensagem(null);
       setSalvando(campo.id);
 
       const ativo = mudanca.ativo ?? campo.ativo;
       const obrigatorio = mudanca.obrigatorio ?? campo.obrigatorio;
+      const visivelNaLoja = mudanca.visivelNaLoja ?? campo.visivelNaLoja;
 
       // Reflete na hora e reverte se o servidor recusar.
       setCampos((atual) =>
         atual.map((c) =>
-          c.id === campo.id ? { ...c, ativo, obrigatorio: ativo ? obrigatorio : false } : c,
+          c.id === campo.id
+            ? {
+                ...c,
+                ativo,
+                obrigatorio: ativo ? obrigatorio : false,
+                visivelNaLoja: ativo ? visivelNaLoja : false,
+              }
+            : c,
         ),
       );
 
@@ -92,6 +103,7 @@ export default function CamposDeProduto() {
           campoId: campo.id,
           ativo,
           obrigatorio,
+          visivelNaLoja,
           ordem: campo.ordem === 999 ? campos.filter((c) => c.ativo).length + 1 : campo.ordem,
         });
         await carregar();
@@ -288,7 +300,7 @@ function LinhaDeCampo({
   bloqueado: boolean;
   aoAlternar: (
     campo: CampoConfigurado,
-    mudanca: { ativo?: boolean; obrigatorio?: boolean },
+    mudanca: { ativo?: boolean; obrigatorio?: boolean; visivelNaLoja?: boolean },
   ) => void;
 }) {
   const tipo = TIPOS.find((t) => t.valor === campo.tipo_campo)?.rotulo ?? campo.tipo_campo;
@@ -317,15 +329,30 @@ function LinhaDeCampo({
       </View>
 
       {campo.ativo ? (
-        <View style={estilos.linha}>
-          <Text style={estilos.obrigatorioRotulo}>Obrigatório no cadastro</Text>
-          <Switch
-            value={campo.obrigatorio}
-            disabled={bloqueado || salvando}
-            onValueChange={(obrigatorio) => aoAlternar(campo, { obrigatorio })}
-            trackColor={{ true: tema.cores.apoio, false: tema.cores.borda }}
-          />
-        </View>
+        <>
+          <View style={estilos.linha}>
+            <Text style={estilos.obrigatorioRotulo}>Obrigatório no cadastro</Text>
+            <Switch
+              value={campo.obrigatorio}
+              disabled={bloqueado || salvando}
+              onValueChange={(obrigatorio) => aoAlternar(campo, { obrigatorio })}
+              trackColor={{ true: tema.cores.apoio, false: tema.cores.borda }}
+            />
+          </View>
+
+          {/* Desligado por padrão de propósito: é aqui que costuma acabar
+              "custo de compra" e "fornecedor", e ninguém deveria publicar a
+              própria margem por esquecer de desmarcar uma caixa. */}
+          <View style={estilos.linha}>
+            <Text style={estilos.obrigatorioRotulo}>Mostrar na loja virtual</Text>
+            <Switch
+              value={campo.visivelNaLoja}
+              disabled={bloqueado || salvando}
+              onValueChange={(visivelNaLoja) => aoAlternar(campo, { visivelNaLoja })}
+              trackColor={{ true: tema.cores.secundaria, false: tema.cores.borda }}
+            />
+          </View>
+        </>
       ) : null}
     </View>
   );

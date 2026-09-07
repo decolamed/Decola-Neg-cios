@@ -26,9 +26,29 @@ export type ConfiguracaoDaLoja = {
   loja_slug: string | null;
   loja_ativa: boolean;
   whatsapp: string | null;
+  /** Só o usuário, sem @ — quem monta o endereço é a vitrine. */
+  loja_instagram: string | null;
   loja_descricao: string | null;
   reserva_horas: number | null;
 };
+
+/**
+ * Aceita o que a pessoa colar: "@loja", "instagram.com/loja", "loja".
+ * Devolve só o usuário, que é o que a constraint do banco admite.
+ */
+export function normalizarInstagram(valor: string): string | null {
+  const limpo = valor
+    .trim()
+    .replace(/^https?:\/\//i, '')
+    .replace(/^(www\.)?instagram\.com\//i, '')
+    .replace(/^@/, '')
+    .replace(/\/.*$/, '');
+  return limpo === '' ? null : limpo;
+}
+
+export function instagramValido(usuario: string): boolean {
+  return /^[A-Za-z0-9._]{1,30}$/.test(usuario);
+}
 
 /**
  * A cara da loja — o que o cliente do lojista vê antes de ler qualquer coisa.
@@ -306,6 +326,7 @@ export function extrairConfiguracao(empresa: Empresa): ConfiguracaoDaLoja {
     loja_slug: empresa.loja_slug,
     loja_ativa: empresa.loja_ativa,
     whatsapp: empresa.whatsapp,
+    loja_instagram: empresa.loja_instagram,
     loja_descricao: empresa.loja_descricao,
     reserva_horas: empresa.reserva_horas,
   };
@@ -323,6 +344,7 @@ export async function salvarConfiguracaoDaLoja(
       loja_slug: dados.loja_slug,
       loja_ativa: dados.loja_ativa,
       whatsapp: dados.whatsapp,
+      loja_instagram: dados.loja_instagram,
       loja_descricao: dados.loja_descricao,
       reserva_horas: dados.reserva_horas,
     })
@@ -334,6 +356,11 @@ export async function salvarConfiguracaoDaLoja(
     const texto = error.message.toLowerCase();
     if (texto.includes('empresas_loja_slug_unico')) {
       throw new Error('Este endereço já está sendo usado por outra loja. Escolha outro.');
+    }
+    if (texto.includes('empresas_loja_instagram_formato')) {
+      throw new Error(
+        'O Instagram aceita apenas letras, números, ponto e sublinhado — sem espaços.',
+      );
     }
     if (texto.includes('empresas_loja_slug_formato')) {
       throw new Error(

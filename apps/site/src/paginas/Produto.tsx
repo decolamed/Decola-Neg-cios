@@ -9,12 +9,20 @@ import { useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { Aviso, Carregando } from '@/componentes/Basicos';
 import { CapaDoProduto } from '@/componentes/Loja';
+import { MolduraDaLoja } from '@/componentes/MolduraDaLoja';
 import { adicionarAoCarrinho } from '@/dados/carrinho';
-import { carregarProduto, moeda, urlDaImagem, type ProdutoVitrine } from '@/dados/loja';
+import {
+  carregarLoja,
+  carregarProduto,
+  moeda,
+  urlDaImagem,
+  type Loja as TipoLoja,
+  type ProdutoVitrine,
+} from '@/dados/loja';
 
 type Estado =
   | { nome: 'carregando' }
-  | { nome: 'pronto'; produto: ProdutoVitrine }
+  | { nome: 'pronto'; loja: TipoLoja; produto: ProdutoVitrine }
   | { nome: 'inexistente' }
   | { nome: 'erro'; mensagem: string };
 
@@ -29,8 +37,8 @@ export function Produto() {
   const carregar = useCallback(async () => {
     setEstado({ nome: 'carregando' });
     try {
-      const produto = await carregarProduto(slug, id);
-      setEstado(produto ? { nome: 'pronto', produto } : { nome: 'inexistente' });
+      const [loja, produto] = await Promise.all([carregarLoja(slug), carregarProduto(slug, id)]);
+      setEstado(loja && produto ? { nome: 'pronto', loja, produto } : { nome: 'inexistente' });
     } catch (e) {
       setEstado({
         nome: 'erro',
@@ -41,6 +49,8 @@ export function Produto() {
 
   useEffect(() => {
     void carregar();
+    setQuantidade(1);
+    setImagemAtiva(0);
   }, [carregar]);
 
   if (estado.nome === 'carregando') {
@@ -73,8 +83,11 @@ export function Produto() {
     );
   }
 
-  const { produto } = estado;
+  const { loja, produto } = estado;
   const maximo = produto.disponivel;
+  const atributos = Object.entries(produto.atributos).filter(
+    ([, valor]) => valor !== null && valor !== undefined && String(valor).trim() !== '',
+  );
 
   const adicionar = () => {
     adicionarAoCarrinho(slug, produto.id, quantidade);
@@ -82,10 +95,14 @@ export function Produto() {
   };
 
   return (
-    <main className="pagina estreita">
-      <Link to={`/loja/${slug}`} className="voltar">
-        ← Voltar para a loja
-      </Link>
+    <MolduraDaLoja loja={loja}>
+      <main className="pagina estreita">
+        <Link
+          to={produto.categoria_id ? `/loja/${slug}/categoria/${produto.categoria_id}` : `/loja/${slug}`}
+          className="voltar"
+        >
+          ← {produto.categoria_nome ?? loja.nome}
+        </Link>
 
       <CapaDoProduto
         produto={{ ...produto, imagens: produto.imagens.slice(imagemAtiva) }}
@@ -112,6 +129,20 @@ export function Produto() {
       <p className="produto-preco grande">{moeda(produto.preco)}</p>
 
       {produto.descricao ? <p className="produto-descricao">{produto.descricao}</p> : null}
+
+      {/* Só os campos que o gestor marcou como visíveis na loja. É aqui que
+          "Tamanho: M" e "Voltagem: 220V" chegam ao cliente — a informação que
+          costuma decidir a compra e que antes só existia no aplicativo. */}
+      {atributos.length > 0 ? (
+        <ul className="produto-atributos">
+          {atributos.map(([rotulo, valor]) => (
+            <li key={rotulo}>
+              <span className="atributo-rotulo">{rotulo}</span>
+              <span className="atributo-valor">{String(valor)}</span>
+            </li>
+          ))}
+        </ul>
+      ) : null}
 
       {maximo <= 0 ? (
         <Aviso tom="alerta" mensagem="Este produto está sem estoque no momento." />
@@ -154,6 +185,7 @@ export function Produto() {
           </button>
         </>
       )}
-    </main>
+      </main>
+    </MolduraDaLoja>
   );
 }

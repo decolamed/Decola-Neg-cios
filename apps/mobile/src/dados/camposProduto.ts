@@ -27,6 +27,14 @@ export type CampoConfigurado = CampoDoCatalogo & {
   ativo: boolean;
   obrigatorio: boolean;
   ordem: number;
+  /**
+   * Este campo aparece na página pública do produto?
+   *
+   * Padrão NÃO, e de propósito: é em `atributos` que acaba morando "custo de
+   * compra" e "fornecedor". Ninguém deveria vazar a própria margem por ter
+   * esquecido de desmarcar uma caixa.
+   */
+  visivelNaLoja: boolean;
 };
 
 type LinhaConfig = {
@@ -34,6 +42,7 @@ type LinhaConfig = {
   ativo: boolean;
   obrigatorio: boolean;
   ordem: number;
+  visivel_na_loja: boolean;
 };
 
 function normalizarOpcoes(opcoes: Json | null): string[] | null {
@@ -53,7 +62,7 @@ export async function listarCamposConfiguraveis(empresaId: string): Promise<Camp
       .order('nome_exibicao', { ascending: true }),
     supabase
       .from('empresa_campos_produto')
-      .select('campo_id, ativo, obrigatorio, ordem')
+      .select('campo_id, ativo, obrigatorio, ordem, visivel_na_loja')
       .eq('empresa_id', empresaId),
   ]);
 
@@ -77,6 +86,7 @@ export async function listarCamposConfiguraveis(empresaId: string): Promise<Camp
         ativo: atual?.ativo ?? false,
         obrigatorio: atual?.obrigatorio ?? false,
         ordem: atual?.ordem ?? 999,
+        visivelNaLoja: atual?.visivel_na_loja ?? false,
       };
     })
     .sort((a, b) => a.ordem - b.ordem || a.nome_exibicao.localeCompare(b.nome_exibicao));
@@ -99,6 +109,7 @@ export async function configurarCampo(params: {
   ativo: boolean;
   obrigatorio: boolean;
   ordem: number;
+  visivelNaLoja: boolean;
 }): Promise<void> {
   await exigirConexao();
 
@@ -107,8 +118,10 @@ export async function configurarCampo(params: {
       empresa_id: params.empresaId,
       campo_id: params.campoId,
       ativo: params.ativo,
-      // Um campo desativado não pode continuar marcado como obrigatório.
+      // Um campo desativado não pode continuar marcado como obrigatório —
+      // nem continuar aparecendo na loja de um produto que já não o tem.
       obrigatorio: params.ativo ? params.obrigatorio : false,
+      visivel_na_loja: params.ativo ? params.visivelNaLoja : false,
       ordem: params.ordem,
     },
     { onConflict: 'empresa_id,campo_id' },

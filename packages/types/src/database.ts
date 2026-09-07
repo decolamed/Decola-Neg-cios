@@ -105,6 +105,8 @@ export type Empresa = {
   loja_banners: BannerDaLoja[];
   /** Interruptor do carrossel, separado da lista: desligar não apaga. */
   loja_banners_ativos: boolean;
+  /** Usuário do Instagram da loja, sem @ e sem URL (0047). */
+  loja_instagram: string | null;
 
   criado_em: string;
   atualizado_em: string;
@@ -199,6 +201,8 @@ export type Produto = {
   /** Caminhos no bucket `produtos` do Storage, em ordem. A primeira é a capa. */
   imagens: string[];
   visivel_na_loja: boolean;
+  /** Aparece na faixa "Produtos em destaque" da vitrine (0047). */
+  destaque: boolean;
   /**
    * Unidades comprometidas com pedidos em aberto. NÃO é estoque físico —
    * o disponível é `estoque_atual - estoque_reservado`, e essa é a conta que
@@ -293,6 +297,8 @@ export type EmpresaCampoProduto = {
   ativo: boolean;
   obrigatorio: boolean;
   ordem: number;
+  /** Este campo aparece na página pública do produto? Padrão: não (0047). */
+  visivel_na_loja: boolean;
 };
 
 export type VendaItem = {
@@ -430,6 +436,8 @@ export type VitrineLojaRow = {
   logo_url: string | null;
   whatsapp: string | null;
   endereco: string | null;
+  /** Usuário do Instagram, sem @ e sem URL (0047). */
+  instagram: string | null;
   /** Só o fato de existir chave Pix; a chave em si não sai daqui. */
   aceita_pix: boolean;
   /** Cor de destaque escolhida pelo lojista (0043). */
@@ -452,6 +460,26 @@ export type VitrineProdutoRow = {
   imagens: string[];
   /** `estoque_atual - estoque_reservado`, calculado pela view. */
   disponivel: number;
+  categoria_id: string | null;
+  categoria_nome: string | null;
+  /** Faixa "Produtos em destaque" da vitrine (0047). */
+  destaque: boolean;
+  criado_em: string;
+  /**
+   * SOMENTE os campos que o gestor marcou como visíveis na loja, já com o
+   * rótulo dele. O padrão é não mostrar — atributo é onde mora "custo".
+   */
+  atributos: Record<string, unknown>;
+};
+
+/** View `vitrine_categorias` (0047) — categorias com produto à mostra. */
+export type VitrineCategoriaRow = {
+  loja_slug: string;
+  id: string;
+  nome: string;
+  produtos: number;
+  /** Foto emprestada do primeiro produto da categoria, ou nula. */
+  capa: string | null;
 };
 
 export type Database = {
@@ -496,6 +524,10 @@ export type Database = {
       };
       vitrine_produtos: {
         Row: VitrineProdutoRow;
+        Relationships: [];
+      };
+      vitrine_categorias: {
+        Row: VitrineCategoriaRow;
         Relationships: [];
       };
     };
@@ -649,6 +681,11 @@ export type Database = {
       };
       vitrine_consultar_pedido: {
         Args: { p_token: string };
+        Returns: Json;
+      };
+      /** Pedidos do telefone VERIFICADO de quem chama (0048). */
+      vitrine_meus_pedidos: {
+        Args: { p_loja_slug?: string | null };
         Returns: Json;
       };
       pedido_confirmar_pagamento: {

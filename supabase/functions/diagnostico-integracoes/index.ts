@@ -185,13 +185,41 @@ async function verificarResend(): Promise<Verificacao> {
       headers: { Authorization: `Bearer ${chave}` },
     });
 
+    // Um 401 aqui tem DUAS causas muito diferentes, e tratá-las igual foi um
+    // erro que chegou à tela do usuário: uma chave restrita a envio — que é a
+    // recomendada, e a única permissão que esta aplicação precisa — não pode
+    // listar domínios, e é recusada exatamente como uma chave inválida seria.
+    // Chamar isso de "falha" acusa de quebrada justamente a configuração certa.
+    // O Resend diferencia as duas no corpo da resposta; é o corpo que decide.
     if (resposta.status === 401 || resposta.status === 403) {
+      const motivo = (await resposta.text()).toLowerCase();
+      const restrita = motivo.includes('restricted') || motivo.includes('not allowed');
+
+      if (restrita) {
+        return {
+          chave: 'resend',
+          nome: 'Resend (e-mails)',
+          situacao: 'atencao',
+          resumo:
+            'A chave está cadastrada e é do tipo restrito a envio — que é o certo para o que ' +
+            'usamos. Uma chave assim não pode listar domínios, então não dá para confirmar o ' +
+            'envio só olhando daqui.',
+          proximoPasso:
+            'Use "Enviar e-mail de teste": ele manda um e-mail de verdade para o seu endereço. ' +
+            'Se chegar, está funcionando — é o único teste que prova isso.',
+          detalhes: { tipo_da_chave: 'restrita a envio' },
+        };
+      }
+
       return {
         chave: 'resend',
         nome: 'Resend (e-mails)',
         situacao: 'falha',
         resumo: 'O Resend recusou a chave.',
-        proximoPasso: 'Gere uma chave nova em resend.com/api-keys e atualize RESEND_API_KEY.',
+        proximoPasso:
+          'Gere uma chave nova em resend.com/api-keys e atualize RESEND_API_KEY. Ao colar, ' +
+          'confira que veio inteira (começa com "re_") e sem espaço no início ou no fim — ' +
+          'chave cortada na cópia dá exatamente este erro.',
         detalhes: { http: resposta.status },
       };
     }

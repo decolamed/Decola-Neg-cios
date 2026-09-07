@@ -9,7 +9,7 @@
  * O painel também não decide quem pode perguntar — a função consulta o banco
  * com o JWT de quem chamou.
  */
-import { supabase } from '@/lib/supabase';
+import { CHAVE_PUBLICA, URL_FUNCOES, supabase } from '@/lib/supabase';
 
 export type SituacaoDaIntegracao = 'ok' | 'atencao' | 'falha' | 'ausente';
 
@@ -34,17 +34,40 @@ export const ROTULO_SITUACAO: Record<SituacaoDaIntegracao, string> = {
   ausente: 'Não configurada',
 };
 
+/**
+ * Manda um e-mail de acesso para o próprio administrador logado.
+ *
+ * É o único teste que prova que o e-mail funciona. Conferir a chave não prova:
+ * a chave restrita a envio — a correta para o nosso uso — nem sequer pode ser
+ * consultada, só usada. Aqui ela é usada, no mesmo caminho de código que
+ * atende o cliente real, e o veredito é a caixa de entrada.
+ *
+ * Reaproveita `enviar-acesso` de propósito, em vez de um endpoint de teste
+ * separado: um teste que exercita outro caminho não testa o que interessa.
+ */
+export async function enviarEmailDeTeste(email: string): Promise<void> {
+  const resposta = await fetch(`${URL_FUNCOES}/enviar-acesso`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', apikey: CHAVE_PUBLICA },
+    body: JSON.stringify({ email, tipo: 'recuperacao' }),
+  });
+
+  const corpo = (await resposta.json().catch(() => null)) as { error?: string } | null;
+  if (!resposta.ok) {
+    throw new Error(corpo?.error ?? 'Não foi possível enviar o e-mail de teste.');
+  }
+}
+
 export async function diagnosticarIntegracoes(): Promise<Diagnostico> {
   const { data: sessao } = await supabase.auth.getSession();
   const token = sessao.session?.access_token;
   if (!token) throw new Error('Sua sessão expirou. Entre novamente.');
 
-  const base = import.meta.env.VITE_SUPABASE_URL?.replace(/\/$/, '');
-  const resposta = await fetch(`${base}/functions/v1/diagnostico-integracoes`, {
+  const resposta = await fetch(`${URL_FUNCOES}/diagnostico-integracoes`, {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${token}`,
-      apikey: import.meta.env.VITE_SUPABASE_ANON_KEY ?? '',
+      apikey: CHAVE_PUBLICA,
       'Content-Type': 'application/json',
     },
     body: '{}',

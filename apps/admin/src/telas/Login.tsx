@@ -10,9 +10,9 @@
  * Por isso esta tela tem exatamente três controles: e-mail, senha e Entrar.
  */
 import { useEffect, useState, type FormEvent } from 'react';
-import { Aviso, CampoTexto } from '@/componentes/Basicos';
+import { Aviso, CampoTexto, Carregando } from '@/componentes/Basicos';
 import { useSessaoAdmin } from '@/contexto/SessaoAdmin';
-import { entrar, LEVANDO_AO_APLICATIVO, sair } from '@/dados/sessao';
+import { entrar } from '@/dados/sessao';
 import { CAMINHO_DO_APP } from '@/lib/enderecos';
 
 export function Login() {
@@ -34,14 +34,16 @@ export function Login() {
    * compartilham a sessão do navegador — então a pessoa não digita a senha de
    * novo do outro lado. Se fossem endereços diferentes, isto seria um segundo
    * login, e o encaminhamento pioraria a vida em vez de melhorar.
+   *
+   * SEM ESPERA. Havia aqui uma pausa de 1,2 s para dar tempo de ler o aviso —
+   * e ela transformava uma passagem em destino: o cliente que abre o produto
+   * pela raiz via, TODA VEZ, uma tela de painel administrativo dizendo que ele
+   * não é administrador. Ninguém precisa ler que está sendo levado para onde
+   * já queria ir. A tela abaixo continua existindo para o caso de o navegador
+   * barrar o redirecionamento, mas o normal é ela nem chegar a piscar.
    */
   useEffect(() => {
-    if (contaDeCliente) {
-      const relogio = setTimeout(() => {
-        window.location.replace(CAMINHO_DO_APP);
-      }, 1200);
-      return () => clearTimeout(relogio);
-    }
+    if (contaDeCliente) window.location.replace(CAMINHO_DO_APP);
   }, [contaDeCliente]);
 
   const enviar = async (evento: FormEvent) => {
@@ -62,28 +64,14 @@ export function Login() {
   if (contaDeCliente) {
     return (
       <div className="centralizado">
-        <h1>Decola Negócios</h1>
-        <div style={{ maxWidth: 420 }}>
-          <Aviso mensagem={LEVANDO_AO_APLICATIVO} tom="sucesso" />
+        <Carregando texto="Abrindo o Decola Negócios…" />
 
-          {/* O redirecionamento é automático; este link cobre o caso de ele
-              ser barrado, e dá à pessoa algo em que clicar durante a espera. */}
-          <a className="botao" href={CAMINHO_DO_APP}>
-            Abrir o aplicativo
-          </a>
-
-          <button
-            type="button"
-            className="botao discreto"
-            style={{ marginTop: 'var(--espaco-sm)' }}
-            onClick={async () => {
-              await sair();
-              await recarregar();
-            }}
-          >
-            Entrar com outra conta
-          </button>
-        </div>
+        {/* Rede de segurança para o caso raro de o navegador barrar o
+            redirecionamento. Discreto de propósito: no caminho normal esta
+            tela não chega a ser lida. */}
+        <a className="botao discreto" href={CAMINHO_DO_APP} style={{ maxWidth: 320 }}>
+          Continuar
+        </a>
       </div>
     );
   }

@@ -17,17 +17,15 @@ import { supabase } from '@/lib/supabase';
 export const ERRO_CREDENCIAIS = 'E-mail ou senha incorretos.';
 export const ERRO_GENERICO = 'Não foi possível entrar. Tente novamente.';
 
-/**
- * Mensagem para quem autenticou e não é administrador da plataforma — um dono
- * de negócio, na maioria das vezes.
+/*
+ * NÃO existe aqui uma mensagem de "esta conta não é de administrador".
  *
- * Antes isto era um beco sem saída: "esta conta não tem acesso, use o
- * aplicativo", sem dizer onde ele fica. Quem chegava aqui tinha credencial
- * válida e nenhum caminho. Agora é aviso de passagem, e a tela encaminha.
+ * Já existiram duas: primeiro um beco sem saída ("use o aplicativo", sem dizer
+ * onde), depois um aviso de passagem com 1,2 s de espera. As duas erravam pelo
+ * mesmo motivo — davam ao cliente uma tela de painel administrativo para ler,
+ * numa visita em que ele só queria abrir o próprio negócio. O encaminhamento
+ * agora é imediato e a tela não chega a ser lida.
  */
-export const LEVANDO_AO_APLICATIVO =
-  'Esta conta é de cliente, não de administrador da plataforma. ' +
-  'Levando você para o aplicativo…';
 
 export async function entrar(email: string, senha: string): Promise<void> {
   const { error } = await supabase.auth.signInWithPassword({

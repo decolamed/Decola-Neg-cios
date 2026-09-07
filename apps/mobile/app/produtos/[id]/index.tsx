@@ -327,12 +327,23 @@ export default function DetalhesDoProduto() {
         ) : null}
 
         {podeEditar ? (
-          <Botao
-            titulo="Editar produto"
-            variante="secundario"
-            aoPressionar={() => router.push(`/produtos/${produto.id}/editar`)}
-            estilo={{ marginTop: tema.espacamento.md }}
-          />
+          <>
+            <Botao
+              titulo="Editar produto"
+              variante="secundario"
+              aoPressionar={() => router.push(`/produtos/${produto.id}/editar`)}
+              estilo={{ marginTop: tema.espacamento.md }}
+            />
+            <Botao
+              titulo={
+                produto.imagens.length > 0
+                  ? `Fotos (${produto.imagens.length})`
+                  : 'Adicionar fotos'
+              }
+              variante="secundario"
+              aoPressionar={() => router.push(`/produtos/${produto.id}/fotos`)}
+            />
+          </>
         ) : null}
 
         {podeArquivarOuExcluir ? (

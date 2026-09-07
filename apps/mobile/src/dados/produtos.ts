@@ -40,6 +40,8 @@ export type ProdutoComStatus = {
    * uma venda que o banco recusa.
    */
   estoque_disponivel: number;
+  /** Caminhos no bucket `produtos`, em ordem. A primeira é a capa. */
+  imagens: string[];
 };
 
 const CAMPOS = '*';

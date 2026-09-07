@@ -9,7 +9,7 @@
  */
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { router, useFocusEffect } from 'expo-router';
-import { FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
+import { FlatList, Image, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import tema from '@decola/theme';
 import { Aviso } from '@/componentes/Aviso';
@@ -22,6 +22,7 @@ import { Seletor } from '@/componentes/Seletor';
 import { useSessao } from '@/contexto/SessaoContexto';
 import { listarCamposAtivos, type CampoConfigurado } from '@/dados/camposProduto';
 import { listarCategorias, type Categoria } from '@/dados/categorias';
+import { urlDaImagem } from '@/dados/imagensProduto';
 import { listarProdutos, observarProdutos, type ProdutoComStatus } from '@/dados/produtos';
 import { moeda } from '@/lib/formato';
 
@@ -207,7 +208,8 @@ function ItemDeProduto({
   produto: ProdutoComStatus;
   aoTocar: () => void;
 }) {
-  // Sem foto de produto na V1: o ladrilho colorido faz o papel da miniatura.
+  // Cor estável por produto, derivada do id: é o que o ladrilho usa quando o
+  // produto ainda não tem foto. Mesmo produto, mesma cor, sempre.
   // A cor é estável por produto, só para a lista não ficar monocromática.
   const cor =
     tema.acentos[
@@ -221,7 +223,17 @@ function ItemDeProduto({
       style={({ pressed }) => [estilos.item, pressed && { opacity: 0.85 }]}
       accessibilityRole="button"
     >
-      <LadrilhoDeIcone nome="produtos" cor={cor} tamanho={46} />
+      {/* A capa quando existe; o ladrilho colorido quando não. Reconhecer o
+          produto pela foto é mais rápido do que ler o nome. */}
+      {produto.imagens.length > 0 ? (
+        <Image
+          source={{ uri: urlDaImagem(produto.imagens[0]) }}
+          style={estilos.itemFoto}
+          resizeMode="cover"
+        />
+      ) : (
+        <LadrilhoDeIcone nome="produtos" cor={cor} tamanho={46} />
+      )}
 
       <View style={estilos.itemInfo}>
         <Text style={estilos.itemNome} numberOfLines={1}>
@@ -270,6 +282,14 @@ const estilos = StyleSheet.create({
     padding: tema.espacamento.md,
     marginBottom: tema.espacamento.sm,
     ...tema.elevacao.card,
+  },
+  // Mesmo tamanho do ladrilho que ela substitui, para a lista não "pular"
+  // entre produtos com e sem foto.
+  itemFoto: {
+    width: 46,
+    height: 46,
+    borderRadius: tema.raio.md,
+    backgroundColor: tema.cores.bordaSuave,
   },
   itemInfo: { flex: 1, marginHorizontal: tema.espacamento.md },
   itemNome: { ...tema.tipografia.corpoDestacado, color: tema.cores.texto },

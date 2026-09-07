@@ -347,7 +347,7 @@ export type AdministradorPlataforma = {
 };
 
 /**
- * View `produtos_com_status` (migration 0016) — Seção 8.3.
+ * View `produtos_com_status` (migrations 0016, 0037 e 0039) — Seção 8.3.
  * O status e o percentual restante são computados pelo banco em tempo de
  * leitura; o app nunca os recalcula.
  */
@@ -355,6 +355,12 @@ export type ProdutoComStatusRow = Produto & {
   categoria_nome: string | null;
   status_estoque: Enums['status_estoque'];
   percentual_restante: number | null;
+  /**
+   * `estoque_atual - estoque_reservado` (0037). É o número que
+   * `registrar_venda` confere — `estoque_atual` sozinho é o físico, e checá-lo
+   * na tela faz o app oferecer venda que o banco recusa.
+   */
+  estoque_disponivel: number;
 };
 
 export type Pedido = {

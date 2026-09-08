@@ -5,6 +5,7 @@
     "baseUrl": ".",
     "paths": {
       "@/*": ["src/*"],
+      "@decola/pix": ["../../packages/pix/src/index.ts"],
       "@decola/theme": ["../../packages/theme/src/index.ts"],
       "@decola/types": ["../../packages/types/src/database.ts"]
     }
@@ -12,6 +13,7 @@
   "include": [
     "**/*.ts",
     "**/*.tsx",
+    "../../packages/pix/src/**/*.ts",
     "../../packages/theme/src/**/*.ts",
     "../../packages/types/src/**/*.ts"
   ]

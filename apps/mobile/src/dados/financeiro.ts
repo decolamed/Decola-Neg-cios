@@ -6,7 +6,7 @@
  * separadamente" (Seção 10.2). O app nunca soma histórico no dispositivo.
  */
 import type { Enums } from '@decola/types';
-import { supabase } from '@/lib/supabase';
+import { CHAVE_PUBLICA, URL_FUNCOES, supabase } from '@/lib/supabase';
 import { exigirConexao } from '@/lib/conectividade';
 import { mensagemDeErro } from '@/lib/erros';
 
@@ -197,14 +197,14 @@ export async function exportarRelatorio(params: {
   const token = sessao.session?.access_token;
   if (!token) throw new Error('Sessão expirada. Entre novamente para exportar.');
 
-  const url = `${process.env.EXPO_PUBLIC_SUPABASE_URL}/functions/v1/exportar-relatorio`;
+  const url = `${URL_FUNCOES}/exportar-relatorio`;
 
   const resposta = await fetch(url, {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${token}`,
       'Content-Type': 'application/json',
-      apikey: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ?? '',
+      apikey: CHAVE_PUBLICA,
     },
     body: JSON.stringify({
       formato: params.formato,

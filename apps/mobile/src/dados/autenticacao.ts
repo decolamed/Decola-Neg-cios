@@ -8,7 +8,7 @@
 import { Session } from '@supabase/supabase-js';
 import * as Linking from 'expo-linking';
 import * as WebBrowser from 'expo-web-browser';
-import { supabase } from '@/lib/supabase';
+import { CHAVE_PUBLICA, URL_FUNCOES, supabase } from '@/lib/supabase';
 import { exigirConexao } from '@/lib/conectividade';
 
 /** Seção 7.11 — mensagem genérica de propósito: não revela se o e-mail existe. */
@@ -174,12 +174,12 @@ export async function enviarLinkDeRecuperacao(email: string): Promise<void> {
   // remetente do Decola, o texto em português e um link que abre no site —
   // e não um e-mail do Supabase apontando para uma rota do Auth.
   const resposta = await fetch(
-    `${process.env.EXPO_PUBLIC_SUPABASE_URL}/functions/v1/enviar-acesso`,
+    `${URL_FUNCOES}/enviar-acesso`,
     {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        apikey: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ?? '',
+        apikey: CHAVE_PUBLICA,
       },
       body: JSON.stringify({ email: email.trim(), tipo: 'recuperacao' }),
     },

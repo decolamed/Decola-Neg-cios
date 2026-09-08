@@ -13,6 +13,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { Aviso, Carregando } from '@/componentes/Basicos';
+import { QrCodePix } from '@/componentes/QrCodePix';
 import { moeda } from '@/dados/loja';
 import {
   ROTULO_STATUS,
@@ -28,7 +29,6 @@ export function Pedido() {
   const [pedido, setPedido] = useState<PedidoConsultado | null>(null);
   const [erro, setErro] = useState<string | null>(null);
   const [avisouPagamento, setAvisouPagamento] = useState(false);
-  const [copiado, setCopiado] = useState(false);
 
   const carregar = useCallback(async () => {
     setErro(null);
@@ -64,16 +64,6 @@ export function Pedido() {
     );
   }
 
-  const copiarPix = async () => {
-    if (!pedido.loja.chave_pix) return;
-    try {
-      await navigator.clipboard.writeText(pedido.loja.chave_pix);
-      setCopiado(true);
-    } catch {
-      // Área de transferência bloqueada: a chave continua visível na tela.
-    }
-  };
-
   return (
     <main className="pagina estreita">
       <div className="cabecalho-pagina">
@@ -90,16 +80,25 @@ export function Pedido() {
         pedido.status === 'aguardando_pagamento' ? (
           <div className="card">
             <h2>Pague com Pix</h2>
-            <p className="legenda">Copie a chave abaixo e faça o pagamento no seu banco.</p>
-
-            <div className="chave-pix">
-              <code>{pedido.loja.chave_pix ?? '—'}</code>
-              <button type="button" className="botao discreto" onClick={copiarPix}>
-                {copiado ? 'Copiada' : 'Copiar chave'}
-              </button>
-            </div>
-
             <p className="valor-destaque">{moeda(pedido.subtotal)}</p>
+
+            {/* O QR carrega o valor. Antes havia só a chave para copiar, e
+                copiar a chave é o pior caminho que o Pix oferece: o cliente
+                ainda precisa abrir o banco, colar, DIGITAR o valor e conferir
+                o recebedor — e é aí que ele erra a vírgula. */}
+            {pedido.loja.chave_pix ? (
+              <QrCodePix
+                chave={pedido.loja.chave_pix}
+                valor={pedido.subtotal}
+                nomeRecebedor={pedido.loja.nome}
+                descricao={`Pedido ${pedido.numero}`}
+              />
+            ) : (
+              <p className="legenda">
+                Esta loja ainda não configurou a chave Pix. Fale com ela pelo WhatsApp para
+                combinar o pagamento.
+              </p>
+            )}
 
             {avisouPagamento ? (
               <Aviso

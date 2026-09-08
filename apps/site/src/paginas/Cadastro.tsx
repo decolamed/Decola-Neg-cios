@@ -10,7 +10,7 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Aviso, CampoTexto, Carregando } from '@/componentes/Basicos';
-import { criarConta, criarEmpresaEAssinatura, emailValido } from '@/dados/cadastro';
+import { contratar, emailValido } from '@/dados/cadastro';
 import { buscarPlanoPorSlug, type PlanoComTrial } from '@/dados/planos';
 
 type Preparacao =
@@ -96,28 +96,27 @@ export function Cadastro() {
       setMensagem(null);
       setCriando(true);
       try {
-        await criarConta(nome, email);
-
-        const resultado = await criarEmpresaEAssinatura({
+        // Um pedido só: conta, empresa e cobrança nascem juntas no servidor.
+        // Se qualquer parte falhar, nada fica pela metade.
+        const contratacao = await contratar({
+          nome,
+          email,
           nomeEmpresa,
-          planoId: preparacao.plano.plano.id,
-          nomeUsuario: nome,
+          planoSlug: slug,
           aceitouTermos,
         });
 
-        // Sem trial, o caminho é um só: cadastro feito, agora paga. O acesso
-        // é liberado pelo webhook do Asaas quando o pagamento confirma, e a
-        // senha vai por e-mail nesse momento — não antes.
-        navegar(resultado.assinatura_status === 'trial' ? '/pronto' : '/pagamento', {
-          replace: true,
-        });
+        // O link do checkout viaja no estado da navegação, não na URL: ele é
+        // de uso único e não deveria sobrar no histórico do navegador nem em
+        // print de tela compartilhado.
+        navegar('/pagamento', { replace: true, state: contratacao });
       } catch (e) {
         setMensagem(e instanceof Error ? e.message : 'Não foi possível concluir o cadastro.');
       } finally {
         setCriando(false);
       }
     },
-    [preparacao, nome, email, nomeEmpresa, aceitouTermos, navegar],
+    [preparacao, slug, nome, email, nomeEmpresa, aceitouTermos, navegar],
   );
 
   if (preparacao.nome === 'carregando') {

@@ -5,6 +5,7 @@ import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import tema from '@decola/theme';
 import { Cabecalho } from '@/componentes/Cabecalho';
+import { HospedeiroDeDialogos } from '@/componentes/Dialogos';
 import { TelaCarregando } from '@/componentes/EstadoDaTela';
 import { ProvedorDeCarrinho } from '@/contexto/CarrinhoContexto';
 import { ProvedorDeSessao } from '@/contexto/SessaoContexto';
@@ -77,6 +78,10 @@ export default function LayoutRaiz() {
               ))}
             </Stack>
           )}
+
+          {/* Fora do Stack, por cima de tudo: a confirmação precisa aparecer
+              inteira mesmo quando a tela por baixo está rolando ou navegando. */}
+          <HospedeiroDeDialogos />
         </ProvedorDeCarrinho>
       </ProvedorDeSessao>
     </SafeAreaProvider>

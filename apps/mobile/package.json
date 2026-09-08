@@ -10,9 +10,10 @@
     "typecheck": "tsc --noEmit",
     "tipos": "npx supabase gen types typescript --project-id nakqafnchwydfogcozvc > ../../packages/types/src/database.ts",
     "conferir:rotas": "node scripts/conferir-rotas.mjs",
-    "exportar:web": "node scripts/conferir-rotas.mjs && EXPO_OFFLINE=1 EXPO_NO_TELEMETRY=1 expo export --platform web --output-dir ../admin/dist/app && node scripts/finalizar-web.mjs ../admin/dist/app"
+    "exportar:web": "node scripts/conferir-rotas.mjs && node scripts/conferir-conexao.mjs && EXPO_OFFLINE=1 EXPO_NO_TELEMETRY=1 expo export --platform web --output-dir ../admin/dist/app && node scripts/finalizar-web.mjs ../admin/dist/app"
   },
   "dependencies": {
+    "@decola/pix": "*",
     "@decola/theme": "*",
     "@decola/types": "*",
     "@expo-google-fonts/montserrat": "^0.4.2",

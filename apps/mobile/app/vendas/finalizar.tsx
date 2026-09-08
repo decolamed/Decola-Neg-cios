@@ -20,8 +20,7 @@ import { useCarrinho } from '@/contexto/CarrinhoContexto';
 import { useSessao } from '@/contexto/SessaoContexto';
 import { registrarVenda, type FormaPagamento } from '@/dados/vendas';
 import { moeda } from '@/lib/formato';
-import { gerarPayloadPix } from '@/lib/pix';
-import { normalizarChavePix } from '@/lib/chavePix';
+import { gerarPayloadPix, normalizarChavePix } from '@decola/pix';
 import { textoDoErro } from '@/lib/erros';
 
 const FORMAS: { valor: FormaPagamento; rotulo: string; icone: NomeDeIcone }[] = [

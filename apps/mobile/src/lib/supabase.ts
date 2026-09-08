@@ -35,6 +35,26 @@ const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || URL_PRODUCAO;
 const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || CHAVE_PRODUCAO;
 
 /**
+ * O ENDEREÇO DAS EDGE FUNCTIONS SAI DAQUI, e de lugar nenhum além daqui.
+ *
+ * Quatro arquivos montavam a URL com
+ * `${process.env.EXPO_PUBLIC_SUPABASE_URL}/functions/v1/...`, SEM a reserva
+ * acima. No aplicativo publicado essa variável não existe, então a URL virava
+ * literalmente "undefined/functions/v1/…" — um caminho relativo, que o
+ * navegador resolvia contra o próprio site e devolvia 404.
+ *
+ * Quatro recursos ficaram mudos por causa disso, sem nenhum erro que
+ * denunciasse a causa: exportar relatório em PDF e Excel, convidar
+ * funcionário, "esqueci minha senha" e o checkout do Asaas dentro do app.
+ *
+ * A lição está nesta constante: o valor com reserva tem de ser calculado uma
+ * vez e reaproveitado. Repetir a expressão é repetir a chance de esquecer o
+ * `||`.
+ */
+export const URL_FUNCOES = `${supabaseUrl}/functions/v1`;
+export const CHAVE_PUBLICA = supabaseAnonKey;
+
+/**
  * A anon key é pública por design — quem protege os dados é a RLS (Seção 9.1),
  * não o segredo da chave. A chave da API do Asaas, essa sim secreta, nunca
  * chega até aqui (Seção 6.4).

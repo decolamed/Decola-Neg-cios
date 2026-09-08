@@ -301,59 +301,72 @@ export default function DetalhesDoProduto() {
               />
             ) : null}
 
+            {/* Confirmar é confirmar, nos dois painéis: alternar a cor por
+                causa do verbo fazia "Reduzir" parecer mais importante que
+                "Adicionar" sem nenhum motivo. */}
             <Botao
               titulo={painel === 'adicionar' ? 'Adicionar' : 'Reduzir'}
               aoPressionar={aplicarAjuste}
               carregando={processando}
-              variante={painel === 'reduzir' ? 'primario' : 'secundario'}
             />
             <Botao titulo="Cancelar" variante="texto" aoPressionar={fecharPainel} />
           </View>
         ) : null}
 
-        {/* Ações */}
-        {podeGerenciarEstoque && painel === 'nenhum' ? (
-          <>
-            <Botao
-              titulo="Adicionar estoque"
-              variante="secundario"
-              aoPressionar={() => setPainel('adicionar')}
-              estilo={{ marginBottom: tema.espacamento.sm }}
-            />
-            <Botao
-              titulo="Reduzir estoque"
-              variante="texto"
-              aoPressionar={() => setPainel('reduzir')}
-            />
-          </>
+        {/*
+          HIERARQUIA DAS AÇÕES — e por que ela mudou.
+
+          Estava assim: "Adicionar estoque", "Editar produto" e "Adicionar
+          fotos" em azul-marinho sólido, colados uns nos outros, e "EXCLUIR
+          PRODUTO" em amarelo — a cor que este aplicativo usa para o botão
+          principal, o que a pessoa toca sem ler. O botão mais perigoso da tela
+          era o mais convidativo.
+
+          Agora há três degraus e eles significam alguma coisa:
+            amarelo ...... a ação mais comum da tela (mexer no estoque);
+            contorno ..... apoio (editar, fotos, reduzir);
+            vermelho ..... destrutivo, e só ele.
+        */}
+        {painel === 'nenhum' && (podeGerenciarEstoque || podeEditar) ? (
+          <View style={estilos.acoes}>
+            {podeGerenciarEstoque ? (
+              <>
+                <Botao titulo="Adicionar estoque" aoPressionar={() => setPainel('adicionar')} />
+                <Botao
+                  titulo="Reduzir estoque"
+                  variante="contorno"
+                  aoPressionar={() => setPainel('reduzir')}
+                />
+              </>
+            ) : null}
+
+            {podeEditar ? (
+              <>
+                <Botao
+                  titulo="Editar produto"
+                  variante="contorno"
+                  aoPressionar={() => router.push(`/produtos/editar/${produto.id}`)}
+                />
+                <Botao
+                  titulo={
+                    produto.imagens.length > 0
+                      ? `Fotos (${produto.imagens.length})`
+                      : 'Adicionar fotos'
+                  }
+                  variante="contorno"
+                  aoPressionar={() => router.push(`/produtos/fotos/${produto.id}`)}
+                />
+              </>
+            ) : null}
+          </View>
         ) : null}
 
-        {podeEditar ? (
-          <>
-            <Botao
-              titulo="Editar produto"
-              variante="secundario"
-              aoPressionar={() => router.push(`/produtos/editar/${produto.id}`)}
-              estilo={{ marginTop: tema.espacamento.md }}
-            />
-            <Botao
-              titulo={
-                produto.imagens.length > 0
-                  ? `Fotos (${produto.imagens.length})`
-                  : 'Adicionar fotos'
-              }
-              variante="secundario"
-              aoPressionar={() => router.push(`/produtos/fotos/${produto.id}`)}
-            />
-          </>
-        ) : null}
-
-        {podeArquivarOuExcluir ? (
+        {podeArquivarOuExcluir && painel === 'nenhum' ? (
           <View style={estilos.acoesDestrutivas}>
             {produto.ciclo_vida === 'arquivado' ? (
               <Botao
                 titulo="Restaurar produto"
-                variante="secundario"
+                variante="contorno"
                 carregando={processando}
                 aoPressionar={async () => {
                   setProcessando(true);
@@ -371,7 +384,12 @@ export default function DetalhesDoProduto() {
               <Botao titulo="Arquivar produto" variante="texto" aoPressionar={confirmarArquivar} />
             )}
 
-            <Botao titulo="Excluir produto" aoPressionar={confirmarExcluir} />
+            {/* Vermelho, e no fim de tudo: excluir não tem volta pela tela. */}
+            <Botao
+              titulo="Excluir produto"
+              variante="destrutivo"
+              aoPressionar={confirmarExcluir}
+            />
           </View>
         ) : null}
 
@@ -427,5 +445,12 @@ const estilos = StyleSheet.create({
     textAlign: 'right',
     flex: 1,
   },
-  acoesDestrutivas: { marginTop: tema.espacamento.xl, gap: tema.espacamento.sm },
+  acoes: { marginTop: tema.espacamento.md, gap: tema.espacamento.sm },
+  acoesDestrutivas: {
+    marginTop: tema.espacamento.xl,
+    paddingTop: tema.espacamento.md,
+    borderTopWidth: 1,
+    borderTopColor: tema.cores.bordaSuave,
+    gap: tema.espacamento.sm,
+  },
 });

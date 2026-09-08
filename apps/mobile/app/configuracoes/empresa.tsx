@@ -21,7 +21,7 @@ import { CampoTexto } from '@/componentes/CampoTexto';
 import { TelaCarregando, TelaMensagem } from '@/componentes/EstadoDaTela';
 import { useSessao } from '@/contexto/SessaoContexto';
 import { salvarDadosDaEmpresa } from '@/dados/configuracoesEmpresa';
-import { ErroChavePix, ROTULO_DO_TIPO, normalizarChavePix } from '@/lib/chavePix';
+import { ErroChavePix, ROTULO_DO_TIPO, normalizarChavePix } from '@decola/pix';
 import { textoDoErro } from '@/lib/erros';
 
 export default function DadosDaEmpresa() {

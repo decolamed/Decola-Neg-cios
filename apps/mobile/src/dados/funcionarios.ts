@@ -7,7 +7,7 @@
  * revalidam papel, limite do plano e a imutabilidade do Gestor Principal.
  */
 import type { ChavePermissao, Enums, Json, MapaPermissoes } from '@decola/types';
-import { supabase } from '@/lib/supabase';
+import { CHAVE_PUBLICA, URL_FUNCOES, supabase } from '@/lib/supabase';
 import { exigirConexao } from '@/lib/conectividade';
 import { mensagemDeErro } from '@/lib/erros';
 
@@ -206,13 +206,13 @@ export async function enviarEmailDeConvite(vinculoId: string): Promise<void> {
   if (!token) throw new Error('Sessão expirada. Entre novamente.');
 
   const resposta = await fetch(
-    `${process.env.EXPO_PUBLIC_SUPABASE_URL}/functions/v1/enviar-convite`,
+    `${URL_FUNCOES}/enviar-convite`,
     {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${token}`,
         'Content-Type': 'application/json',
-        apikey: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ?? '',
+        apikey: CHAVE_PUBLICA,
       },
       body: JSON.stringify({ vinculo_id: vinculoId }),
     },

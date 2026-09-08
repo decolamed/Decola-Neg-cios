@@ -1667,3 +1667,61 @@ a.botao {
   background: var(--tom-secundaria);
   color: var(--cor-primaria);
 }
+
+.linha-resumo {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--espaco-md);
+  padding: 8px 0;
+  border-bottom: 1px solid var(--cor-bordaSuave);
+}
+
+/* ------------------------------------------------------------- pix ------ */
+
+.pix-qr {
+  display: grid;
+  justify-items: center;
+  gap: var(--espaco-sm);
+  margin: var(--espaco-md) 0;
+  text-align: center;
+}
+
+.pix-qr img,
+.pix-qr-vazio {
+  width: 230px;
+  height: 230px;
+  border-radius: var(--raio-md);
+  background: var(--cor-superficie);
+  border: 1px solid var(--cor-borda);
+}
+
+.pix-qr .botao {
+  max-width: 280px;
+}
+
+/* O "copia e cola" fica escondido atrás de um resumo: ele é uma parede de
+   200 caracteres, e quem usa o QR nunca precisa vê-lo. */
+.pix-copia {
+  width: 100%;
+  margin-top: var(--espaco-xs);
+}
+
+.pix-copia summary {
+  cursor: pointer;
+  font-size: var(--fonte-legenda-tamanho);
+  color: var(--cor-primaria);
+}
+
+.pix-copia code {
+  display: block;
+  margin-top: var(--espaco-sm);
+  padding: var(--espaco-sm);
+  background: var(--cor-fundoCampo);
+  border-radius: var(--raio-sm);
+  font-size: 11px;
+  line-height: 1.5;
+  text-align: left;
+  word-break: break-all;
+  color: var(--cor-textoSuave);
+}

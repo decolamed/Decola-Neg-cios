@@ -7,12 +7,12 @@
  */
 import { useCallback, useState } from 'react';
 import { router } from 'expo-router';
-import { CameraView, useCameraPermissions } from 'expo-camera';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import tema from '@decola/theme';
 import { Botao } from '@/componentes/Botao';
-import { TelaCarregando, TelaMensagem } from '@/componentes/EstadoDaTela';
+import { TelaMensagem } from '@/componentes/EstadoDaTela';
+import { LeitorDeCodigo } from '@/componentes/LeitorDeCodigo';
 import { useCarrinho } from '@/contexto/CarrinhoContexto';
 import { useSessao } from '@/contexto/SessaoContexto';
 import { buscarProdutoPorCodigo } from '@/dados/produtos';
@@ -20,7 +20,6 @@ import { AVISO_PRODUTO_NAO_CADASTRADO } from '@/dados/vendas';
 import { textoDoErro } from '@/lib/erros';
 
 export default function Scanner() {
-  const [permissao, pedirPermissao] = useCameraPermissions();
   const { temPermissao, podeEscrever } = useSessao();
   const carrinho = useCarrinho();
 
@@ -69,17 +68,6 @@ export default function Scanner() {
     [processando, naoEncontrado, carrinho],
   );
 
-  if (!permissao) return <TelaCarregando />;
-
-  if (!permissao.granted) {
-    return (
-      <TelaMensagem
-        mensagem="Precisamos da câmera para ler o código de barras dos produtos."
-        aoTentarNovamente={pedirPermissao}
-      />
-    );
-  }
-
   // Seção 8.2 — produto não cadastrado.
   if (naoEncontrado) {
     return (
@@ -112,64 +100,25 @@ export default function Scanner() {
   }
 
   return (
-    <View style={estilos.tela}>
-      <CameraView
-        style={StyleSheet.absoluteFill}
-        facing="back"
-        barcodeScannerSettings={{
-          barcodeTypes: ['ean13', 'ean8', 'upc_a', 'upc_e', 'code128', 'code39', 'itf14', 'qr'],
-        }}
-        onBarcodeScanned={processando ? undefined : aoLer}
-      />
-
-      <SafeAreaView style={estilos.sobreposicao}>
-        <View style={estilos.alvo} />
-
-        <View style={estilos.rodape}>
-          {erro ? <Text style={estilos.erro}>{erro}</Text> : null}
-          <Text style={estilos.instrucao}>
-            Aponte a câmera para o código de barras do produto.
-          </Text>
-          <Botao titulo="Cancelar" variante="secundario" aoPressionar={() => router.back()} />
-        </View>
-      </SafeAreaView>
-    </View>
+    <LeitorDeCodigo
+      aoLer={(codigo) => void aoLer({ data: codigo })}
+      aoCancelar={() => router.back()}
+      pausado={processando}
+      instrucao={erro ?? 'Aponte a câmera para o código de barras do produto.'}
+    />
   );
 }
 
+// A câmera e a sobreposição saíram daqui para `LeitorDeCodigo`, que sabe fazer
+// isso nas duas plataformas. O que sobra nesta tela é a decisão do que fazer
+// com o código lido — e é só disso que estes estilos tratam.
 const estilos = StyleSheet.create({
-  tela: { flex: 1, backgroundColor: tema.paleta.preto },
   telaMensagem: {
     flex: 1,
     backgroundColor: tema.cores.fundo,
     justifyContent: 'center',
     padding: tema.espacamento.lg,
-  },
-  sobreposicao: { flex: 1, justifyContent: 'space-between' },
-  alvo: {
-    alignSelf: 'center',
-    marginTop: tema.espacamento.xxl,
-    width: '80%',
-    height: 180,
-    borderWidth: 2,
-    borderColor: tema.cores.destaque,
-    borderRadius: tema.raio.md,
-  },
-  rodape: {
-    padding: tema.espacamento.lg,
-    backgroundColor: 'rgba(1, 57, 94, 0.85)',
-  },
-  instrucao: {
-    ...tema.tipografia.corpo,
-    color: tema.cores.textoInverso,
-    textAlign: 'center',
-    marginBottom: tema.espacamento.md,
-  },
-  erro: {
-    ...tema.tipografia.corpoDestacado,
-    color: tema.cores.destaque,
-    textAlign: 'center',
-    marginBottom: tema.espacamento.sm,
+    gap: tema.espacamento.sm,
   },
   titulo: { ...tema.tipografia.h1, color: tema.cores.texto, marginBottom: tema.espacamento.sm },
   codigo: {

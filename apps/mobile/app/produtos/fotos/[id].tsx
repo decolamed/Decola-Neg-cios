@@ -18,16 +18,19 @@ import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import tema from '@decola/theme';
+import { AjustarImagem } from '@/componentes/AjustarImagem';
 import { Aviso } from '@/componentes/Aviso';
 import { Botao } from '@/componentes/Botao';
 import { TelaCarregando, TelaMensagem } from '@/componentes/EstadoDaTela';
 import { useSessao } from '@/contexto/SessaoContexto';
 import {
   MAXIMO_DE_IMAGENS,
+  PROPORCAO_DA_FOTO,
   apagarImagem,
   carregarImagensDoProduto,
   enviarImagem,
   escolherImagem,
+  medirImagem,
   salvarImagensDoProduto,
   tirarFoto,
   urlDaImagem,
@@ -35,6 +38,15 @@ import {
 import { buscarProduto, type ProdutoComStatus } from '@/dados/produtos';
 import { Dialogo } from '@/lib/dialogo';
 import { textoDoErro } from '@/lib/erros';
+import type { AreaDeRecorte } from '@/lib/recorte';
+
+/** A foto escolhida, esperando o enquadramento antes de subir. */
+type EmAjuste = {
+  origem: 'galeria' | 'camera';
+  uri: string;
+  largura: number;
+  altura: number;
+};
 
 export default function FotosDoProduto() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -42,6 +54,7 @@ export default function FotosDoProduto() {
 
   const [produto, setProduto] = useState<ProdutoComStatus | null | 'inexistente'>(null);
   const [imagens, setImagens] = useState<string[]>([]);
+  const [emAjuste, setEmAjuste] = useState<EmAjuste | null>(null);
   const [erro, setErro] = useState<string | null>(null);
   const [ocupado, setOcupado] = useState(false);
 
@@ -83,21 +96,40 @@ export default function FotosDoProduto() {
     [id],
   );
 
-  const adicionar = useCallback(
-    async (origem: 'galeria' | 'camera') => {
-      if (!conta || !id) return;
+  /**
+   * Escolher a foto não sobe nada ainda — abre o enquadramento.
+   *
+   * A vitrine mostra a capa num quadrado. Se o corte acontecesse só na hora de
+   * exibir, o lojista veria na loja publicada uma foto cortada por decisão de
+   * ninguém. Aqui ele decide, olhando.
+   */
+  const escolher = useCallback(async (origem: 'galeria' | 'camera') => {
+    setErro(null);
+    try {
+      const uri = origem === 'galeria' ? await escolherImagem() : await tirarFoto();
+      if (!uri) return; // desistir não é erro
+
+      const { largura, altura } = await medirImagem(uri);
+      setEmAjuste({ origem, uri, largura, altura });
+    } catch (e) {
+      setErro(textoDoErro(e, 'Não foi possível abrir a foto.'));
+    }
+  }, []);
+
+  const enviarAjustada = useCallback(
+    async (recorte: AreaDeRecorte) => {
+      if (!conta || !id || !emAjuste) return;
       setErro(null);
+      setOcupado(true);
 
       try {
-        const uri = origem === 'galeria' ? await escolherImagem() : await tirarFoto();
-        if (!uri) return; // desistir não é erro
-
-        setOcupado(true);
         const caminho = await enviarImagem({
           empresaId: conta.empresa.id,
           produtoId: id,
-          uriLocal: uri,
+          uriLocal: emAjuste.uri,
+          recorte,
         });
+        setEmAjuste(null);
         await aplicar([...imagens, caminho]);
       } catch (e) {
         setErro(textoDoErro(e, 'Não foi possível adicionar a foto.'));
@@ -105,7 +137,7 @@ export default function FotosDoProduto() {
         setOcupado(false);
       }
     },
-    [conta, id, imagens, aplicar],
+    [conta, id, emAjuste, imagens, aplicar],
   );
 
   const remover = useCallback(
@@ -141,6 +173,27 @@ export default function FotosDoProduto() {
 
   if (!temPermissao('editar_produto')) {
     return <TelaMensagem mensagem="Você não tem permissão para alterar este produto." />;
+  }
+
+  if (emAjuste) {
+    return (
+      <SafeAreaView style={estilos.tela}>
+        <AjustarImagem
+          uri={emAjuste.uri}
+          larguraOriginal={emAjuste.largura}
+          alturaOriginal={emAjuste.altura}
+          proporcao={PROPORCAO_DA_FOTO}
+          titulo="Enquadrar a foto"
+          aoConfirmar={(area) => void enviarAjustada(area)}
+          aoCancelar={() => {
+            const origem = emAjuste.origem;
+            setEmAjuste(null);
+            void escolher(origem);
+          }}
+          ocupado={ocupado}
+        />
+      </SafeAreaView>
+    );
   }
 
   const podeAlterar = podeEscrever && !ocupado;
@@ -213,14 +266,14 @@ export default function FotosDoProduto() {
           <View style={estilos.acoes}>
             <Botao
               titulo="Escolher da galeria"
-              aoPressionar={() => void adicionar('galeria')}
+              aoPressionar={() => void escolher('galeria')}
               carregando={ocupado}
               desabilitado={!podeAlterar}
             />
             <Botao
               titulo="Tirar foto"
               variante="secundario"
-              aoPressionar={() => void adicionar('camera')}
+              aoPressionar={() => void escolher('camera')}
               desabilitado={!podeAlterar}
             />
           </View>

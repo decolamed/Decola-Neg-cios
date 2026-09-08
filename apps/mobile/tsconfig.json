@@ -4,11 +4,21 @@
     "strict": true,
     "baseUrl": ".",
     "paths": {
-      "@/*": ["src/*"],
-      "@decola/pix": ["../../packages/pix/src/index.ts"],
-      "@decola/theme": ["../../packages/theme/src/index.ts"],
-      "@decola/types": ["../../packages/types/src/database.ts"]
-    }
+      "@/*": [
+        "src/*"
+      ],
+      "@decola/pix": [
+        "../../packages/pix/src/index.ts"
+      ],
+      "@decola/theme": [
+        "../../packages/theme/src/index.ts"
+      ],
+      "@decola/types": [
+        "../../packages/types/src/database.ts"
+      ]
+    },
+    "module": "esnext",
+    "moduleResolution": "bundler"
   },
   "include": [
     "**/*.ts",

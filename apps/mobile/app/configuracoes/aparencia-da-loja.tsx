@@ -15,20 +15,21 @@ import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-nati
 import { SafeAreaView } from 'react-native-safe-area-context';
 import tema from '@decola/theme';
 import type { BannerDaLoja } from '@decola/types';
+import { AjustarImagem } from '@/componentes/AjustarImagem';
 import { Aviso } from '@/componentes/Aviso';
 import { Botao } from '@/componentes/Botao';
 import { CampoTexto } from '@/componentes/CampoTexto';
 import { Checkbox } from '@/componentes/Checkbox';
 import { TelaCarregando, TelaMensagem } from '@/componentes/EstadoDaTela';
-import { Seletor } from '@/componentes/Seletor';
 import { useSessao } from '@/contexto/SessaoContexto';
-import { escolherImagem } from '@/dados/imagensProduto';
+import { escolherImagem, medirImagem } from '@/dados/imagensProduto';
 import {
   ALTURA_DO_BANNER,
   CORES_SUGERIDAS,
-  ENQUADRAMENTOS,
   LARGURA_DO_BANNER,
   MAXIMO_DE_BANNERS,
+  PROPORCAO_DA_LOGO,
+  PROPORCAO_DO_BANNER,
   apagarImagemDaLoja,
   corValida,
   enviarImagemDaLoja,
@@ -36,10 +37,18 @@ import {
   salvarPersonalizacao,
   textoSobre,
   urlDaImagemDaLoja,
-  type Enquadramento,
 } from '@/dados/loja';
 import { Dialogo } from '@/lib/dialogo';
 import { textoDoErro } from '@/lib/erros';
+import type { AreaDeRecorte } from '@/lib/recorte';
+
+/** A imagem escolhida, esperando o enquadramento antes de subir. */
+type EmAjuste = {
+  tipo: 'logo' | 'banners';
+  uri: string;
+  largura: number;
+  altura: number;
+};
 
 export default function AparenciaDaLoja() {
   const { carregando, conta, podeEscrever, recarregar } = useSessao();
@@ -48,7 +57,7 @@ export default function AparenciaDaLoja() {
   const [logo, setLogo] = useState<string | null>(null);
   const [cor, setCor] = useState<string | null>(null);
   const [banners, setBanners] = useState<BannerDaLoja[]>([]);
-  const [enquadramento, setEnquadramento] = useState<Enquadramento>('centro');
+  const [emAjuste, setEmAjuste] = useState<EmAjuste | null>(null);
   const [bannersAtivos, setBannersAtivos] = useState(true);
 
   const [erro, setErro] = useState<string | null>(null);
@@ -90,24 +99,43 @@ export default function AparenciaDaLoja() {
     [conta, nome, logo, cor, banners, bannersAtivos, recarregar],
   );
 
-  /** Sobe a imagem e grava na hora: o arquivo já subiu, a lista tem de seguir. */
-  const adicionarImagem = useCallback(
-    async (tipo: 'logo' | 'banners') => {
-      if (!conta) return;
-      setErro(null);
-      try {
-        const uri = await escolherImagem();
-        if (!uri) return; // desistir não é erro
+  /**
+   * Escolher a imagem NÃO sobe nada ainda — abre o ajuste.
+   *
+   * A ordem importa: enquadrar antes de subir é o que faz a foto publicada ser
+   * a que a pessoa viu. Subir primeiro e cortar depois traria de volta o
+   * problema, só que com o arquivo errado já no bucket.
+   */
+  const escolher = useCallback(async (tipo: 'logo' | 'banners') => {
+    setErro(null);
+    try {
+      const uri = await escolherImagem();
+      if (!uri) return; // desistir não é erro
 
-        setOcupado(true);
+      const { largura, altura } = await medirImagem(uri);
+      setEmAjuste({ tipo, uri, largura, altura });
+    } catch (e) {
+      setErro(textoDoErro(e, 'Não foi possível abrir a imagem.'));
+    }
+  }, []);
+
+  /** Sobe a imagem já enquadrada e grava na hora: o arquivo subiu, a lista segue. */
+  const enviarAjustada = useCallback(
+    async (recorte: AreaDeRecorte) => {
+      if (!conta || !emAjuste) return;
+      setErro(null);
+      setOcupado(true);
+      try {
         const caminho = await enviarImagemDaLoja({
           empresaId: conta.empresa.id,
-          tipo,
-          uriLocal: uri,
-          enquadramento,
+          tipo: emAjuste.tipo,
+          uriLocal: emAjuste.uri,
+          recorte,
         });
 
-        if (tipo === 'logo') {
+        setEmAjuste(null);
+
+        if (emAjuste.tipo === 'logo') {
           const anterior = logo;
           setLogo(caminho);
           await salvar({ logo: caminho });
@@ -123,7 +151,7 @@ export default function AparenciaDaLoja() {
         setOcupado(false);
       }
     },
-    [conta, logo, banners, enquadramento, salvar],
+    [conta, emAjuste, logo, banners, salvar],
   );
 
   const removerBanner = useCallback(
@@ -151,6 +179,29 @@ export default function AparenciaDaLoja() {
   if (!conta) return <TelaMensagem mensagem="Sua conta não está disponível no momento." />;
   if (!conta.ehGestor) {
     return <TelaMensagem mensagem="Só o Gestor pode alterar a aparência da loja." />;
+  }
+
+  // Tela cheia de propósito: enquadrar é uma decisão que merece a tela inteira,
+  // e voltar para o formulário no meio dela só confundiria.
+  if (emAjuste) {
+    const ehBanner = emAjuste.tipo === 'banners';
+    return (
+      <SafeAreaView style={estilos.tela}>
+        <AjustarImagem
+          uri={emAjuste.uri}
+          larguraOriginal={emAjuste.largura}
+          alturaOriginal={emAjuste.altura}
+          proporcao={ehBanner ? PROPORCAO_DO_BANNER : PROPORCAO_DA_LOGO}
+          titulo={ehBanner ? 'Enquadrar o banner' : 'Enquadrar a logo'}
+          aoConfirmar={(area) => void enviarAjustada(area)}
+          aoCancelar={() => {
+            setEmAjuste(null);
+            void escolher(emAjuste.tipo);
+          }}
+          ocupado={ocupado}
+        />
+      </SafeAreaView>
+    );
   }
 
   const corEfetiva = cor ?? tema.cores.primaria;
@@ -230,7 +281,7 @@ export default function AparenciaDaLoja() {
             <Botao
               titulo={logo ? 'Trocar' : 'Escolher logo'}
               variante="secundario"
-              aoPressionar={() => void adicionarImagem('logo')}
+              aoPressionar={() => void escolher('logo')}
               desabilitado={!podeAlterar}
             />
             {logo ? (
@@ -292,10 +343,10 @@ export default function AparenciaDaLoja() {
           de funcionamento.
         </Text>
         <Text style={estilos.dica}>
-          O banner da loja tem {LARGURA_DO_BANNER} × {ALTURA_DO_BANNER} pixels (formato deitado,
-          16:7). Não precisa preparar a imagem nesse tamanho: qualquer foto é ajustada
-          automaticamente. O que você escolhe abaixo é QUAL PARTE dela fica, quando ela for mais
-          alta do que o banner.
+          O banner tem {LARGURA_DO_BANNER} × {ALTURA_DO_BANNER} pixels (deitado, 16:7). Não precisa
+          preparar a imagem nesse tamanho: depois de escolher a foto você arrasta e aproxima até
+          enquadrar do seu jeito, e o que ficar dentro da moldura é exatamente o que vai para a
+          loja.
         </Text>
 
         <View style={estilos.espaco}>
@@ -333,22 +384,13 @@ export default function AparenciaDaLoja() {
             mensagem={`Você chegou ao limite de ${MAXIMO_DE_BANNERS} banners. Remova um para adicionar outro.`}
           />
         ) : (
-          <>
-            <Seletor
-              rotulo="Ao cortar a imagem, manter"
-              opcoes={ENQUADRAMENTOS.map((e) => ({ valor: e.valor, rotulo: e.rotulo }))}
-              selecionado={enquadramento}
-              aoSelecionar={(v) => setEnquadramento((v as Enquadramento) ?? 'centro')}
-              bloqueado={!podeAlterar}
-            />
-            <Botao
-              titulo="Adicionar banner"
-              variante="secundario"
-              aoPressionar={() => void adicionarImagem('banners')}
-              carregando={ocupado}
-              desabilitado={!podeAlterar}
-            />
-          </>
+          <Botao
+            titulo="Adicionar banner"
+            variante="secundario"
+            aoPressionar={() => void escolher('banners')}
+            carregando={ocupado}
+            desabilitado={!podeAlterar}
+          />
         )}
 
         <View style={estilos.espaco}>

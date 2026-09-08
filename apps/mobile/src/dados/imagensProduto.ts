@@ -20,14 +20,36 @@ import { supabase } from '@/lib/supabase';
 import { lerBinario } from '@/lib/arquivos';
 import { exigirConexao } from '@/lib/conectividade';
 import { mensagemDeErro } from '@/lib/erros';
+import { recorteCentralizado, type AreaDeRecorte } from '@/lib/recorte';
 
 const BUCKET = 'produtos';
 
 /** Teto de fotos por produto. Vitrine com dez fotos não vende mais; cansa. */
 export const MAXIMO_DE_IMAGENS = 5;
 
-/** Lado maior da foto publicada. Suficiente para tela cheia de celular. */
+/** Lado da foto publicada. Suficiente para tela cheia de celular. */
 const LADO_MAXIMO = 1200;
+
+/**
+ * A vitrine mostra a foto do produto num quadrado (`.produto-capa`, 1:1).
+ * Guardar quadrado é o que garante que o que o lojista enquadrou é o que o
+ * cliente vê — sem um segundo corte, feito pelo navegador, que ninguém pediu.
+ */
+export const PROPORCAO_DA_FOTO = 1;
+
+/**
+ * Dimensões reais do arquivo — de onde o recorte tem de partir.
+ *
+ * `ImagePicker` devolve largura e altura em alguns casos e não em outros
+ * (galeria da web, principalmente). Perguntar ao manipulador é o caminho que
+ * responde igual nas duas plataformas.
+ */
+export async function medirImagem(uri: string): Promise<{ largura: number; altura: number }> {
+  const lida = await ImageManipulator.manipulateAsync(uri, [], {
+    format: ImageManipulator.SaveFormat.JPEG,
+  });
+  return { largura: lida.width, altura: lida.height };
+}
 
 const QUALIDADE = 0.8;
 
@@ -74,17 +96,29 @@ export async function tirarFoto(): Promise<string | null> {
 /**
  * Sobe a foto e devolve o CAMINHO gravado — quem chama é que decide se e
  * quando esse caminho entra em `produtos.imagens`.
+ *
+ * O `recorte` vem da tela de ajuste: é o pedaço que o lojista enquadrou. Sem
+ * ele o corte é o quadrado do meio — o palpite de quem não escolheu, usado só
+ * quando não há escolha para respeitar.
  */
 export async function enviarImagem(params: {
   empresaId: string;
   produtoId: string;
   uriLocal: string;
+  recorte?: AreaDeRecorte;
 }): Promise<string> {
   await exigirConexao();
 
+  const { largura, altura } = await medirImagem(params.uriLocal);
+  const area = params.recorte ?? recorteCentralizado(largura, altura, PROPORCAO_DA_FOTO);
+
+  // Nunca AUMENTAR: esticar uma foto pequena não acrescenta detalhe, só peso
+  // e borrão. `LADO_MAXIMO` é teto, não alvo.
+  const lado = Math.min(LADO_MAXIMO, area.width, area.height);
+
   const reduzida = await ImageManipulator.manipulateAsync(
     params.uriLocal,
-    [{ resize: { width: LADO_MAXIMO } }],
+    [{ crop: area }, { resize: { width: lado, height: lado } }],
     { compress: QUALIDADE, format: ImageManipulator.SaveFormat.JPEG },
   );
 

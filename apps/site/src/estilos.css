@@ -491,8 +491,11 @@ a.botao {
   background: var(--cor-fundo);
 }
 
+/* Quadrada como a capa da grade, e não 4/3: o lojista enquadra a foto num
+   quadrado no aplicativo, e recortar de novo aqui jogaria fora justamente o
+   que ele decidiu manter. */
 .produto-capa.grande {
-  aspect-ratio: 4 / 3;
+  aspect-ratio: 1;
   margin-bottom: var(--espaco-md);
 }
 

@@ -21,6 +21,7 @@
     "@react-native-async-storage/async-storage": "1.23.1",
     "@react-native-community/netinfo": "11.4.1",
     "@supabase/supabase-js": "^2.45.0",
+    "@zxing/browser": "^0.1.5",
     "base64-arraybuffer": "^1.0.2",
     "expo": "~51.0.39",
     "expo-camera": "~15.0.16",

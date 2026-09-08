@@ -14,6 +14,7 @@ import { Botao } from './Botao';
 import { CampoPersonalizado } from './CampoPersonalizado';
 import { Checkbox } from './Checkbox';
 import { CampoTexto } from './CampoTexto';
+import { LeitorDeCodigo } from './LeitorDeCodigo';
 import { Seletor } from './Seletor';
 
 export type ValoresDoProduto = {
@@ -78,6 +79,8 @@ export function FormularioDeProduto({
   rotuloSalvar = 'Salvar produto',
   erros = {},
 }: Props) {
+  const [lendoCodigo, setLendoCodigo] = useState(false);
+
   const [tocado, setTocado] = useState(false);
 
   const opcoesDeCategoria = useMemo(
@@ -112,6 +115,21 @@ export function FormularioDeProduto({
         return valor !== undefined && valor !== null && String(valor).trim() !== '';
       });
 
+  // Enquanto lê, o leitor toma a tela: uma câmera espremida entre campos não
+  // dá enquadramento para a etiqueta e ainda esconde o que foi lido.
+  if (lendoCodigo) {
+    return (
+      <LeitorDeCodigo
+        instrucao="Aponte para o código de barras da etiqueta do produto."
+        aoLer={(codigo) => {
+          definir('codigo', codigo);
+          setLendoCodigo(false);
+        }}
+        aoCancelar={() => setLendoCodigo(false)}
+      />
+    );
+  }
+
   return (
     <View>
       <CampoTexto
@@ -122,6 +140,9 @@ export function FormularioDeProduto({
         bloqueado={bloqueado}
       />
 
+      {/* Ler o código com a câmera era o que faltava aqui: digitar treze
+          dígitos de um EAN à mão é onde nasce o produto que a venda depois não
+          encontra. O leitor é o MESMO da tela de venda. */}
       <CampoTexto
         rotulo="Código / código de barras"
         valor={valores.codigo}
@@ -129,6 +150,13 @@ export function FormularioDeProduto({
         erro={erros.codigo}
         bloqueado={bloqueado}
         placeholder="Opcional"
+      />
+      <Botao
+        titulo={valores.codigo ? 'Ler outro código' : 'Ler código de barras'}
+        variante="contorno"
+        aoPressionar={() => setLendoCodigo(true)}
+        desabilitado={bloqueado}
+        estilo={{ marginBottom: tema.espacamento.md }}
       />
 
       <CampoTexto

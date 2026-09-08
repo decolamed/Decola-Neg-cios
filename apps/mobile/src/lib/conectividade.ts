@@ -31,11 +31,41 @@ export class SemConexaoError extends Error {
   }
 }
 
+/**
+ * Prazo para a checagem de conexão responder.
+ *
+ * `NetInfo.fetch()` na web faz uma requisição de sondagem antes de responder.
+ * Numa rede móvel ruim essa requisição pode ficar pendurada — e como ela é
+ * `await`, TUDO que depende dela fica pendurado junto: a abertura do app, o
+ * envio de uma foto, o registro de uma venda. Uma tela que espera para sempre
+ * é pior do que uma que erra: a pessoa não tem sequer o que tentar.
+ */
+const PRAZO_DA_CHECAGEM = 4000;
+
 export async function estaConectado(): Promise<boolean> {
-  const estado = await NetInfo.fetch();
-  // `isInternetReachable` pode ser null enquanto o teste ainda não concluiu;
-  // nesse caso confiamos em `isConnected` para não bloquear indevidamente.
-  return Boolean(estado.isConnected) && estado.isInternetReachable !== false;
+  /**
+   * Na dúvida, CONECTADO.
+   *
+   * Se a sondagem não responde a tempo, isso não é prova de que falta
+   * internet — é prova de que a sondagem não respondeu. Seguir em frente faz a
+   * operação de verdade acontecer, e se ela falhar o erro que a pessoa vê vem
+   * do servidor, dizendo o que houve. Barrar aqui produziria "Sem conexão" em
+   * cima de uma internet que está funcionando.
+   */
+  const semResposta = new Promise<boolean>((resolver) => {
+    setTimeout(() => resolver(true), PRAZO_DA_CHECAGEM);
+  });
+
+  const checagem = NetInfo.fetch()
+    .then(
+      (estado) =>
+        // `isInternetReachable` pode ser null enquanto o teste ainda não
+        // concluiu; nesse caso confiamos em `isConnected`.
+        Boolean(estado.isConnected) && estado.isInternetReachable !== false,
+    )
+    .catch(() => true);
+
+  return Promise.race([checagem, semResposta]);
 }
 
 /**

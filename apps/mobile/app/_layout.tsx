@@ -7,6 +7,7 @@ import tema from '@decola/theme';
 import { Cabecalho } from '@/componentes/Cabecalho';
 import { HospedeiroDeDialogos } from '@/componentes/Dialogos';
 import { TelaCarregando } from '@/componentes/EstadoDaTela';
+import { TelaQueFalhou } from '@/componentes/TelaQueFalhou';
 import { ProvedorDeCarrinho } from '@/contexto/CarrinhoContexto';
 import { ProvedorDeSessao } from '@/contexto/SessaoContexto';
 import {
@@ -41,6 +42,14 @@ const SEM_CABECALHO = [
   'financeiro/index',
   'pedidos/index',
 ];
+
+/**
+ * O Expo Router usa como limite de erro o `ErrorBoundary` exportado de um
+ * layout. Exportado AQUI, no layout raiz, ele vale para o aplicativo inteiro:
+ * qualquer tela que quebre mostra o que houve, em vez de sumir e deixar a
+ * pessoa olhando para um retângulo sem texto.
+ */
+export { TelaQueFalhou as ErrorBoundary };
 
 export default function LayoutRaiz() {
   // Com o mapa vazio (fontes ainda não fornecidas) `carregadas` já vem true e

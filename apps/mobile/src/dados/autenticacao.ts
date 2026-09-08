@@ -55,8 +55,17 @@ export async function sessaoAtual(): Promise<Session | null> {
   return data.session;
 }
 
-export function observarSessao(aoMudar: (sessao: Session | null) => void) {
-  const { data } = supabase.auth.onAuthStateChange((_evento, sessao) => aoMudar(sessao));
+/**
+ * O EVENTO É REPASSADO, e não engolido.
+ *
+ * Nem todo aviso do Supabase significa "a conta mudou". `INITIAL_SESSION` só
+ * repete a sessão que já estava guardada, e `TOKEN_REFRESHED` troca o token da
+ * mesma pessoa. Quem escuta precisa distinguir isso: tratar os três como
+ * iguais fazia o aplicativo refazer a leitura de vínculo, empresa e assinatura
+ * várias vezes por abertura, e de novo a cada volta ao foco.
+ */
+export function observarSessao(aoMudar: (sessao: Session | null, evento: string) => void) {
+  const { data } = supabase.auth.onAuthStateChange((evento, sessao) => aoMudar(sessao, evento));
   return () => data.subscription.unsubscribe();
 }
 

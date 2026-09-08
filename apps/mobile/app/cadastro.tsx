@@ -1,17 +1,32 @@
 /**
  * Tela Cadastro de Conta e Criação da Empresa — Seção 7.12.
  *
- * Cria a conta do usuário — que se torna automaticamente Gestor Principal
- * (Seção 5.1) — e a empresa associada, dando início a uma nova assinatura.
+ * O QUE MUDOU, E POR QUÊ. Esta tela criava a conta do próprio aparelho
+ * (`signUp`) e só depois pedia a empresa ao banco. Com "Confirm email" ligado
+ * no Supabase Auth, o `signUp` não devolve sessão, o passo seguinte nunca
+ * acontecia, e a pessoa terminava com uma conta no Auth e NENHUMA empresa —
+ * logo, nenhuma assinatura e nenhuma cobrança. Ela confirmava o e-mail,
+ * tentava entrar e ouvia "você não está vinculado a nenhuma empresa ativa",
+ * sem nunca ter visto um boleto. Quatro contas ficaram assim.
+ *
+ * Agora a contratação inteira acontece no servidor, na Edge Function
+ * `contratar` — a mesma porta que o site usa. Ela cria a conta já confirmada,
+ * cria a empresa e ABRE A COBRANÇA no mesmo pedido, devolvendo o endereço do
+ * checkout. Não há como sobrar meio cadastro.
+ *
+ * NÃO SE ESCOLHE SENHA AQUI. Ela chega por e-mail quando o pagamento é
+ * confirmado. Pedir senha antes foi o que criou a armadilha: a pessoa
+ * escolhia, guardava, e a senha não abria nada.
+ *
+ * A TELA EXPLICA O CAMINHO ANTES DE PEDIR OS DADOS. Quem preenche um cadastro
+ * precisa saber que o próximo passo é pagar, e que o acesso vem depois da
+ * confirmação — senão o pagamento parece cobrança indevida e a espera pelo
+ * e-mail parece falha.
  *
  * Dois caminhos de entrada:
  *   ?planoId=<uuid>  veio da Escolha do Plano (Seção 7.13) — dá para trocar
  *   ?plano=<slug>    veio de um link direto (Seção 6.3) — plano FIXO, não
  *                    editável, e a Escolha do Plano é pulada por completo
- *
- * Se o usuário já está autenticado (chegou por "Entrar com Google" sem conta
- * prévia — Seção 7.11), os campos de e-mail e senha não aparecem e o nome
- * completo vem pré-preenchido, editável.
  */
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, router, useLocalSearchParams } from 'expo-router';
@@ -25,6 +40,7 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import * as WebBrowser from 'expo-web-browser';
 import tema from '@decola/theme';
 import { Aviso } from '@/componentes/Aviso';
 import { Botao } from '@/componentes/Botao';
@@ -33,13 +49,8 @@ import { Checkbox } from '@/componentes/Checkbox';
 import { TelaCarregando, TelaMensagem } from '@/componentes/EstadoDaTela';
 import { Icone, LadrilhoDeIcone } from '@/componentes/Icone';
 import { Marca, AssinaturaDecola } from '@/componentes/Marca';
-import {
-  cadastrarComSenha,
-  emailValido,
-  ERRO_CADASTRO_GENERICO,
-  sessaoAtual,
-} from '@/dados/autenticacao';
-import { criarEmpresaEAssinatura } from '@/dados/empresa';
+import { emailValido, ERRO_CADASTRO_GENERICO, sessaoAtual } from '@/dados/autenticacao';
+import { contratar, type ContratacaoFeita } from '@/dados/contratacao';
 import {
   buscarPlanoPorId,
   buscarPlanoPorSlug,
@@ -60,6 +71,22 @@ type Preparacao =
   | { nome: 'pronto'; plano: PlanoComTrial; planoFixo: boolean; jaAutenticado: boolean }
   | { nome: 'erro'; mensagem: string; permiteEscolherOutro: boolean };
 
+/**
+ * Abre o checkout do Asaas.
+ *
+ * No aparelho, o navegador in-app mantém a pessoa dentro do aplicativo. Na
+ * web, trocar a página vale mais que abrir uma aba: aba nova é bloqueada por
+ * padrão quando não sai de um toque direto, e o cliente ficaria olhando uma
+ * tela parada sem entender que o pagamento tinha sido aberto em algum lugar.
+ */
+async function abrirCheckout(url: string): Promise<void> {
+  if (Platform.OS === 'web') {
+    window.location.assign(url);
+    return;
+  }
+  await WebBrowser.openBrowserAsync(url);
+}
+
 export default function Cadastro() {
   const params = useLocalSearchParams<{ planoId?: string; plano?: string }>();
 
@@ -67,13 +94,19 @@ export default function Cadastro() {
 
   const [nome, setNome] = useState('');
   const [email, setEmail] = useState('');
-  const [senha, setSenha] = useState('');
   const [nomeEmpresa, setNomeEmpresa] = useState('');
   const [aceitouTermos, setAceitouTermos] = useState(false);
 
   const [erros, setErros] = useState<Record<string, string | null>>({});
   const [mensagem, setMensagem] = useState<string | null>(null);
   const [criando, setCriando] = useState(false);
+
+  /**
+   * Guardado depois que a contratação dá certo. A conta e a empresa JÁ existem
+   * neste ponto: se o navegador engolir a abertura do checkout, a pessoa não
+   * pode ficar sem caminho — daí o endereço continuar à mão num botão.
+   */
+  const [contratado, setContratado] = useState<ContratacaoFeita | null>(null);
 
   /** Resolve o plano e detecta se já existe sessão (caminho do Google). */
   const preparar = useCallback(async () => {
@@ -139,16 +172,15 @@ export default function Cadastro() {
   const jaAutenticado = preparacao.nome === 'pronto' && preparacao.jaAutenticado;
 
   /**
-   * Estado "Preenchimento": o botão Criar conta fica desabilitado até todos os
-   * campos obrigatórios estarem válidos — incluindo o aceite dos termos.
+   * O botão fica desabilitado até os campos obrigatórios estarem válidos —
+   * incluindo o aceite dos termos.
    */
   const formularioCompleto = useMemo(() => {
     const base = nome.trim().length > 0 && nomeEmpresa.trim().length > 0 && aceitouTermos;
-    if (jaAutenticado) return base;
-    return base && emailValido(email) && senha.length > 0;
-  }, [nome, nomeEmpresa, aceitouTermos, jaAutenticado, email, senha]);
+    return jaAutenticado ? base : base && emailValido(email);
+  }, [nome, nomeEmpresa, aceitouTermos, jaAutenticado, email]);
 
-  const aoCriarConta = useCallback(async () => {
+  const aoContratar = useCallback(async () => {
     if (preparacao.nome !== 'pronto') return;
 
     setMensagem(null);
@@ -156,45 +188,31 @@ export default function Cadastro() {
 
     if (nome.trim().length === 0) novosErros.nome = 'Informe seu nome completo.';
     if (nomeEmpresa.trim().length === 0) novosErros.empresa = 'Informe o nome da empresa.';
-    if (!jaAutenticado) {
-      if (!emailValido(email)) novosErros.email = 'Informe um e-mail válido.';
-      // Seção 5.5 — sem exigência de complexidade; apenas não vazia.
-      if (senha.length === 0) novosErros.senha = 'Informe uma senha.';
-    }
+    if (!jaAutenticado && !emailValido(email)) novosErros.email = 'Informe um e-mail válido.';
 
     setErros(novosErros);
     if (Object.values(novosErros).some(Boolean)) return;
 
     setCriando(true);
     try {
-      // Passo 2 — cria o auth.users (o trigger cria `usuarios`). Pulado
-      // quando a conta já existe por vir do Google.
-      if (!jaAutenticado) {
-        await cadastrarComSenha(nome, email, senha);
-      }
-
-      // Passos 3 a 5, numa transação só, revalidados no servidor.
-      const resultado = await criarEmpresaEAssinatura({
-        nomeEmpresa,
-        planoId: preparacao.plano.plano.id,
-        nomeUsuario: nome,
+      // Um pedido só: conta, empresa e cobrança. O servidor devolve o endereço
+      // do checkout já pronto.
+      const resultado = await contratar({
+        nome: nome.trim(),
+        email: email.trim(),
+        nomeEmpresa: nomeEmpresa.trim(),
+        planoSlug: preparacao.plano.plano.slug,
         aceitouTermos,
       });
 
-      // Passo 6 — sem tela de confirmação intermediária.
-      if (resultado.assinatura_status === 'trial') {
-        router.replace('/dashboard');
-      } else {
-        // `pendente_pagamento`: sem acesso ao conteúdo até a confirmação.
-        // O checkout hospedado do Asaas entra na Fase 7 (Seção 7.12, item 6).
-        router.replace('/pagamento');
-      }
+      setContratado(resultado);
+      await abrirCheckout(resultado.url_checkout);
     } catch (e) {
       setMensagem(e instanceof Error && e.message ? e.message : ERRO_CADASTRO_GENERICO);
     } finally {
       setCriando(false);
     }
-  }, [preparacao, nome, nomeEmpresa, email, senha, aceitouTermos, jaAutenticado]);
+  }, [preparacao, nome, nomeEmpresa, email, aceitouTermos, jaAutenticado]);
 
   if (preparacao.nome === 'carregando') return <TelaCarregando />;
 
@@ -210,6 +228,67 @@ export default function Cadastro() {
   }
 
   const { plano, planoFixo } = preparacao;
+
+  // ---------------------------------------------------------------------------
+  // Depois da contratação: a conta existe e falta pagar. Esta tela não promete
+  // acesso imediato — ela diz o que está acontecendo e quanto costuma demorar,
+  // porque boleto que confirma em três dias úteis não é defeito, mas vira
+  // reclamação quando ninguém avisou.
+  // ---------------------------------------------------------------------------
+  if (contratado) {
+    return (
+      <SafeAreaView style={estilos.tela}>
+        <ScrollView contentContainerStyle={estilos.conteudo}>
+          <Marca escura comTagline={false} />
+
+          <Text style={estilos.titulo}>Recebemos seu pedido</Text>
+          <Text style={estilos.subtitulo}>
+            Sua conta e o cadastro do {nomeEmpresa.trim()} já foram criados. Falta só o pagamento
+            de {moeda(contratado.valor)} para liberar o acesso.
+          </Text>
+
+          <View style={estilos.cardPasso}>
+            <Text style={estilos.tituloCard}>Quanto costuma demorar a confirmação</Text>
+            <Text style={estilos.itemPrazo}>
+              <Text style={estilos.forte}>Pix</Text> — poucos minutos.
+            </Text>
+            <Text style={estilos.itemPrazo}>
+              <Text style={estilos.forte}>Cartão de crédito</Text> — em geral na hora.
+            </Text>
+            <Text style={estilos.itemPrazo}>
+              <Text style={estilos.forte}>Boleto</Text> — até 3 dias úteis depois do pagamento.
+            </Text>
+            <Text style={estilos.legenda}>
+              Assim que a confirmação chegar, enviamos um e-mail para {email.trim()} com o link
+              para você criar sua senha. Você não precisa ficar com esta tela aberta.
+            </Text>
+          </View>
+
+          <Botao
+            titulo="Abrir o pagamento de novo"
+            variante="secundario"
+            aoPressionar={() => {
+              void abrirCheckout(contratado.url_checkout);
+            }}
+          />
+
+          <Text style={estilos.legenda}>
+            Não recebeu o e-mail depois do prazo? Confira a caixa de spam e, se não estiver lá,
+            toque em "Esqueci minha senha" na tela de entrada e informe o mesmo e-mail — o link de
+            acesso é o mesmo.
+          </Text>
+
+          <View style={estilos.rodape}>
+            <Link href="/login" style={estilos.link}>
+              Voltar para a tela de entrada
+            </Link>
+          </View>
+
+          <AssinaturaDecola escura />
+        </ScrollView>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={estilos.tela}>
@@ -241,6 +320,27 @@ export default function Cadastro() {
             ) : null}
           </View>
 
+          {/* Dito ANTES do formulário, de propósito: quem preenche precisa
+              saber que o próximo passo é pagar e que a senha vem depois. */}
+          <View style={estilos.cardPasso}>
+            <Text style={estilos.tituloCard}>Como funciona</Text>
+            <Text style={estilos.passo}>
+              <Text style={estilos.forte}>1.</Text> Você preenche seus dados aqui.
+            </Text>
+            <Text style={estilos.passo}>
+              <Text style={estilos.forte}>2.</Text> Abrimos o pagamento, onde você escolhe entre
+              Pix, boleto ou cartão.
+            </Text>
+            <Text style={estilos.passo}>
+              <Text style={estilos.forte}>3.</Text> Confirmado o pagamento, você recebe um e-mail
+              para criar sua senha — e o acesso é liberado na hora.
+            </Text>
+            <Text style={estilos.legenda}>
+              A senha não é escolhida agora: ela vem nesse e-mail, no endereço que você informar
+              abaixo.
+            </Text>
+          </View>
+
           {mensagem ? <Aviso mensagem={mensagem} /> : null}
 
           <CampoTexto
@@ -252,30 +352,18 @@ export default function Cadastro() {
             autoCompletar="name"
           />
 
-          {/* Vindo do Google, a conta já existe: e-mail e senha não aparecem. */}
+          {/* Vindo do Google, a conta já existe: o e-mail não é editável. */}
           {!jaAutenticado ? (
-            <>
-              <CampoTexto
-                rotulo="E-mail"
-                valor={email}
-                aoMudar={setEmail}
-                erro={erros.email}
-                bloqueado={criando}
-                tipoTeclado="email-address"
-                autoCompletar="email"
-                placeholder="voce@exemplo.com"
-              />
-
-              <CampoTexto
-                rotulo="Senha"
-                valor={senha}
-                aoMudar={setSenha}
-                erro={erros.senha}
-                bloqueado={criando}
-                senha
-                autoCompletar="password"
-              />
-            </>
+            <CampoTexto
+              rotulo="E-mail"
+              valor={email}
+              aoMudar={setEmail}
+              erro={erros.email}
+              bloqueado={criando}
+              tipoTeclado="email-address"
+              autoCompletar="email"
+              placeholder="voce@exemplo.com"
+            />
           ) : (
             <View style={estilos.contaGoogle}>
               <Icone nome="perfil" cor={tema.cores.secundaria} tamanho={20} />
@@ -305,9 +393,11 @@ export default function Cadastro() {
             </Text>
           </Checkbox>
 
+          {/* O rótulo diz o que o botão faz. "Criar conta" escondia que o
+              passo seguinte era uma tela de pagamento. */}
           <Botao
-            titulo="Criar conta"
-            aoPressionar={aoCriarConta}
+            titulo="Continuar para o pagamento"
+            aoPressionar={aoContratar}
             carregando={criando}
             desabilitado={!formularioCompleto}
           />
@@ -360,6 +450,30 @@ const estilos = StyleSheet.create({
   rotuloPlano: { ...tema.tipografia.rotulo, color: tema.cores.textoSuave },
   nomePlano: { ...tema.tipografia.h2, color: tema.cores.texto, marginTop: 2 },
   valorPlano: { ...tema.tipografia.corpoDestacado, color: tema.cores.primaria, marginTop: 2 },
+  cardPasso: {
+    // `fundoCard` é branco, e a tela também: um cartão branco sobre branco não
+    // se lê como bloco. O cinza claro do tema separa sem pedir atenção.
+    backgroundColor: tema.cores.fundo,
+    borderRadius: tema.raio.lg,
+    borderWidth: 1,
+    borderColor: tema.cores.bordaSuave,
+    padding: tema.espacamento.md,
+    marginBottom: tema.espacamento.lg,
+    gap: tema.espacamento.xs,
+  },
+  tituloCard: {
+    ...tema.tipografia.rotulo,
+    color: tema.cores.textoSuave,
+    marginBottom: tema.espacamento.xs,
+  },
+  passo: { ...tema.tipografia.corpo, color: tema.cores.texto },
+  itemPrazo: { ...tema.tipografia.corpo, color: tema.cores.texto },
+  forte: { ...tema.tipografia.corpoDestacado, color: tema.cores.texto },
+  legenda: {
+    ...tema.tipografia.legenda,
+    color: tema.cores.textoSuave,
+    marginTop: tema.espacamento.sm,
+  },
   contaGoogle: {
     flexDirection: 'row',
     alignItems: 'center',

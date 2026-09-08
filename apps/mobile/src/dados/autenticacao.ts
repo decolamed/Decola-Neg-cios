@@ -15,7 +15,10 @@ import { exigirConexao } from '@/lib/conectividade';
 export const ERRO_CREDENCIAIS = 'E-mail ou senha incorretos.';
 export const ERRO_ENTRAR_GENERICO = 'Não foi possível entrar. Tente novamente.';
 export const ERRO_CADASTRO_GENERICO = 'Não foi possível criar sua conta. Tente novamente.';
-export const ERRO_EMAIL_EM_USO = 'Este e-mail já possui uma conta. Faça login.';
+// "E-mail já em uso" saiu daqui: quem decide isso agora é a Edge Function
+// `contratar`, que distingue conta completa (recusa, e manda entrar) de
+// cadastro interrompido (reaproveita). Uma frase fixa no aparelho não tinha
+// como fazer essa diferença.
 
 /** Seção 7.10 — usuário autenticado que não pertence a nenhuma empresa ativa. */
 export const AVISO_SEM_EMPRESA =
@@ -98,49 +101,25 @@ export async function entrarComSenha(email: string, senha: string): Promise<Sess
 }
 
 /**
- * Seção 7.12 — criação da conta com e-mail e senha.
+ * NÃO EXISTE MAIS UM `cadastrarComSenha` AQUI — e a ausência é a correção.
  *
- * A verificação de e-mail não é obrigatória antes do primeiro acesso
- * (Seção 5.5), então o Supabase deve retornar sessão imediatamente. Se o
- * projeto estiver com "Confirm email" ligado, não há sessão e o cadastro não
- * pode continuar — o erro abaixo deixa isso explícito em vez de falhar de
- * forma obscura na criação da empresa.
+ * Havia, e ele criava a conta pelo `signUp` do próprio aparelho, contando com
+ * a sessão que o `signUp` devolve para os passos seguintes (criar a empresa,
+ * abrir a cobrança). Com "Confirm email" ligado no Supabase Auth, `signUp` NÃO
+ * devolve sessão: devolve um usuário e manda um e-mail. Os passos seguintes
+ * nunca aconteciam e sobrava uma conta sem empresa — que, ao tentar entrar,
+ * ouvia "você não está vinculado a nenhuma empresa ativa" sem nunca ter visto
+ * uma cobrança. Quatro contas ficaram assim antes de o defeito ser encontrado.
+ *
+ * A contratação inteira passou para o servidor, em `@/dados/contratacao`, que
+ * chama a Edge Function `contratar` — a mesma porta do site. Nada aqui deve
+ * voltar a criar conta a partir do aparelho: sem sessão garantida, cadastro
+ * feito pelo cliente é cadastro que pode parar no meio.
+ *
+ * O `signUp` continua legítimo em UM lugar, o aceite de convite de
+ * funcionário: lá não há pagamento, a empresa já existe, e a pessoa escolhe a
+ * própria senha na hora.
  */
-export async function cadastrarComSenha(
-  nome: string,
-  email: string,
-  senha: string,
-): Promise<Session> {
-  await exigirConexao('cadastro');
-
-  const { data, error } = await supabase.auth.signUp({
-    email: email.trim(),
-    password: senha,
-    options: { data: { nome: nome.trim() } },
-  });
-
-  if (error) {
-    const jaExiste =
-      error.message.toLowerCase().includes('already registered') ||
-      error.message.toLowerCase().includes('user already exists');
-    throw new ErroAutenticacao(jaExiste ? ERRO_EMAIL_EM_USO : ERRO_CADASTRO_GENERICO);
-  }
-
-  // O Supabase oculta e-mails já cadastrados devolvendo um usuário sem
-  // identidades em vez de um erro. É o sinal de duplicidade da Seção 7.12.
-  if (data.user && data.user.identities && data.user.identities.length === 0) {
-    throw new ErroAutenticacao(ERRO_EMAIL_EM_USO);
-  }
-
-  if (!data.session) {
-    throw new ErroAutenticacao(
-      'Sua conta foi criada, mas é necessário confirmar o e-mail antes de continuar. ' +
-        'Verifique sua caixa de entrada e faça login.',
-    );
-  }
-
-  return data.session;
-}
 
 /**
  * Seção 7.11 — Entrar com Google (único provedor social da V1; Apple ficou

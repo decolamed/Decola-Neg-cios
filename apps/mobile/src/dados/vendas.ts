@@ -9,6 +9,7 @@ import type { Enums } from '@decola/types';
 import { supabase } from '@/lib/supabase';
 import { exigirConexao } from '@/lib/conectividade';
 import { mensagemDeErro } from '@/lib/erros';
+import { observarTabelas } from '@/lib/tempoReal';
 
 export type FormaPagamento = Enums['forma_pagamento_venda'];
 export type DescontoTipo = Enums['desconto_tipo'];
@@ -260,26 +261,10 @@ export async function solicitacaoPendenteDaVenda(vendaId: string): Promise<boole
 
 /** Seção 3.3 — o histórico reflete vendas de outros dispositivos da empresa. */
 export function observarVendas(empresaId: string, aoMudar: () => void) {
-  const canal = supabase
-    .channel(`vendas:${empresaId}`)
-    .on(
-      'postgres_changes',
-      { event: '*', schema: 'public', table: 'vendas', filter: `empresa_id=eq.${empresaId}` },
-      aoMudar,
-    )
-    .on(
-      'postgres_changes',
-      {
-        event: '*',
-        schema: 'public',
-        table: 'solicitacoes_cancelamento',
-        filter: `empresa_id=eq.${empresaId}`,
-      },
-      aoMudar,
-    )
-    .subscribe();
-
-  return () => {
-    supabase.removeChannel(canal);
-  };
+  return observarTabelas({
+    nome: 'vendas',
+    empresaId,
+    assuntos: [{ tabela: 'vendas' }, { tabela: 'solicitacoes_cancelamento' }],
+    aoMudar,
+  });
 }

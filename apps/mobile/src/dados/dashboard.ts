@@ -14,6 +14,7 @@
 import type { Enums } from '@decola/types';
 import { supabase } from '@/lib/supabase';
 import { mensagemDeErro } from '@/lib/erros';
+import { observarTabelas } from '@/lib/tempoReal';
 
 export type ResumoDoDashboard = {
   vendas_hoje_total: number;
@@ -188,21 +189,10 @@ export async function marcarTodosComoLidos(avisos: Aviso[], usuarioId: string): 
  * o estoque acende o alerta sem precisar recarregar a tela.
  */
 export function observarAvisos(empresaId: string, aoMudar: () => void) {
-  const canal = supabase
-    .channel(`avisos:${empresaId}`)
-    .on(
-      'postgres_changes',
-      { event: '*', schema: 'public', table: 'alertas_estoque', filter: `empresa_id=eq.${empresaId}` },
-      aoMudar,
-    )
-    .on(
-      'postgres_changes',
-      { event: '*', schema: 'public', table: 'notificacoes', filter: `empresa_id=eq.${empresaId}` },
-      aoMudar,
-    )
-    .subscribe();
-
-  return () => {
-    supabase.removeChannel(canal);
-  };
+  return observarTabelas({
+    nome: 'avisos',
+    empresaId,
+    assuntos: [{ tabela: 'alertas_estoque' }, { tabela: 'notificacoes' }],
+    aoMudar,
+  });
 }

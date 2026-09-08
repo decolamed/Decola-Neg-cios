@@ -9,6 +9,7 @@ import type { Enums } from '@decola/types';
 import { CHAVE_PUBLICA, URL_FUNCOES, supabase } from '@/lib/supabase';
 import { exigirConexao } from '@/lib/conectividade';
 import { mensagemDeErro } from '@/lib/erros';
+import { observarTabelas } from '@/lib/tempoReal';
 
 export type TipoMovimentacao = Enums['movimentacao_tipo'];
 export type OrigemMovimentacao = Enums['movimentacao_origem'];
@@ -244,21 +245,10 @@ export async function exportarRelatorio(params: {
 
 /** Seção 3.3 — o financeiro reflete vendas e lançamentos de outros dispositivos. */
 export function observarFinanceiro(empresaId: string, aoMudar: () => void) {
-  const canal = supabase
-    .channel(`financeiro:${empresaId}`)
-    .on(
-      'postgres_changes',
-      {
-        event: '*',
-        schema: 'public',
-        table: 'movimentacoes_financeiras',
-        filter: `empresa_id=eq.${empresaId}`,
-      },
-      aoMudar,
-    )
-    .subscribe();
-
-  return () => {
-    supabase.removeChannel(canal);
-  };
+  return observarTabelas({
+    nome: 'financeiro',
+    empresaId,
+    assuntos: [{ tabela: 'movimentacoes_financeiras' }],
+    aoMudar,
+  });
 }

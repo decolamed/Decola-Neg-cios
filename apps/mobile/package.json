@@ -10,7 +10,8 @@
     "typecheck": "tsc --noEmit",
     "tipos": "npx supabase gen types typescript --project-id nakqafnchwydfogcozvc > ../../packages/types/src/database.ts",
     "conferir:rotas": "node scripts/conferir-rotas.mjs",
-    "exportar:web": "node scripts/conferir-rotas.mjs && node scripts/conferir-conexao.mjs && EXPO_OFFLINE=1 EXPO_NO_TELEMETRY=1 expo export --platform web --output-dir ../admin/dist/app && node scripts/finalizar-web.mjs ../admin/dist/app"
+    "exportar:web": "node scripts/conferir-rotas.mjs && node scripts/conferir-conexao.mjs && node scripts/conferir-canais.mjs && EXPO_OFFLINE=1 EXPO_NO_TELEMETRY=1 expo export --platform web --output-dir ../admin/dist/app && node scripts/finalizar-web.mjs ../admin/dist/app",
+    "conferir:canais": "node scripts/conferir-canais.mjs"
   },
   "dependencies": {
     "@decola/pix": "*",

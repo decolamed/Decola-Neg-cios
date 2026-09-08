@@ -12,6 +12,7 @@ import type {
 import { supabase } from '@/lib/supabase';
 import { exigirConexao } from '@/lib/conectividade';
 import { mensagemDeErro } from '@/lib/erros';
+import { observarTabelas } from '@/lib/tempoReal';
 
 /**
  * Estado completo da conta do usuário logado.
@@ -145,26 +146,15 @@ export async function criarEmpresaEAssinatura(params: {
  * assinatura para `ativa` após o pagamento navega sozinha (Seção 7.12).
  */
 export function observarContextoDaConta(empresaId: string, aoMudar: () => void) {
-  const canal = supabase
-    .channel(`conta:${empresaId}`)
-    .on(
-      'postgres_changes',
-      { event: '*', schema: 'public', table: 'empresa_usuarios', filter: `empresa_id=eq.${empresaId}` },
-      aoMudar,
-    )
-    .on(
-      'postgres_changes',
-      { event: '*', schema: 'public', table: 'assinaturas', filter: `empresa_id=eq.${empresaId}` },
-      aoMudar,
-    )
-    .on(
-      'postgres_changes',
-      { event: '*', schema: 'public', table: 'empresas', filter: `id=eq.${empresaId}` },
-      aoMudar,
-    )
-    .subscribe();
-
-  return () => {
-    supabase.removeChannel(canal);
-  };
+  return observarTabelas({
+    nome: 'conta',
+    empresaId,
+    assuntos: [
+      { tabela: 'empresa_usuarios' },
+      { tabela: 'assinaturas' },
+      // `empresas` é filtrada pelo id, não por empresa_id: ela É a empresa.
+      { tabela: 'empresas', filtro: `id=eq.${empresaId}` },
+    ],
+    aoMudar,
+  });
 }

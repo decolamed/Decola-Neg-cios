@@ -9,6 +9,7 @@ import type { Json } from '@decola/types';
 import { supabase } from '@/lib/supabase';
 import { exigirConexao } from '@/lib/conectividade';
 import { mensagemDeErro } from '@/lib/erros';
+import { observarTabelas } from '@/lib/tempoReal';
 
 export type StatusEstoque = 'disponivel' | 'estoque_baixo' | 'esgotado';
 export type CicloVida = 'ativo' | 'arquivado' | 'excluido';
@@ -253,16 +254,10 @@ export async function excluirProduto(id: string): Promise<void> {
 
 /** Seção 3.3 — a lista reflete alterações de outros dispositivos da empresa. */
 export function observarProdutos(empresaId: string, aoMudar: () => void) {
-  const canal = supabase
-    .channel(`produtos:${empresaId}`)
-    .on(
-      'postgres_changes',
-      { event: '*', schema: 'public', table: 'produtos', filter: `empresa_id=eq.${empresaId}` },
-      aoMudar,
-    )
-    .subscribe();
-
-  return () => {
-    supabase.removeChannel(canal);
-  };
+  return observarTabelas({
+    nome: 'produtos',
+    empresaId,
+    assuntos: [{ tabela: 'produtos' }],
+    aoMudar,
+  });
 }

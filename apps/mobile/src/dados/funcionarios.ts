@@ -10,6 +10,7 @@ import type { ChavePermissao, Enums, Json, MapaPermissoes } from '@decola/types'
 import { CHAVE_PUBLICA, URL_FUNCOES, supabase } from '@/lib/supabase';
 import { exigirConexao } from '@/lib/conectividade';
 import { mensagemDeErro } from '@/lib/erros';
+import { observarTabelas } from '@/lib/tempoReal';
 
 export type Papel = Enums['papel_usuario'];
 export type StatusVinculo = Enums['vinculo_status'];
@@ -226,21 +227,10 @@ export async function enviarEmailDeConvite(vinculoId: string): Promise<void> {
 
 /** Seção 5.4 — mudanças de papel e permissão aparecem em tempo real. */
 export function observarFuncionarios(empresaId: string, aoMudar: () => void) {
-  const canal = supabase
-    .channel(`funcionarios:${empresaId}`)
-    .on(
-      'postgres_changes',
-      {
-        event: '*',
-        schema: 'public',
-        table: 'empresa_usuarios',
-        filter: `empresa_id=eq.${empresaId}`,
-      },
-      aoMudar,
-    )
-    .subscribe();
-
-  return () => {
-    supabase.removeChannel(canal);
-  };
+  return observarTabelas({
+    nome: 'funcionarios',
+    empresaId,
+    assuntos: [{ tabela: 'empresa_usuarios' }],
+    aoMudar,
+  });
 }

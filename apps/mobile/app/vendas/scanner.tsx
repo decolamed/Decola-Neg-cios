@@ -13,6 +13,7 @@ import tema from '@decola/theme';
 import { Botao } from '@/componentes/Botao';
 import { TelaMensagem } from '@/componentes/EstadoDaTela';
 import { LeitorDeCodigo } from '@/componentes/LeitorDeCodigo';
+import { voltar } from '@/componentes/Cabecalho';
 import { useCarrinho } from '@/contexto/CarrinhoContexto';
 import { useSessao } from '@/contexto/SessaoContexto';
 import { buscarProdutoPorCodigo } from '@/dados/produtos';
@@ -58,7 +59,7 @@ export default function Scanner() {
         }
 
         carrinho.adicionar(produto, 1);
-        router.back();
+        voltar('/vendas/nova');
       } catch (e) {
         setErro(textoDoErro(e, 'Não foi possível consultar o produto.'));
       } finally {
@@ -94,7 +95,7 @@ export default function Scanner() {
           variante="secundario"
           aoPressionar={() => setNaoEncontrado(null)}
         />
-        <Botao titulo="Voltar" variante="texto" aoPressionar={() => router.back()} />
+        <Botao titulo="Voltar" variante="texto" aoPressionar={() => voltar('/vendas/nova')} />
       </SafeAreaView>
     );
   }
@@ -102,7 +103,7 @@ export default function Scanner() {
   return (
     <LeitorDeCodigo
       aoLer={(codigo) => void aoLer({ data: codigo })}
-      aoCancelar={() => router.back()}
+      aoCancelar={() => voltar('/vendas/nova')}
       pausado={processando}
       instrucao={erro ?? 'Aponte a câmera para o código de barras do produto.'}
     />

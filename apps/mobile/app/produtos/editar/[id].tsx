@@ -13,6 +13,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import tema from '@decola/theme';
 import { Aviso } from '@/componentes/Aviso';
 import { TelaCarregando, TelaMensagem } from '@/componentes/EstadoDaTela';
+import { voltar } from '@/componentes/Cabecalho';
 import {
   FormularioDeProduto,
   precoParaNumero,
@@ -112,7 +113,7 @@ export default function EditarProduto() {
         visivelNaLoja: valores.visivelNaLoja,
         destaque: valores.destaque,
       });
-      router.back();
+      voltar('/produtos');
     } catch (e) {
       setMensagem(textoDoErro(e, 'Não foi possível salvar as alterações.'));
     } finally {

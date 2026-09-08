@@ -18,6 +18,7 @@ import { Aviso } from '@/componentes/Aviso';
 import { Botao } from '@/componentes/Botao';
 import { CampoTexto } from '@/componentes/CampoTexto';
 import { TelaMensagem } from '@/componentes/EstadoDaTela';
+import { voltar } from '@/componentes/Cabecalho';
 import { useSessao } from '@/contexto/SessaoContexto';
 import { emailValido } from '@/dados/autenticacao';
 import { convidarFuncionario, enviarEmailDeConvite } from '@/dados/funcionarios';
@@ -125,7 +126,7 @@ export default function NovoFuncionario() {
               />
 
               <Botao titulo="Enviar convite" aoPressionar={convidar} carregando={enviando} />
-              <Botao titulo="Cancelar" variante="texto" aoPressionar={() => router.back()} />
+              <Botao titulo="Cancelar" variante="texto" aoPressionar={() => voltar('/funcionarios')} />
             </>
           )}
         </ScrollView>

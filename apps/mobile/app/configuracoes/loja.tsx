@@ -14,7 +14,7 @@
  * mesma coisa é como as duas versões passam a divergir.
  */
 import { useCallback, useEffect, useState } from 'react';
-import { ScrollView, Share, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import tema from '@decola/theme';
 import { Aviso } from '@/componentes/Aviso';
@@ -23,6 +23,7 @@ import { CampoTexto } from '@/componentes/CampoTexto';
 import { Checkbox } from '@/componentes/Checkbox';
 import { TelaCarregando, TelaMensagem } from '@/componentes/EstadoDaTela';
 import { useSessao } from '@/contexto/SessaoContexto';
+import { compartilharTexto } from '@/lib/compartilhar';
 import {
   BASE_DA_LOJA_VISIVEL,
   contarProdutosNaVitrine,
@@ -50,6 +51,7 @@ export default function ConfiguracoesDaLoja() {
   const [erro, setErro] = useState<string | null>(null);
   const [sucesso, setSucesso] = useState<string | null>(null);
   const [salvando, setSalvando] = useState(false);
+  const [avisoDoLink, setAvisoDoLink] = useState<string | null>(null);
 
   useEffect(() => {
     if (!conta) return;
@@ -219,18 +221,29 @@ export default function ConfiguracoesDaLoja() {
             <Text style={estilos.link} selectable>
               {link}
             </Text>
-            {/* Compartilhar, e não copiar: o destino do link é o cliente, e a
-                folha nativa leva direto ao WhatsApp. `Clipboard` do
-                react-native, além disso, está depreciado. */}
+            {/* No celular abre a folha do sistema, que leva direto ao WhatsApp.
+                No computador não existe folha nenhuma — antes o botão dava erro
+                e não fazia nada; agora copia o texto e DIZ que copiou. */}
             <Botao
               titulo="Enviar para um cliente"
               variante="secundario"
               aoPressionar={() => {
-                void Share.share({
-                  message: `Confira os produtos da ${conta.empresa.nome}: ${link}`,
-                });
+                void compartilharTexto(
+                  `Confira os produtos da ${conta.empresa.nome}: ${link}`,
+                  conta.empresa.nome,
+                ).then((r) =>
+                  setAvisoDoLink(
+                    r === 'copiado'
+                      ? 'Link copiado. Cole no WhatsApp do seu cliente.'
+                      : r === 'nada'
+                        ? 'Não foi possível compartilhar por aqui. O link está logo acima — segure para copiar.'
+                        : null,
+                  ),
+                );
               }}
             />
+
+            {avisoDoLink ? <Aviso tom="sucesso" mensagem={avisoDoLink} /> : null}
           </View>
         ) : null}
       </ScrollView>

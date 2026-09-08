@@ -20,6 +20,7 @@ import { BadgeArquivado, BadgeStatus } from '@/componentes/BadgeStatus';
 import { Botao } from '@/componentes/Botao';
 import { CampoTexto } from '@/componentes/CampoTexto';
 import { TelaCarregando, TelaMensagem } from '@/componentes/EstadoDaTela';
+import { voltar } from '@/componentes/Cabecalho';
 import { useSessao } from '@/contexto/SessaoContexto';
 import { listarCamposAtivos, type CampoConfigurado } from '@/dados/camposProduto';
 import {
@@ -186,7 +187,7 @@ export default function DetalhesDoProduto() {
             setProcessando(true);
             try {
               await excluirProduto(produto.id);
-              router.back();
+              voltar('/produtos');
             } catch (e) {
               setMensagem(textoDoErro(e, 'Não foi possível excluir.'));
               setProcessando(false);

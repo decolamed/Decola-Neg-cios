@@ -12,6 +12,7 @@ import tema from '@decola/theme';
 import { Aviso } from '@/componentes/Aviso';
 import { Botao } from '@/componentes/Botao';
 import { CampoTexto } from '@/componentes/CampoTexto';
+import { voltar } from '@/componentes/Cabecalho';
 import { emailValido, enviarLinkDeRecuperacao } from '@/dados/autenticacao';
 import { textoDoErro } from '@/lib/erros';
 
@@ -90,7 +91,7 @@ export default function RecuperarSenha() {
               />
 
               <View style={{ marginTop: tema.espacamento.sm }}>
-                <Botao titulo="Cancelar" variante="texto" aoPressionar={() => router.back()} />
+                <Botao titulo="Cancelar" variante="texto" aoPressionar={() => voltar('/login')} />
               </View>
             </>
           )}

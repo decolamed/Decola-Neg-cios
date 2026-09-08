@@ -15,6 +15,7 @@ import tema from '@decola/theme';
 import { Aviso } from '@/componentes/Aviso';
 import { Botao } from '@/componentes/Botao';
 import { CampoTexto } from '@/componentes/CampoTexto';
+import { voltar } from '@/componentes/Cabecalho';
 import { alterarSenha } from '@/dados/autenticacao';
 import { textoDoErro } from '@/lib/erros';
 
@@ -45,7 +46,7 @@ export default function AlterarSenha() {
       setRepetida('');
       setSucesso('Senha alterada com sucesso.');
       // A confirmação fica em Perfil, como manda a Seção 7.14.
-      setTimeout(() => router.back(), 1200);
+      setTimeout(() => voltar('/perfil'), 1200);
     } catch (e) {
       setErro(textoDoErro(e, 'Não foi possível alterar sua senha.'));
     } finally {

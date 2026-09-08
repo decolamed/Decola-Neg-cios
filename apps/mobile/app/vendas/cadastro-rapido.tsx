@@ -24,6 +24,7 @@ import { CampoTexto } from '@/componentes/CampoTexto';
 import { TelaCarregando, TelaMensagem } from '@/componentes/EstadoDaTela';
 import { Seletor } from '@/componentes/Seletor';
 import { precoParaNumero } from '@/componentes/FormularioDeProduto';
+import { voltar } from '@/componentes/Cabecalho';
 import { useCarrinho } from '@/contexto/CarrinhoContexto';
 import { useSessao } from '@/contexto/SessaoContexto';
 import { listarCamposAtivos, type CampoConfigurado } from '@/dados/camposProduto';
@@ -231,7 +232,7 @@ export default function CadastroRapido() {
           ))}
 
           <Botao titulo="Cadastrar e adicionar à venda" aoPressionar={salvar} carregando={salvando} />
-          <Botao titulo="Cancelar" variante="texto" aoPressionar={() => router.back()} />
+          <Botao titulo="Cancelar" variante="texto" aoPressionar={() => voltar('/vendas/nova')} />
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>

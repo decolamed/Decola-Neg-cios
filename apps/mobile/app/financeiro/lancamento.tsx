@@ -20,6 +20,7 @@ import { CampoTexto } from '@/componentes/CampoTexto';
 import { TelaCarregando, TelaMensagem } from '@/componentes/EstadoDaTela';
 import { Seletor } from '@/componentes/Seletor';
 import { precoParaNumero } from '@/componentes/FormularioDeProduto';
+import { voltar } from '@/componentes/Cabecalho';
 import { useSessao } from '@/contexto/SessaoContexto';
 import {
   buscarLancamento,
@@ -123,7 +124,7 @@ export default function Lancamento() {
         await criarLancamento(conta.empresa.id, dados);
       }
 
-      router.back();
+      voltar('/financeiro');
     } catch (e) {
       setMensagem(textoDoErro(e, 'Não foi possível salvar o lançamento.'));
     } finally {
@@ -145,7 +146,7 @@ export default function Lancamento() {
             setSalvando(true);
             try {
               await excluirLancamento(id);
-              router.back();
+              voltar('/financeiro');
             } catch (e) {
               setMensagem(textoDoErro(e, 'Não foi possível excluir.'));
               setSalvando(false);
@@ -251,7 +252,7 @@ export default function Lancamento() {
             <Botao titulo="Excluir lançamento" variante="texto" aoPressionar={confirmarExclusao} />
           ) : null}
 
-          <Botao titulo="Cancelar" variante="texto" aoPressionar={() => router.back()} />
+          <Botao titulo="Cancelar" variante="texto" aoPressionar={() => voltar('/financeiro')} />
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>

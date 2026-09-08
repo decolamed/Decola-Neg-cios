@@ -16,6 +16,7 @@ import { Botao } from '@/componentes/Botao';
 import { CobrancaPix } from '@/componentes/CobrancaPix';
 import { TelaMensagem } from '@/componentes/EstadoDaTela';
 import { Icone, type NomeDeIcone } from '@/componentes/Icone';
+import { voltar } from '@/componentes/Cabecalho';
 import { useCarrinho } from '@/contexto/CarrinhoContexto';
 import { useSessao } from '@/contexto/SessaoContexto';
 import { registrarVenda, type FormaPagamento } from '@/dados/vendas';
@@ -191,7 +192,7 @@ export default function FinalizarVenda() {
           desabilitado={!podeEscrever}
         />
 
-        <Botao titulo="Voltar ao carrinho" variante="texto" aoPressionar={() => router.back()} />
+        <Botao titulo="Voltar ao carrinho" variante="texto" aoPressionar={() => voltar('/vendas/nova')} />
       </ScrollView>
     </SafeAreaView>
   );

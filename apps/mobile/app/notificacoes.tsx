@@ -48,6 +48,20 @@ const APARENCIA_CATEGORIA: Record<CategoriaDoAviso, { icone: NomeDeIcone; cor: s
   pedido: { icone: 'vendas', cor: tema.cores.acaoPrimaria },
 };
 
+/**
+ * Uma categoria nova no banco não pode apagar a central de notificações.
+ *
+ * Ler `APARENCIA_CATEGORIA[categoria].icone` direto significa que basta UM
+ * aviso de categoria desconhecida para a tela inteira parar de abrir — e o
+ * lojista perde de vista TODOS os avisos, inclusive os que entende. O sino
+ * genérico é uma resposta melhor do que uma tela que não abre.
+ */
+const APARENCIA_RESERVA = { icone: 'sino' as NomeDeIcone, cor: tema.cores.apoio };
+
+function aparenciaDe(categoria: CategoriaDoAviso) {
+  return APARENCIA_CATEGORIA[categoria] ?? APARENCIA_RESERVA;
+}
+
 function quando(iso: string): string {
   const data = new Date(iso);
   const minutos = Math.floor((Date.now() - data.getTime()) / 60000);
@@ -168,14 +182,16 @@ export default function Notificacoes() {
             ]}
           >
             <LadrilhoDeIcone
-              nome={APARENCIA_CATEGORIA[item.categoria].icone}
-              cor={APARENCIA_CATEGORIA[item.categoria].cor}
+              nome={aparenciaDe(item.categoria).icone}
+              cor={aparenciaDe(item.categoria).cor}
               tamanho={38}
             />
 
             <View style={estilos.corpoAviso}>
               <View style={estilos.linhaTopo}>
-                <Text style={estilos.categoria}>{ROTULO_CATEGORIA[item.categoria]}</Text>
+                <Text style={estilos.categoria}>
+                  {ROTULO_CATEGORIA[item.categoria] ?? 'Aviso'}
+                </Text>
                 <Text style={estilos.quando}>{quando(item.criado_em)}</Text>
               </View>
 

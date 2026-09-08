@@ -14,8 +14,20 @@ const APARENCIA: Record<StatusEstoque, { rotulo: string; cor: string }> = {
 };
 
 export function BadgeStatus({ status }: { status: StatusEstoque }) {
-  const { rotulo, cor } = APARENCIA[status];
-  return <Badge rotulo={rotulo} cor={cor} />;
+  /**
+   * A reserva não é zelo excessivo — é o raio de alcance.
+   *
+   * Este badge aparece na LISTA de produtos, na tela de estoque baixo e no
+   * detalhe do produto. Desestruturar direto de `APARENCIA[status]` significa
+   * que um único valor inesperado (uma situação nova no banco, uma linha
+   * estranha) não estraga um badge: derruba as três telas inteiras, e o
+   * lojista fica sem o catálogo.
+   *
+   * Mostrar o valor cru é feio e é de propósito: é honesto, cabe na tela e diz
+   * a quem for consertar exatamente o que apareceu.
+   */
+  const aparencia = APARENCIA[status] ?? { rotulo: String(status), cor: tema.cores.textoSuave };
+  return <Badge rotulo={aparencia.rotulo} cor={aparencia.cor} />;
 }
 
 /**

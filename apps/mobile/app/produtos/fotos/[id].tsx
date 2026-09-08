@@ -22,6 +22,7 @@ import { AjustarImagem } from '@/componentes/AjustarImagem';
 import { Aviso } from '@/componentes/Aviso';
 import { Botao } from '@/componentes/Botao';
 import { TelaCarregando, TelaMensagem } from '@/componentes/EstadoDaTela';
+import { voltar } from '@/componentes/Cabecalho';
 import { useSessao } from '@/contexto/SessaoContexto';
 import {
   MAXIMO_DE_IMAGENS,
@@ -279,7 +280,7 @@ export default function FotosDoProduto() {
           </View>
         )}
 
-        <Botao titulo="Voltar" variante="texto" aoPressionar={() => router.back()} />
+        <Botao titulo="Voltar" variante="texto" aoPressionar={() => voltar('/produtos')} />
       </ScrollView>
     </SafeAreaView>
   );

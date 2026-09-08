@@ -12,8 +12,25 @@ import { exigirConexao } from '@/lib/conectividade';
 import { mensagemDeErro } from '@/lib/erros';
 
 export type StatusPedido = Enums['pedido_status'];
+/** Como o cliente escolheu pagar, lá na vitrine. */
+export type PagamentoPedido = Enums['pedido_pagamento'];
+/** Como o dinheiro de fato entrou — o que vai para a venda e o relatório. */
+export type FormaPagamento = Enums['forma_pagamento_venda'];
 
 export type PedidoComItens = Pedido & { itens: PedidoItem[] };
+
+/**
+ * As formas oferecidas ao finalizar um pedido pago fora da vitrine.
+ *
+ * São as mesmas da venda no balcão, de propósito: é o mesmo dinheiro entrando
+ * pela mesma porta, e o relatório soma os dois lados.
+ */
+export const FORMAS_DE_PAGAMENTO: { valor: FormaPagamento; rotulo: string }[] = [
+  { valor: 'dinheiro', rotulo: 'Dinheiro' },
+  { valor: 'pix', rotulo: 'Pix' },
+  { valor: 'cartao', rotulo: 'Cartão' },
+  { valor: 'outros', rotulo: 'Outros' },
+];
 
 /** Rótulos do GESTOR — diferentes dos que o cliente vê na vitrine. */
 export const ROTULO_STATUS: Record<StatusPedido, string> = {
@@ -112,11 +129,35 @@ export async function cancelarPedido(pedidoId: string, motivo: string): Promise<
  * Finalizar é o que transforma o pedido em venda: baixa o estoque, lança o
  * financeiro e libera a reserva. Daí ter função própria, e não ser mais um
  * status na lista de transições.
+ *
+ * A FORMA DE PAGAMENTO PRECISA VIR JUNTO.
+ *
+ * A RPC sempre aceitou `p_forma_pagamento`, e o aplicativo nunca mandava. Sem
+ * ela, o banco usa a reserva: `pix` quando o pedido foi pago pela vitrine, e
+ * `outros` em TODO o resto. Como quase todo pedido de retirada é pago no
+ * balcão, o resultado era um histórico de vendas e um relatório em que a loja
+ * virtual inteira aparecia como "Outros" — o lojista deixava de saber quanto
+ * entrou em dinheiro e quanto em cartão, que é metade da razão de olhar o
+ * relatório.
  */
-export async function finalizarPedido(pedidoId: string): Promise<void> {
+export async function finalizarPedido(
+  pedidoId: string,
+  formaPagamento?: FormaPagamento,
+): Promise<void> {
   await exigirConexao();
-  const { error } = await supabase.rpc('pedido_finalizar', { p_pedido_id: pedidoId });
+  const { error } = await supabase.rpc('pedido_finalizar', {
+    p_pedido_id: pedidoId,
+    p_forma_pagamento: formaPagamento ?? null,
+  });
   if (error) throw new Error(mensagemDeErro(error));
+}
+
+/**
+ * O pedido pago pela vitrine já sabe a resposta — foi Pix, e perguntar seria
+ * burocracia. Os outros foram pagos na mão do lojista, e só ele sabe como.
+ */
+export function precisaEscolherFormaDePagamento(pedido: { pagamento: PagamentoPedido }): boolean {
+  return pedido.pagamento !== 'pix_online';
 }
 
 /** Link para falar com o cliente pelo WhatsApp, com o pedido já citado. */

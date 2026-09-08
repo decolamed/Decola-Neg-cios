@@ -26,12 +26,24 @@ import { Icone } from '@/componentes/Icone';
 /** Para onde ir quando não há para onde voltar. */
 export const DESTINO_DE_RESERVA = '/dashboard';
 
-export function voltar() {
+/**
+ * Voltar sem deixar ninguém preso.
+ *
+ * `router.back()` sozinho NÃO FAZ NADA quando não há histórico — e isso não é
+ * raro: acontece toda vez que a tela é aberta direto pelo endereço, toda vez
+ * que a pessoa recarrega a página, e toda vez que o aplicativo instalado
+ * restaura a última tela ao abrir. O botão fica lá, a pessoa toca, e não
+ * acontece coisa alguma.
+ *
+ * `destino` permite dizer para onde faz sentido cair em cada tela: quem estava
+ * vendo uma venda volta para a lista de vendas, não para o Início.
+ */
+export function voltar(destino: string = DESTINO_DE_RESERVA) {
   if (router.canGoBack()) {
     router.back();
     return;
   }
-  router.replace(DESTINO_DE_RESERVA);
+  router.replace(destino as never);
 }
 
 export function Cabecalho() {
@@ -40,7 +52,9 @@ export function Cabecalho() {
   return (
     <View style={[estilos.barra, { paddingTop: margens.top + tema.espacamento.xs }]}>
       <Pressable
-        onPress={voltar}
+        // Envolvido de propósito: `onPress` entrega o evento do toque como
+        // primeiro argumento, e `voltar` o leria como destino.
+        onPress={() => voltar()}
         accessibilityRole="button"
         accessibilityLabel="Voltar"
         // Alvo folgado: no celular a seta sozinha tem menos que os 44dp que

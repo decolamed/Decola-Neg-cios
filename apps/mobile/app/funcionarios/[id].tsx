@@ -17,6 +17,7 @@ import tema from '@decola/theme';
 import { Aviso } from '@/componentes/Aviso';
 import { Botao } from '@/componentes/Botao';
 import { TelaCarregando, TelaMensagem } from '@/componentes/EstadoDaTela';
+import { voltar } from '@/componentes/Cabecalho';
 import { useSessao } from '@/contexto/SessaoContexto';
 import {
   alterarPapel,
@@ -279,7 +280,7 @@ export default function DetalhesDoFuncionario() {
           />
         ) : null}
 
-        <Botao titulo="Voltar" variante="texto" aoPressionar={() => router.back()} />
+        <Botao titulo="Voltar" variante="texto" aoPressionar={() => voltar('/funcionarios')} />
       </ScrollView>
     </SafeAreaView>
   );

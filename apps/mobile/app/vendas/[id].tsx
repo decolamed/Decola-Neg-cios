@@ -19,6 +19,7 @@ import { CampoTexto } from '@/componentes/CampoTexto';
 import { TelaCarregando, TelaMensagem } from '@/componentes/EstadoDaTela';
 import { Badge } from '@/componentes/BadgeStatus';
 import { Icone } from '@/componentes/Icone';
+import { voltar } from '@/componentes/Cabecalho';
 import { useSessao } from '@/contexto/SessaoContexto';
 import {
   buscarVenda,
@@ -266,7 +267,7 @@ export default function DetalhesDaVenda() {
           />
         ) : null}
 
-        <Botao titulo="Voltar às vendas" variante="texto" aoPressionar={() => router.back()} />
+        <Botao titulo="Voltar às vendas" variante="texto" aoPressionar={() => voltar('/vendas')} />
       </ScrollView>
     </SafeAreaView>
   );

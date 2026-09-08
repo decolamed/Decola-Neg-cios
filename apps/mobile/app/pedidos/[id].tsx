@@ -19,7 +19,10 @@ import { Botao } from '@/componentes/Botao';
 import { CobrancaPix } from '@/componentes/CobrancaPix';
 import { TelaCarregando, TelaMensagem } from '@/componentes/EstadoDaTela';
 import { useSessao } from '@/contexto/SessaoContexto';
+import { Seletor } from '@/componentes/Seletor';
+import { voltar } from '@/componentes/Cabecalho';
 import {
+  FORMAS_DE_PAGAMENTO,
   PROXIMO_PASSO,
   ROTULO_STATUS,
   avancarStatus,
@@ -27,7 +30,9 @@ import {
   carregarPedido,
   confirmarPagamento,
   finalizarPedido,
+  precisaEscolherFormaDePagamento,
   whatsappDoCliente,
+  type FormaPagamento,
   type PedidoComItens,
 } from '@/dados/pedidos';
 import { moeda } from '@/lib/formato';
@@ -45,6 +50,12 @@ export default function DetalheDoPedido() {
   const [pedido, setPedido] = useState<PedidoComItens | null | 'inexistente'>(null);
   const [erro, setErro] = useState<string | null>(null);
   const [processando, setProcessando] = useState(false);
+
+  /**
+   * Como o dinheiro entrou. Só o lojista sabe, e sem perguntar o relatório
+   * inteiro da loja virtual virava "Outros".
+   */
+  const [formaRecebida, setFormaRecebida] = useState<FormaPagamento>('dinheiro');
 
   const carregar = useCallback(async () => {
     if (!id) return;
@@ -219,17 +230,44 @@ export default function DetalheDoPedido() {
         ) : null}
 
         {podeFinalizar ? (
-          <Botao
-            titulo="Finalizar pedido"
-            aoPressionar={() =>
-              confirmar(
-                'Finalizar pedido',
-                'O estoque será baixado e a venda entra no financeiro. Isso não pode ser desfeito por aqui.',
-                () => void executar(() => finalizarPedido(pedido.id)),
-              )
-            }
-            carregando={processando}
-          />
+          <View style={estilos.bloco}>
+            <Text style={estilos.rotuloBloco}>Finalizar</Text>
+
+            {/* Pedido pago pela vitrine já foi Pix — perguntar seria burocracia.
+                Nos outros, o dinheiro passou pela mão do lojista e só ele sabe
+                como entrou; sem essa resposta o relatório mente. */}
+            {precisaEscolherFormaDePagamento(pedido) ? (
+              <Seletor
+                rotulo="Como o cliente pagou?"
+                opcoes={FORMAS_DE_PAGAMENTO.map((f) => ({ valor: f.valor, rotulo: f.rotulo }))}
+                selecionado={formaRecebida}
+                aoSelecionar={(v) => setFormaRecebida((v as FormaPagamento) ?? 'dinheiro')}
+                bloqueado={processando}
+              />
+            ) : (
+              <Text style={estilos.texto}>
+                O cliente pagou por Pix na loja virtual — a venda entra como Pix.
+              </Text>
+            )}
+
+            <Botao
+              titulo="Finalizar pedido"
+              aoPressionar={() =>
+                confirmar(
+                  'Finalizar pedido',
+                  'O estoque será baixado e a venda entra no financeiro. Isso não pode ser desfeito por aqui.',
+                  () =>
+                    void executar(() =>
+                      finalizarPedido(
+                        pedido.id,
+                        precisaEscolherFormaDePagamento(pedido) ? formaRecebida : undefined,
+                      ),
+                    ),
+                )
+              }
+              carregando={processando}
+            />
+          </View>
         ) : null}
 
         {!encerrado && podeEscrever ? (
@@ -253,7 +291,7 @@ export default function DetalheDoPedido() {
           />
         ) : null}
 
-        <Botao titulo="Voltar" variante="texto" aoPressionar={() => router.back()} />
+        <Botao titulo="Voltar" variante="texto" aoPressionar={() => voltar('/pedidos')} />
       </ScrollView>
     </SafeAreaView>
   );

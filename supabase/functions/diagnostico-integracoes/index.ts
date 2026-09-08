@@ -22,6 +22,7 @@
  *   RESEND_API_KEY, EMAIL_REMETENTE
  */
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
+import { URL_DO_SITE } from '../_shared/enderecos.ts';
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -313,10 +314,9 @@ async function verificarResend(): Promise<Verificacao> {
  * ainda estaria quebrado, e é isso que ela denuncia.
  */
 async function verificarSite(): Promise<Verificacao> {
-  // Mesma constante de `enviar-acesso`, e pelo mesmo motivo: onde publicamos é
-  // fato do repositório. Conferir um endereço vindo de secret seria conferir a
-  // configuração, não o site que os clientes abrem.
-  const base = 'https://site-kappa-five-66.vercel.app';
+  // Conferir um endereço vindo de secret seria conferir a configuração, não o
+  // site que os clientes abrem. Daí vir do arquivo compartilhado.
+  const base = URL_DO_SITE;
   const nome = 'Site público (links de e-mail)';
 
   // A referência do projeto: o "abc123" de https://abc123.supabase.co.

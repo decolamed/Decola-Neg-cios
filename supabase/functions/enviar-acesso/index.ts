@@ -32,16 +32,15 @@
  * O ENDEREÇO DO SITE NÃO É MAIS SECRET. Era, e isso custou caro: um valor
  * antigo guardado no painel manda todo mundo para o lugar errado, e nada no
  * código denuncia — o link sai bonito e quebrado. Onde publicamos é fato do
- * repositório, não configuração de ambiente. Mudou o endereço? Muda esta
- * constante e republica, num lugar só, com histórico.
+ * repositório, não configuração de ambiente. Mudou o endereço? Muda
+ * `_shared/enderecos.ts` e republica ESTA e as outras três funções que o usam.
  *
  * SECRETS: RESEND_API_KEY, EMAIL_REMETENTE, SUPABASE_SERVICE_ROLE_KEY (do
  * projeto).
  */
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
 
-/** Onde o site público está publicado. Ver a nota acima sobre não ser secret. */
-const URL_DO_SITE = 'https://site-kappa-five-66.vercel.app';
+import { URL_DO_SITE } from '../_shared/enderecos.ts';
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',

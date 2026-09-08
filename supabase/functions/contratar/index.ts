@@ -23,8 +23,9 @@
  */
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
 
-/** Onde o site público está publicado — fato do repositório, não secret. */
-const URL_DO_SITE = 'https://site-kappa-five-66.vercel.app';
+// Onde o site está publicado vive em UM arquivo, compartilhado. Ver a nota
+// em `_shared/enderecos.ts` sobre por que não é secret.
+import { URL_DO_SITE } from '../_shared/enderecos.ts';
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',

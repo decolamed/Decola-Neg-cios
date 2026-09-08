@@ -16,12 +16,7 @@
  */
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
 
-/**
- * Onde o site público está publicado — fato do repositório, não secret.
- * Mesma decisão de `enviar-acesso`: um endereço antigo guardado no painel
- * manda todo mundo para o lugar errado e nada no código denuncia.
- */
-const URL_DO_SITE = 'https://site-kappa-five-66.vercel.app';
+import { URL_DO_SITE } from '../_shared/enderecos.ts';
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',

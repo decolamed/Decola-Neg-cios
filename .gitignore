@@ -11,3 +11,8 @@ web-build/
 
 # Export local do Metro (validação de build)
 export/
+
+# Rascunho da CLI do Supabase (marcador de versão, cache de link do projeto).
+# Nasce sozinho ao rodar qualquer comando `supabase` e não descreve nada do
+# produto — o que descreve o banco são as migrações em supabase/migrations.
+supabase/.temp/

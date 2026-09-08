@@ -8,7 +8,7 @@
  * (Seção 10.3). A RPC de agregação recusa quem não tem.
  */
 import { useCallback, useEffect, useState } from 'react';
-import { Platform, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import tema from '@decola/theme';
 import { Aviso } from '@/componentes/Aviso';
@@ -122,11 +122,11 @@ export default function Relatorios() {
           colunas,
         });
 
-        // No celular grava e abre a folha de compartilhamento; no navegador
-        // dispara o download. Antes isto chamava `expo-file-system` direto e
-        // o botão simplesmente não fazia nada na web, onde esse módulo não
-        // existe.
-        await entregarArquivo({
+        // `entregarArquivo` sabe o caminho de cada plataforma e DEVOLVE qual
+        // usou. Sem isso a tela dizia "foi baixado" mesmo quando o arquivo
+        // tinha ido para a folha de compartilhamento — mandando a pessoa
+        // procurar na pasta errada.
+        const entrega = await entregarArquivo({
           nomeArquivo: arquivo.nomeArquivo,
           conteudo: arquivo.conteudo,
           codificacao: formato === 'pdf' ? 'base64' : 'texto',
@@ -134,9 +134,13 @@ export default function Relatorios() {
           titulo: 'Relatório de vendas',
         });
 
-        if (Platform.OS === 'web') {
-          setMensagem(`${arquivo.nomeArquivo} foi baixado.`);
-        }
+        setMensagem(
+          entrega === 'baixado'
+            ? `${arquivo.nomeArquivo} foi baixado. Procure na pasta de downloads do aparelho.`
+            : entrega === 'aberto'
+              ? `${arquivo.nomeArquivo} foi aberto em outra aba.`
+              : `${arquivo.nomeArquivo} está pronto.`,
+        );
       } catch (e) {
         setMensagem(textoDoErro(e, 'Não foi possível exportar o relatório.'));
       } finally {

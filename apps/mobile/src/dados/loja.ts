@@ -265,8 +265,34 @@ export function sugerirEndereco(nome: string): string {
     .replace(/-+$/, '');
 }
 
+/**
+ * Endereços que a vitrine NÃO pode usar — espelho de
+ * `app.slug_de_loja_reservado()` (migração 0050).
+ *
+ * A loja mora na raiz do site (`dominio/nome-da-loja`), então o endereço dela
+ * divide espaço com as páginas do próprio produto. Um negócio chamado "Planos"
+ * receberia `dominio/planos`, que é a página de preços: a vitrine não abriria
+ * e nada avisaria — o lojista mandaria o link aos clientes e eles veriam a
+ * página errada.
+ *
+ * A lista está aqui para o lojista ser avisado ENQUANTO digita. Quem de fato
+ * recusa é o banco (Seção 9.1); se as duas divergirem, quem vale é ele.
+ */
+export const ENDERECOS_RESERVADOS = [
+  'planos', 'cadastro', 'pagamento', 'pronto', 'definir-senha', 'redefinir-senha',
+  'convite', 'pedido', 'como-funciona', 'loja',
+  'admin', 'app', 'api', 'painel', 'login', 'entrar', 'sair', 'conta', 'perfil',
+  'suporte', 'ajuda', 'sobre', 'termos', 'privacidade', 'contato', 'blog',
+  'assets', 'static', 'public', 'favicon', 'robots', 'sitemap', 'index',
+  'null', 'undefined', 'www',
+] as const;
+
+export function enderecoReservado(slug: string): boolean {
+  return (ENDERECOS_RESERVADOS as readonly string[]).includes(slug.trim().toLowerCase());
+}
+
 export function enderecoValido(slug: string): boolean {
-  return /^[a-z0-9]([a-z0-9-]{1,48}[a-z0-9])$/.test(slug);
+  return /^[a-z0-9]([a-z0-9-]{1,48}[a-z0-9])$/.test(slug) && !enderecoReservado(slug);
 }
 
 /** Só dígitos: é o que a API do WhatsApp aceita. O DDI 55 entra se faltar. */
@@ -317,6 +343,12 @@ export async function salvarConfiguracaoDaLoja(
         'O Instagram aceita apenas letras, números, ponto e sublinhado — sem espaços.',
       );
     }
+    if (texto.includes('empresas_loja_slug_nao_reservado')) {
+      throw new Error(
+        'Este endereço é usado por uma página do próprio Decola Negócios e não pode ser o da ' +
+          'sua loja. Escolha outro — por exemplo, acrescente o nome da sua cidade.',
+      );
+    }
     if (texto.includes('empresas_loja_slug_formato')) {
       throw new Error(
         'O endereço da loja aceita apenas letras minúsculas, números e hífen, ' +
@@ -353,12 +385,12 @@ export async function contarProdutosNaVitrine(empresaId: string): Promise<number
  * recompilar a decisão; sem ela vale a produção.
  */
 export const URL_DO_SITE = (
-  process.env.EXPO_PUBLIC_URL_SITE ?? 'https://site-kappa-five-66.vercel.app'
+  process.env.EXPO_PUBLIC_URL_SITE ?? 'https://sitedecolanegocios.vercel.app'
 ).replace(/\/$/, '');
 
 /** Só o miolo do endereço, para a tela mostrar sem o "https://" na frente. */
-export const BASE_DA_LOJA_VISIVEL = `${URL_DO_SITE.replace(/^https?:\/\//, '')}/loja`;
+export const BASE_DA_LOJA_VISIVEL = URL_DO_SITE.replace(/^https?:\/\//, '');
 
 export function enderecoCompleto(slug: string): string {
-  return `${URL_DO_SITE}/loja/${slug}`;
+  return `${URL_DO_SITE}/${slug}`;
 }

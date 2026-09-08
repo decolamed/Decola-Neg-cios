@@ -18,21 +18,20 @@
  * Agora é uma linha. Depois de alterar, as quatro funções precisam ser
  * publicadas de novo — elas levam uma cópia do código no momento do deploy.
  *
- * ESTADO DO QUE ESTÁ NO AR (08/09/2026): `asaas-checkout`, `enviar-acesso` e
- * `contratar` já foram publicadas usando este arquivo.
- * `diagnostico-integracoes` ainda roda a versão com o endereço embutido — o
- * VALOR é o mesmo, então nada muda de comportamento, e ela passa a usar este
- * arquivo na próxima publicação (que a troca de domínio exige de qualquer
- * forma).
+ * ESTADO DO QUE ESTÁ NO AR (08/09/2026): as quatro funções foram publicadas
+ * usando este arquivo, já com o domínio novo.
  *
  * O QUE MAIS PRECISA MUDAR JUNTO, fora deste arquivo:
  *   - Supabase → Authentication → URL Configuration (Site URL e Redirect URLs)
- *   - Vercel: manter o domínio ANTIGO como apelido do projeto, senão todo link
- *     de loja que os lojistas já mandaram para os clientes deles vira erro.
+ *   - Vercel, no projeto do app/painel: VITE_URL_SITE e EXPO_PUBLIC_URL_SITE
+ *   - Vercel, no projeto do site: manter o domínio antigo como apelido SE já
+ *     houver lojista com link divulgado. Na troca de 08/09/2026 não havia
+ *     nenhum, então o antigo (`site-kappa-five-66`) foi simplesmente
+ *     descartado.
  */
 
 /** O site público: planos, contratação e as vitrines dos lojistas. */
-export const URL_DO_SITE = 'https://site-kappa-five-66.vercel.app';
+export const URL_DO_SITE = 'https://sitedecolanegocios.vercel.app';
 
 /** O aplicativo e o painel, servidos na mesma publicação (o painel na raiz). */
 export const URL_DO_APP = 'https://decolanegocios.vercel.app';

@@ -1,5 +1,5 @@
 /**
- * Produtos de uma categoria — `/loja/:slug/categoria/:id`.
+ * Produtos de uma categoria — `/:slug/categoria/:id`.
  *
  * As pastilhas no topo trazem as OUTRAS categorias junto: quem entrou em
  * "Cabelos" e queria "Skincare" troca ali mesmo, sem voltar para a home. É a
@@ -119,7 +119,7 @@ export function Categoria() {
   return (
     <MolduraDaLoja loja={loja}>
       <main className="pagina">
-        <Link to={`/loja/${slug}`} className="voltar">
+        <Link to={`/${slug}`} className="voltar">
           ← {loja.nome}
         </Link>
 
@@ -144,7 +144,7 @@ export function Categoria() {
                 ? 'Nenhum produto desta categoria corresponde à sua busca.'
                 : 'Esta categoria ainda não tem produtos à mostra.'}
             </p>
-            <Link className="botao discreto" to={`/loja/${slug}`}>
+            <Link className="botao discreto" to={`/${slug}`}>
               Ver todos os produtos
             </Link>
           </div>

@@ -1,5 +1,5 @@
 /**
- * Carrinho — `/loja/:slug/carrinho`.
+ * Carrinho — `/:slug/carrinho`.
  *
  * O carrinho guarda id e quantidade; nome, preço e disponibilidade são
  * relidos da vitrine ao abrir. Por isso esta tela é o lugar onde o cliente
@@ -88,7 +88,7 @@ export function Carrinho() {
 
   return (
     <main className="pagina estreita">
-      <Link to={`/loja/${slug}`} className="voltar">
+      <Link to={`/${slug}`} className="voltar">
         ← Continuar comprando
       </Link>
 
@@ -110,7 +110,7 @@ export function Carrinho() {
       {linhas.length === 0 ? (
         <div className="card">
           <p>Seu carrinho está vazio.</p>
-          <Link to={`/loja/${slug}`} className="botao">
+          <Link to={`/${slug}`} className="botao">
             Ver produtos
           </Link>
         </div>
@@ -172,7 +172,7 @@ export function Carrinho() {
             type="button"
             className="botao"
             disabled={temProblema}
-            onClick={() => navegar(`/loja/${slug}/checkout`)}
+            onClick={() => navegar(`/${slug}/checkout`)}
           >
             Continuar
           </button>

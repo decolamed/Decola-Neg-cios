@@ -1,5 +1,5 @@
 /**
- * Detalhe do produto — `/loja/:slug/produto/:id`.
+ * Detalhe do produto — `/:slug/produto/:id`.
  *
  * A quantidade que dá para escolher é limitada pelo `disponivel` da view, que
  * já desconta o reservado. O banco confere de novo na criação do pedido: entre
@@ -65,7 +65,7 @@ export function Produto() {
     return (
       <main className="pagina estreita">
         <Aviso mensagem="Este produto não está mais disponível nesta loja." />
-        <Link to={`/loja/${slug}`} className="botao">
+        <Link to={`/${slug}`} className="botao">
           Voltar para a loja
         </Link>
       </main>
@@ -91,14 +91,14 @@ export function Produto() {
 
   const adicionar = () => {
     adicionarAoCarrinho(slug, produto.id, quantidade);
-    navegar(`/loja/${slug}/carrinho`);
+    navegar(`/${slug}/carrinho`);
   };
 
   return (
     <MolduraDaLoja loja={loja}>
       <main className="pagina estreita">
         <Link
-          to={produto.categoria_id ? `/loja/${slug}/categoria/${produto.categoria_id}` : `/loja/${slug}`}
+          to={produto.categoria_id ? `/${slug}/categoria/${produto.categoria_id}` : `/${slug}`}
           className="voltar"
         >
           ← {produto.categoria_nome ?? loja.nome}

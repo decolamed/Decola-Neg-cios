@@ -1,5 +1,5 @@
 /**
- * Meus pedidos — `/loja/:slug/pedidos`.
+ * Meus pedidos — `/:slug/pedidos`.
  *
  * A quarta aba da barra da loja. Existe por um motivo concreto: até aqui, o
  * único caminho de volta a um pedido era o link recebido. Quem apagava a
@@ -162,7 +162,7 @@ export function MeusPedidos() {
             ) : pedidos.length === 0 ? (
               <div className="card">
                 <p>Ainda não encontramos pedidos feitos com este telefone.</p>
-                <Link className="botao" to={`/loja/${slug}`}>
+                <Link className="botao" to={`/${slug}`}>
                   Ver a loja
                 </Link>
               </div>

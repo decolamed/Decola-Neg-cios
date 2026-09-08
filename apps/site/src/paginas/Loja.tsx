@@ -1,5 +1,5 @@
 /**
- * Vitrine de um negócio — `/loja/:slug`.
+ * Vitrine de um negócio — `/:slug`.
  *
  * Pública e sem login. O que aparece aqui é exatamente o que as views
  * `vitrine_*` devolvem: produto visível, ativo, de loja no ar e com assinatura
@@ -201,7 +201,7 @@ export function Loja() {
                   {destaques.length > 0 ? 'Todos os produtos' : 'Produtos'}
                 </h2>
                 {categorias.length > 0 ? (
-                  <Link className="loja-secao-link" to={`/loja/${slug}/categorias`}>
+                  <Link className="loja-secao-link" to={`/${slug}/categorias`}>
                     Ver categorias →
                   </Link>
                 ) : null}

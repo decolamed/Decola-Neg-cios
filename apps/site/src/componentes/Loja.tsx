@@ -238,7 +238,7 @@ export function CirculosDeCategoria({
   return (
     <nav className="categorias-circulos" aria-label="Categorias">
       <Link
-        to={`/loja/${slug}`}
+        to={`/${slug}`}
         className={ativa === null ? 'categoria-circulo ativo' : 'categoria-circulo'}
       >
         <span className="categoria-imagem grade" aria-hidden="true">
@@ -250,7 +250,7 @@ export function CirculosDeCategoria({
       {categorias.map((categoria) => (
         <Link
           key={categoria.id}
-          to={`/loja/${slug}/categoria/${categoria.id}`}
+          to={`/${slug}/categoria/${categoria.id}`}
           className={ativa === categoria.id ? 'categoria-circulo ativo' : 'categoria-circulo'}
         >
           {categoria.capa ? (
@@ -281,13 +281,13 @@ export function ChipsDeCategoria({
 
   return (
     <nav className="categoria-chips" aria-label="Categorias">
-      <Link to={`/loja/${slug}`} className={ativa === null ? 'chip ativo' : 'chip'}>
+      <Link to={`/${slug}`} className={ativa === null ? 'chip ativo' : 'chip'}>
         Todos
       </Link>
       {categorias.map((c) => (
         <Link
           key={c.id}
-          to={`/loja/${slug}/categoria/${c.id}`}
+          to={`/${slug}/categoria/${c.id}`}
           className={ativa === c.id ? 'chip ativo' : 'chip'}
         >
           {c.nome}
@@ -340,7 +340,7 @@ export function CartaoDeProduto({
 
   return (
     <article className={esgotado ? 'produto esgotado' : 'produto'}>
-      <Link to={`/loja/${slug}/produto/${produto.id}`} className="produto-link">
+      <Link to={`/${slug}/produto/${produto.id}`} className="produto-link">
         <CapaDoProduto produto={produto} />
         <span className="produto-nome">{produto.nome}</span>
         <span className="produto-preco">{moeda(produto.preco)}</span>
@@ -380,7 +380,7 @@ export function LinhaDeProduto({
 
   return (
     <article className={esgotado ? 'produto-linha esgotado' : 'produto-linha'}>
-      <Link to={`/loja/${slug}/produto/${produto.id}`} className="produto-linha-link">
+      <Link to={`/${slug}/produto/${produto.id}`} className="produto-linha-link">
         <CapaDoProduto produto={produto} />
         <div className="produto-linha-texto">
           <span className="produto-nome">{produto.nome}</span>
@@ -422,16 +422,16 @@ export function BarraDaLoja({ slug, itensNoCarrinho }: { slug: string; itensNoCa
 
   const itens = useMemo(
     () => [
-      { destino: `/loja/${slug}`, rotulo: 'Início', icone: <IconeCasa />, exato: true },
-      { destino: `/loja/${slug}/categorias`, rotulo: 'Categorias', icone: <IconeGrade />, exato: false },
+      { destino: `/${slug}`, rotulo: 'Início', icone: <IconeCasa />, exato: true },
+      { destino: `/${slug}/categorias`, rotulo: 'Categorias', icone: <IconeGrade />, exato: false },
       {
-        destino: `/loja/${slug}/carrinho`,
+        destino: `/${slug}/carrinho`,
         rotulo: 'Carrinho',
         icone: <IconeCarrinho />,
         exato: false,
         contador: itensNoCarrinho,
       },
-      { destino: `/loja/${slug}/pedidos`, rotulo: 'Pedidos', icone: <IconePessoa />, exato: false },
+      { destino: `/${slug}/pedidos`, rotulo: 'Pedidos', icone: <IconePessoa />, exato: false },
     ],
     [slug, itensNoCarrinho],
   );

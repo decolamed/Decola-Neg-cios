@@ -1,5 +1,5 @@
 /**
- * Todas as categorias da loja — `/loja/:slug/categorias`.
+ * Todas as categorias da loja — `/:slug/categorias`.
  *
  * O destino da aba "Categorias" da barra inferior. Na home as categorias
  * aparecem em círculos que rolam de lado, o que é bom para escolher rápido e
@@ -91,7 +91,7 @@ export function Categorias() {
         {categorias.length === 0 ? (
           <div className="card">
             <p>Esta loja ainda não organizou os produtos em categorias.</p>
-            <Link className="botao" to={`/loja/${slug}`}>
+            <Link className="botao" to={`/${slug}`}>
               Ver todos os produtos
             </Link>
           </div>
@@ -100,7 +100,7 @@ export function Categorias() {
             {categorias.map((categoria) => (
               <Link
                 key={categoria.id}
-                to={`/loja/${slug}/categoria/${categoria.id}`}
+                to={`/${slug}/categoria/${categoria.id}`}
                 className="cartao-categoria"
               >
                 {categoria.capa ? (

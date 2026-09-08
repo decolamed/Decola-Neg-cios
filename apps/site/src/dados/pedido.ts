@@ -72,10 +72,46 @@ export async function criarPedido(dados: {
   return data as unknown as PedidoCriado;
 }
 
+/**
+ * Este link viaja pelo WhatsApp, e link que viaja chega quebrado: cortado no
+ * fim, com um caractere a mais colado, copiado pela metade. O banco recebe
+ * `p_token uuid` e responde em inglês — `invalid input syntax for type uuid` —
+ * que era o que o cliente lia na tela.
+ *
+ * Conferir o formato ANTES de perguntar ao banco resolve os dois lados: o
+ * cliente ouve uma frase que explica o que fazer, e uma consulta inútil não
+ * sai da tela.
+ */
+const FORMATO_DO_TOKEN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+const LINK_QUEBRADO =
+  'Este link de acompanhamento está incompleto. Confira se ele foi copiado inteiro — ' +
+  'às vezes o WhatsApp corta o endereço no fim da mensagem.';
+
 export async function consultarPedido(token: string): Promise<PedidoConsultado> {
-  const { data, error } = await supabase.rpc('vitrine_consultar_pedido', { p_token: token });
-  if (error) throw new Error(error.message || 'Pedido não encontrado.');
-  return data as unknown as PedidoConsultado;
+  if (!FORMATO_DO_TOKEN.test(token.trim())) throw new Error(LINK_QUEBRADO);
+
+  const { data, error } = await supabase.rpc('vitrine_consultar_pedido', {
+    p_token: token.trim(),
+  });
+
+  if (error) {
+    // 22P02 é o banco recusando o formato do token. Só chega aqui se o formato
+    // passar pela conferência acima e ainda assim ser recusado; a frase para o
+    // cliente é a mesma, porque o problema é o mesmo.
+    if (error.code === '22P02') throw new Error(LINK_QUEBRADO);
+    throw new Error(error.message || 'Pedido não encontrado.');
+  }
+
+  // A função devolve o pedido inteiro ou levanta erro — nunca um pedaço. Se
+  // mesmo assim vier algo sem `loja`, a tela quebrava em branco ao ler
+  // `pedido.loja.nome`, e tela branca não diz nada a quem está esperando a
+  // encomenda. Melhor a mesma frase de "não encontrado".
+  const pedido = data as unknown as PedidoConsultado | null;
+  if (!pedido || typeof pedido !== 'object' || !pedido.loja) {
+    throw new Error('Pedido não encontrado.');
+  }
+  return pedido;
 }
 
 /** Rótulos que o CLIENTE vê. O gestor tem os seus, na área interna. */

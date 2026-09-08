@@ -87,8 +87,27 @@ export function Moldura({ children }: { children: ReactNode }) {
    * (planos, cadastro, redefinir senha), mas na loja de um lojista ele
    * disputaria a atenção com o nome do próprio negócio — e a página é dele,
    * não nossa. Aqui a plataforma vira assinatura discreta no rodapé.
+   *
+   * A PERGUNTA TEVE DE SER INVERTIDA. Antes bastava olhar se o caminho começava
+   * com `/loja/`. Agora a vitrine mora na RAIZ (`dominio/nome-da-loja`), então
+   * não há prefixo que a identifique: qualquer caminho que não seja uma página
+   * NOSSA é de alguém. Listar as nossas é a única pergunta que continua tendo
+   * resposta certa — e é a mesma lista que o banco reserva em
+   * `app.slug_de_loja_reservado()` (migração 0050).
    */
-  const daLoja = pathname.startsWith('/loja/') || pathname.startsWith('/pedido/');
+  const PAGINAS_DA_PLATAFORMA = [
+    'planos',
+    'cadastro',
+    'pagamento',
+    'pronto',
+    'definir-senha',
+    'redefinir-senha',
+    'convite',
+    'como-funciona',
+  ];
+
+  const primeiroTrecho = pathname.split('/').filter(Boolean)[0] ?? '';
+  const daLoja = primeiroTrecho !== '' && !PAGINAS_DA_PLATAFORMA.includes(primeiroTrecho);
 
   return (
     <>

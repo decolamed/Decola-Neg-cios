@@ -28,6 +28,7 @@ import {
   BASE_DA_LOJA_VISIVEL,
   contarProdutosNaVitrine,
   enderecoCompleto,
+  enderecoReservado,
   enderecoValido,
   extrairConfiguracao,
   instagramValido,
@@ -73,6 +74,17 @@ export default function ConfiguracoesDaLoja() {
     setSucesso(null);
 
     const slug = endereco.trim().toLowerCase();
+
+    // Reservado vem ANTES do formato: "planos" tem formato perfeito, e dizer
+    // "aceita apenas letras minúsculas" para quem digitou exatamente isso é
+    // mandar a pessoa procurar um erro que não existe.
+    if (slug && enderecoReservado(slug)) {
+      setErro(
+        `"${slug}" é o endereço de uma página do próprio Decola Negócios e não pode ser o da ` +
+          'sua loja. Escolha outro — acrescentar a cidade ou o sobrenome costuma resolver.',
+      );
+      return;
+    }
 
     // Ligar sem endereço é recusado pelo banco (constraint
     // `empresas_loja_ativa_exige_slug`); dizer antes evita o erro técnico.

@@ -1,5 +1,5 @@
 /**
- * Checkout — `/loja/:slug/checkout`.
+ * Checkout — `/:slug/checkout`.
  *
  * Os dois fluxos ficam na mesma tela, mas nunca ao mesmo tempo: escolher a
  * modalidade troca o que aparece abaixo. Misturar campos de entrega com
@@ -42,7 +42,7 @@ export function Checkout() {
   const montar = useCallback(async () => {
     const itens = itensDoCarrinho(slug);
     if (itens.length === 0) {
-      navegar(`/loja/${slug}/carrinho`, { replace: true });
+      navegar(`/${slug}/carrinho`, { replace: true });
       return;
     }
     try {
@@ -137,7 +137,7 @@ export function Checkout() {
 
   return (
     <main className="pagina estreita">
-      <Link to={`/loja/${slug}/carrinho`} className="voltar">
+      <Link to={`/${slug}/carrinho`} className="voltar">
         ← Voltar ao carrinho
       </Link>
 

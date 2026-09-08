@@ -2,10 +2,10 @@
  * Contratação — do e-mail digitado até o link de pagamento.
  *
  * ESTA É A ÚNICA PORTA DE CONTRATAÇÃO. O site entra por aqui, e o aplicativo
- * também. Ele tinha a sua própria, feita do aparelho, com exatamente o defeito
- * descrito abaixo — o site foi consertado, o aplicativo não, e o defeito
- * continuou pegando clientes por mais tempo do que precisava. Duas portas para
- * a mesma coisa é como uma delas apodrece sem ninguém notar.
+ * também. Ele tinha a sua própria, feita do aparelho, com o defeito descrito
+ * abaixo — o site foi consertado, o aplicativo não, e o defeito continuou
+ * pegando clientes. Duas portas para a mesma coisa é como uma delas apodrece
+ * sem ninguém notar.
  *
  * POR QUE ISTO EXISTE. O cadastro fazia, do navegador: `signUp` → RPC da
  * empresa → checkout, e os dois últimos passos dependiam da SESSÃO que o
@@ -15,24 +15,28 @@
  * dizia "este e-mail já tem conta", e entrar não funcionava porque a senha da
  * contratação é descartável de propósito.
  *
- * Aqui nada depende de sessão. A chave de serviço cria a conta já confirmada,
- * cria a empresa e abre a cobrança — três passos, um pedido só, e o navegador
- * recebe só a URL do checkout.
+ * QUEM DECIDE É O BANCO (migração 0051). Esta função não consulta `planos`,
+ * `empresas` nem `empresa_usuarios`: ela PERGUNTA, numa chamada só, o que fazer
+ * com este e-mail e este plano. Não é elegância — é obrigação. A migração 0030
+ * negou ao `service_role`, de propósito, o acesso a essas tabelas ("só pelas
+ * RPCs administrativas"), e a versão anterior desta função as lia direto com a
+ * chave de serviço. O banco recusava com 403 e o cliente lia "Este plano não
+ * está mais disponível". Nenhuma contratação funcionou enquanto isso durou.
+ *
+ * Aqui ficou só o que só esta função pode fazer: falar com o Auth (criar a
+ * conta) e com o Asaas (abrir a cobrança).
  *
  * NINGUÉM PODE FICAR SEM CAMINHO. É a regra que organiza os desfechos de um
  * e-mail que já existe, porque cada um deles já prendeu alguém:
  *
- *   sem empresa ............. tentativa que parou no meio. Reaproveita a conta
- *                             e segue a contratação.
- *   empresa sem pagamento ... contratou e fechou o checkout. NÃO consegue
- *                             entrar (a senha só nasce depois da confirmação)
- *                             nem cadastrar de novo. Volta para o MESMO
- *                             pagamento, reabrindo a cobrança que já existe.
- *   empresa em uso .......... aí sim recusa, com a instrução certa: entre, não
- *                             cadastre de novo.
- *
- * Recusar os dois primeiros era condenar a pessoa para sempre: com empresa
- * criada e nenhuma forma de pagá-la, o cadastro fica de pé e inútil.
+ *   conta_orfa ............... tentativa que parou no meio. Reaproveita a conta
+ *                              e segue a contratação.
+ *   aguardando_pagamento ..... contratou e fechou o checkout. NÃO consegue
+ *                              entrar (a senha só nasce depois da confirmação)
+ *                              nem cadastrar de novo. Volta para o MESMO
+ *                              pagamento, reabrindo a cobrança que já existe.
+ *   conta_ativa .............. aí sim recusa, com a instrução certa: entre, não
+ *                              cadastre de novo.
  *
  * SECRETS: SUPABASE_SERVICE_ROLE_KEY, ASAAS_API_KEY, ASAAS_AMBIENTE.
  */
@@ -99,23 +103,83 @@ function vencimentoEmTresDias(): string {
   return data.toISOString().slice(0, 10);
 }
 
-/**
- * Quem já contratou mas não pagou volta para o MESMO pagamento.
- *
- * Reabrir a cobrança que já existe, em vez de criar outra, evita duas
- * cobranças abertas para a mesma assinatura — o cliente pagaria uma e a outra
- * ficaria vencendo, e a conciliação pelo webhook viraria adivinhação. Só
- * quando a antiga não serve mais (vencida, cancelada, sumida do Asaas) é que
- * uma nova é aberta.
- */
-async function retomarPagamento(
-  admin: ReturnType<typeof createClient>,
-  assinatura: {
+/** O que `public.contratacao_situacao` devolve. */
+type Situacao = {
+  situacao:
+    | 'plano_indisponivel'
+    | 'email_novo'
+    | 'conta_orfa'
+    | 'aguardando_pagamento'
+    | 'conta_ativa';
+  usuario_id?: string;
+  plano?: { id: string; nome: string; valor: number };
+  assinatura?: {
     id: string;
     valor_contratado: number;
     asaas_customer_id: string | null;
-    empresas?: { nome: string } | null;
+    empresa_nome: string | null;
+  };
+};
+
+/** Abre a cobrança do primeiro ciclo e registra o que o webhook vai reconciliar. */
+async function abrirCobranca(
+  admin: ReturnType<typeof createClient>,
+  chave: string,
+  dados: {
+    assinaturaId: string;
+    clienteId: string;
+    valor: number;
+    descricao: string;
   },
+): Promise<{ url_checkout: string; valor: number; vencimento: string }> {
+  const cobranca = await chamarAsaas('/payments', chave, {
+    customer: dados.clienteId,
+    // UNDEFINED deixa o pagador escolher Pix, boleto ou cartão no checkout.
+    billingType: 'UNDEFINED',
+    value: Number(dados.valor),
+    dueDate: vencimentoEmTresDias(),
+    description: dados.descricao,
+    externalReference: dados.assinaturaId,
+    callback: { successUrl: `${URL_DO_SITE}/pronto`, autoRedirect: true },
+  });
+
+  await admin
+    .from('assinaturas')
+    .update({ asaas_customer_id: dados.clienteId, proximo_vencimento: cobranca.dueDate })
+    .eq('id', dados.assinaturaId);
+
+  await admin.from('cobrancas').upsert(
+    {
+      assinatura_id: dados.assinaturaId,
+      asaas_payment_id: cobranca.id,
+      valor: Number(cobranca.value),
+      // O pagador ainda não escolheu: registramos como pix e o webhook corrige
+      // com a forma efetivamente usada.
+      forma_pagamento: 'pix',
+      status: 'pendente',
+      vencimento: cobranca.dueDate,
+    },
+    { onConflict: 'asaas_payment_id' },
+  );
+
+  return {
+    url_checkout: cobranca.invoiceUrl,
+    valor: Number(cobranca.value),
+    vencimento: cobranca.dueDate,
+  };
+}
+
+/**
+ * Quem já contratou mas não pagou volta para o MESMO pagamento.
+ *
+ * Reabrir a cobrança que já existe, em vez de criar outra, evita duas cobranças
+ * abertas para a mesma assinatura — o cliente pagaria uma e a outra ficaria
+ * vencendo, e a conciliação pelo webhook viraria adivinhação. Só quando a
+ * antiga não serve mais (paga, cancelada, sumida do Asaas) uma nova é aberta.
+ */
+async function retomarPagamento(
+  admin: ReturnType<typeof createClient>,
+  assinatura: NonNullable<Situacao['assinatura']>,
   email: string,
 ): Promise<Response> {
   const chave = Deno.env.get('ASAAS_API_KEY');
@@ -155,47 +219,22 @@ async function retomarPagamento(
     }
 
     // 2. Não havia cobrança aproveitável. Abre outra para a MESMA assinatura.
-    // Sem cliente no Asaas quando a primeira tentativa morreu justamente ali.
-    const nomeDaEmpresa = assinatura.empresas?.nome?.trim() || email;
+    const nomeDaEmpresa = assinatura.empresa_nome?.trim() || email;
     let clienteId = assinatura.asaas_customer_id;
     if (!clienteId) {
+      // Sem cliente no Asaas quando a primeira tentativa morreu justamente ali.
       const cliente = await chamarAsaas('/customers', chave, { name: nomeDaEmpresa, email });
       clienteId = cliente.id;
     }
 
-    const nova = await chamarAsaas('/payments', chave, {
-      customer: clienteId,
-      billingType: 'UNDEFINED',
-      value: Number(assinatura.valor_contratado),
-      dueDate: vencimentoEmTresDias(),
-      description: `Assinatura ${nomeDaEmpresa} — Decola Negócios`,
-      externalReference: assinatura.id,
-      callback: { successUrl: `${URL_DO_SITE}/pronto`, autoRedirect: true },
+    const aberta = await abrirCobranca(admin, chave, {
+      assinaturaId: assinatura.id,
+      clienteId,
+      valor: assinatura.valor_contratado,
+      descricao: `Assinatura ${nomeDaEmpresa} — Decola Negócios`,
     });
 
-    await admin
-      .from('assinaturas')
-      .update({ asaas_customer_id: clienteId, proximo_vencimento: nova.dueDate })
-      .eq('id', assinatura.id);
-
-    await admin.from('cobrancas').upsert(
-      {
-        assinatura_id: assinatura.id,
-        asaas_payment_id: nova.id,
-        valor: Number(nova.value),
-        forma_pagamento: 'pix',
-        status: 'pendente',
-        vencimento: nova.dueDate,
-      },
-      { onConflict: 'asaas_payment_id' },
-    );
-
-    return responder({
-      url_checkout: nova.invoiceUrl,
-      valor: Number(nova.value),
-      vencimento: nova.dueDate,
-      retomada: true,
-    });
+    return responder({ ...aberta, retomada: true });
   } catch (e) {
     console.error('contratar: falha ao retomar pagamento', e);
     return erro(
@@ -242,78 +281,45 @@ Deno.serve(async (requisicao) => {
     Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
   );
 
-  // ---------------------------------------------------------------- plano
-  const { data: plano } = await admin
-    .from('planos')
-    .select('id, nome, valor_mensal')
-    .eq('slug', planoSlug)
-    .eq('ativo', true)
-    .maybeSingle();
+  // ------------------------------------------------------- o que fazer aqui?
+  const { data: resposta, error: erroSituacao } = await admin.rpc('contratacao_situacao', {
+    p_email: email,
+    p_plano_slug: planoSlug,
+  });
 
-  if (!plano) {
+  if (erroSituacao) {
+    console.error('contratar: falha ao consultar a situação', erroSituacao);
+    return erro('Não foi possível iniciar o cadastro agora. Tente novamente.', 500);
+  }
+
+  const situacao = resposta as unknown as Situacao;
+
+  if (situacao.situacao === 'plano_indisponivel') {
     return erro('Este plano não está mais disponível. Escolha outro para continuar.', 404);
   }
 
+  if (situacao.situacao === 'conta_ativa') {
+    return erro(
+      'Este e-mail já tem uma conta ativa. Entre pelo aplicativo — se não lembra a senha, ' +
+        'use "Esqueci minha senha".',
+      409,
+    );
+  }
+
+  if (situacao.situacao === 'aguardando_pagamento' && situacao.assinatura) {
+    return await retomarPagamento(admin, situacao.assinatura, email);
+  }
+
+  const plano = situacao.plano;
+  if (!plano) {
+    console.error('contratar: situação sem plano', situacao);
+    return erro('Não foi possível iniciar o cadastro agora. Tente novamente.', 500);
+  }
+
   // ----------------------------------------------------------------- conta
-  //
-  // O e-mail já existe? Quatro desfechos, e só um deles é recusa (ver o
-  // cabeçalho: sem empresa, empresa sem pagamento, empresa em uso, e-mail novo).
-  const { data: perfil } = await admin
-    .from('usuarios')
-    .select('id')
-    .eq('email', email)
-    .maybeSingle();
+  let usuarioId = situacao.usuario_id;
 
-  let usuarioId = perfil?.id as string | undefined;
-
-  if (usuarioId) {
-    // `limit(1)` pela mesma razão de baixo: quem foi convidado para mais de
-    // uma empresa tem mais de um vínculo, e `maybeSingle()` falharia aí.
-    const { data: vinculos } = await admin
-      .from('empresa_usuarios')
-      .select('id, empresa_id')
-      .eq('usuario_id', usuarioId)
-      .neq('status', 'removido')
-      .limit(1);
-
-    const vinculo = vinculos?.[0];
-
-    if (vinculo) {
-      // Já existe empresa. Duas situações MUITO diferentes moram aqui, e
-      // tratá-las igual criava um beco sem saída.
-      // `limit(1)` e não `maybeSingle()`: nada no esquema impede duas
-      // assinaturas não canceladas na mesma empresa, e ali `maybeSingle()`
-      // falharia — reabrindo justamente o beco que este trecho existe para
-      // fechar.
-      const { data: assinaturas } = await admin
-        .from('assinaturas')
-        .select('id, status, valor_contratado, asaas_customer_id, empresas(nome)')
-        .eq('empresa_id', vinculo.empresa_id)
-        .neq('status', 'cancelada')
-        .order('criado_em', { ascending: false })
-        .limit(1);
-
-      const assinatura = assinaturas?.[0];
-
-      // Caso 1b: contratou e NÃO pagou. Esta pessoa não consegue entrar (a
-      // senha só nasce depois da confirmação) nem cadastrar de novo — recusar
-      // aqui a deixava sem nenhum caminho, com uma empresa criada e nenhuma
-      // forma de pagá-la. Basta ter fechado a aba do checkout. O certo é
-      // devolvê-la ao pagamento.
-      if (assinatura?.status === 'pendente_pagamento') {
-        return await retomarPagamento(admin, assinatura, email);
-      }
-
-      // Caso 1: conta completa e em uso. Não é para cadastrar de novo.
-      return erro(
-        'Este e-mail já tem uma conta ativa. Entre pelo aplicativo — se não lembra a senha, ' +
-          'use "Esqueci minha senha".',
-        409,
-      );
-    }
-    // Caso 2: conta órfã, de uma tentativa que parou no meio. Reaproveita.
-  } else {
-    // Caso 3: e-mail novo.
+  if (!usuarioId) {
     const { data: criado, error: erroCriacao } = await admin.auth.admin.createUser({
       email,
       password: senhaDescartavel(),
@@ -343,11 +349,10 @@ Deno.serve(async (requisicao) => {
 
   if (!usuarioId) return erro('Não foi possível criar sua conta. Tente novamente.', 500);
 
-  // A linha em `public.usuarios` nasce de um gatilho sobre `auth.users`. Se ela
-  // ainda não estiver lá, a RPC abaixo recusaria — então garantimos aqui.
-  await admin.from('usuarios').upsert({ id: usuarioId, nome, email }, { onConflict: 'id' });
-
   // --------------------------------------------------------------- empresa
+  // O e-mail vai junto: a RPC garante a linha em `public.usuarios` quando o
+  // gatilho de `auth.users` ainda não rodou. Esta função não escreve lá — nem
+  // tem privilégio para isso, nem deveria.
   const { data: contratacao, error: erroEmpresa } = await admin.rpc(
     'contratacao_criar_empresa',
     {
@@ -355,6 +360,7 @@ Deno.serve(async (requisicao) => {
       p_nome_empresa: nomeEmpresa,
       p_plano_id: plano.id,
       p_nome_usuario: nome,
+      p_email: email,
     },
   );
 
@@ -370,7 +376,7 @@ Deno.serve(async (requisicao) => {
   if (!chave) {
     // A conta e a empresa JÁ existem e ficam pendentes de pagamento. Dizer
     // isso é melhor do que apagar tudo: o dono da plataforma liga o Asaas e a
-    // pessoa retoma pelo mesmo e-mail.
+    // pessoa retoma pelo mesmo e-mail — e cai no caminho de retomada acima.
     console.error('contratar: ASAAS_API_KEY ausente');
     return erro(
       'Sua conta foi criada, mas o meio de pagamento ainda não está configurado. ' +
@@ -386,39 +392,14 @@ Deno.serve(async (requisicao) => {
       externalReference: usuarioId,
     });
 
-    const cobranca = await chamarAsaas('/payments', chave, {
-      customer: cliente.id,
-      // UNDEFINED deixa o pagador escolher Pix, boleto ou cartão no checkout.
-      billingType: 'UNDEFINED',
-      value: Number(dados.valor),
-      dueDate: vencimentoEmTresDias(),
-      description: `Assinatura ${plano.nome} — Decola Negócios`,
-      externalReference: dados.assinatura_id,
-      callback: { successUrl: `${URL_DO_SITE}/pronto`, autoRedirect: true },
+    const aberta = await abrirCobranca(admin, chave, {
+      assinaturaId: dados.assinatura_id,
+      clienteId: cliente.id,
+      valor: dados.valor,
+      descricao: `Assinatura ${plano.nome} — Decola Negócios`,
     });
 
-    await admin
-      .from('assinaturas')
-      .update({ asaas_customer_id: cliente.id, proximo_vencimento: cobranca.dueDate })
-      .eq('id', dados.assinatura_id);
-
-    await admin.from('cobrancas').upsert(
-      {
-        assinatura_id: dados.assinatura_id,
-        asaas_payment_id: cobranca.id,
-        valor: Number(cobranca.value),
-        forma_pagamento: 'pix',
-        status: 'pendente',
-        vencimento: cobranca.dueDate,
-      },
-      { onConflict: 'asaas_payment_id' },
-    );
-
-    return responder({
-      url_checkout: cobranca.invoiceUrl,
-      valor: Number(cobranca.value),
-      vencimento: cobranca.dueDate,
-    });
+    return responder(aberta);
   } catch (e) {
     console.error('contratar: falha no Asaas', e);
     return erro(

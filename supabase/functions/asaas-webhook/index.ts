@@ -61,16 +61,19 @@ async function enviarPrimeiroAcesso(supabase: any, empresaId: string): Promise<v
   try {
     // O e-mail de quem contratou é o do Gestor Principal da empresa: é a linha
     // que a própria RPC de criação escreve, com o e-mail da conta do Auth.
-    const { data: gestor } = await supabase
-      .from('empresa_usuarios')
-      .select('email_convite')
-      .eq('empresa_id', empresaId)
-      .eq('papel', 'gestor_principal')
-      .maybeSingle();
+    //
+    // PELA RPC, E NÃO LENDO A TABELA (migração 0052). Isto aqui consultava
+    // `empresa_usuarios` direto com a chave de serviço, que não tem SELECT nela
+    // de propósito (migração 0030). O banco recusava, o `catch` abaixo engolia,
+    // e o cliente pagava sem NUNCA receber o link para criar a senha — sem
+    // nada, em lugar nenhum, dizendo por quê.
+    const { data: email, error: erroGestor } = await supabase.rpc(
+      'contratacao_email_do_gestor',
+      { p_empresa_id: empresaId },
+    );
 
-    const email = gestor?.email_convite;
-    if (!email) {
-      console.error('primeiro acesso: empresa sem gestor principal', empresaId);
+    if (erroGestor || !email) {
+      console.error('primeiro acesso: nao achei o gestor principal', empresaId, erroGestor);
       return;
     }
 

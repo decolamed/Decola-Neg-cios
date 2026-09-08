@@ -10,17 +10,16 @@ import { useCallback, useMemo, useState } from 'react';
 import { router } from 'expo-router';
 import { ScrollView, StyleSheet, Text, View, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import QRCode from 'react-native-qrcode-svg';
 import tema from '@decola/theme';
 import { Aviso } from '@/componentes/Aviso';
 import { Botao } from '@/componentes/Botao';
+import { CobrancaPix } from '@/componentes/CobrancaPix';
 import { TelaMensagem } from '@/componentes/EstadoDaTela';
 import { Icone, type NomeDeIcone } from '@/componentes/Icone';
 import { useCarrinho } from '@/contexto/CarrinhoContexto';
 import { useSessao } from '@/contexto/SessaoContexto';
 import { registrarVenda, type FormaPagamento } from '@/dados/vendas';
 import { moeda } from '@/lib/formato';
-import { gerarPayloadPix, normalizarChavePix } from '@decola/pix';
 import { textoDoErro } from '@/lib/erros';
 
 const FORMAS: { valor: FormaPagamento; rotulo: string; icone: NomeDeIcone }[] = [
@@ -35,41 +34,8 @@ export default function FinalizarVenda() {
   const carrinho = useCarrinho();
 
   const [forma, setForma] = useState<FormaPagamento>('dinheiro');
-  const [pixGerado, setPixGerado] = useState<string | null>(null);
-  const [erroPix, setErroPix] = useState<string | null>(null);
   const [mensagem, setMensagem] = useState<string | null>(null);
   const [confirmando, setConfirmando] = useState(false);
-
-  // Sem chave cadastrada não existe "gerar mesmo assim": um BR Code montado em
-  // cima de chave vazia ou inválida abre bonitinho no banco do cliente e o
-  // dinheiro não chega em lugar nenhum. Melhor não oferecer o botão.
-  const chavePix = useMemo(() => {
-    if (!conta?.empresa.chave_pix) return null;
-    try {
-      return normalizarChavePix(conta.empresa.chave_pix);
-    } catch {
-      return null;
-    }
-  }, [conta?.empresa.chave_pix]);
-
-  const gerarPix = useCallback(() => {
-    setErroPix(null);
-    if (!conta || !chavePix) return;
-
-    try {
-      setPixGerado(
-        gerarPayloadPix({
-          chave: chavePix.valor,
-          valor: carrinho.total,
-          nomeRecebedor: conta.empresa.nome,
-          descricao: `Venda ${new Date().toLocaleDateString('pt-BR')}`,
-        }),
-      );
-    } catch (e) {
-      setPixGerado(null);
-      setErroPix(textoDoErro(e, 'Não foi possível gerar o QR Code Pix.'));
-    }
-  }, [conta, chavePix, carrinho.total]);
 
   const confirmar = useCallback(async () => {
     setMensagem(null);
@@ -164,11 +130,7 @@ export default function FinalizarVenda() {
             return (
               <Pressable
                 key={f.valor}
-                onPress={() => {
-                  setForma(f.valor);
-                  setPixGerado(null);
-                  setErroPix(null);
-                }}
+                onPress={() => setForma(f.valor)}
                 accessibilityRole="button"
                 accessibilityState={{ selected: ativa }}
                 style={({ pressed }) => [
@@ -197,51 +159,28 @@ export default function FinalizarVenda() {
           <View style={estilos.card}>
             <Text style={estilos.tituloCard}>Cobrança Pix</Text>
 
-            {erroPix ? <Aviso mensagem={erroPix} tom="alerta" /> : null}
+            {/* O QR aparece PRONTO, sem um "gerar" no meio do caminho. Ele já
+                traz o valor desta venda e a chave da empresa; o botão a mais
+                era só um passo entre o cliente e o pagamento. */}
+            <CobrancaPix
+              chave={conta.empresa.chave_pix}
+              valor={carrinho.total}
+              nomeRecebedor={conta.empresa.nome}
+              descricao={`Venda ${new Date().toLocaleDateString('pt-BR')}`}
+              nota={
+                `Cobrança de ${moeda(carrinho.total)} — o valor já vai dentro do código. ` +
+                'O pagamento não é confirmado sozinho: confira o recebimento e toque em ' +
+                '"Confirmar venda".'
+              }
+            />
 
-            {!chavePix ? (
-              <>
-                <Aviso
-                  tom="alerta"
-                  mensagem={
-                    conta.empresa.chave_pix
-                      ? 'A chave Pix cadastrada não está em um formato válido, então o QR Code ' +
-                        'geraria uma cobrança que ninguém recebe. Corrija a chave para usar o Pix.'
-                      : 'Esta empresa ainda não cadastrou uma chave Pix. Sem ela não é possível ' +
-                        'gerar o QR Code — o cliente pagaria e o dinheiro não chegaria a você.'
-                  }
-                />
-                {conta.ehGestor ? (
-                  <Botao
-                    titulo="Cadastrar chave Pix"
-                    variante="secundario"
-                    aoPressionar={() => router.push('/configuracoes/empresa')}
-                  />
-                ) : (
-                  <Text style={estilos.notaPix}>
-                    Peça ao Gestor para cadastrar a chave em Configurações → Dados da empresa. Você
-                    pode registrar a venda normalmente escolhendo outra forma de pagamento.
-                  </Text>
-                )}
-              </>
-            ) : pixGerado ? (
-              <>
-                <View style={estilos.qrcode}>
-                  <QRCode value={pixGerado} size={200} />
-                </View>
-                <Text style={estilos.notaPix}>
-                  Mostre o QR Code ao cliente. O pagamento não é confirmado automaticamente —
-                  confira o recebimento e toque em "Confirmar venda".
-                </Text>
-                <Botao
-                  titulo="Gerar novamente"
-                  variante="texto"
-                  aoPressionar={() => setPixGerado(null)}
-                />
-              </>
-            ) : (
-              <Botao titulo="Gerar QR Code Pix" variante="secundario" aoPressionar={gerarPix} />
-            )}
+            {!conta.empresa.chave_pix && conta.ehGestor ? (
+              <Botao
+                titulo="Cadastrar chave Pix"
+                variante="secundario"
+                aoPressionar={() => router.push('/configuracoes/empresa')}
+              />
+            ) : null}
           </View>
         ) : null}
 
@@ -316,11 +255,4 @@ const estilos = StyleSheet.create({
   rotuloTotal: { ...tema.tipografia.h2, color: tema.cores.texto },
   desconto: { ...tema.tipografia.corpoDestacado, color: tema.cores.negativo },
   total: { ...tema.tipografia.h2, color: tema.cores.primaria },
-  qrcode: { alignItems: 'center', paddingVertical: tema.espacamento.md },
-  notaPix: {
-    ...tema.tipografia.legenda,
-    color: tema.cores.textoSuave,
-    textAlign: 'center',
-    marginBottom: tema.espacamento.sm,
-  },
 });

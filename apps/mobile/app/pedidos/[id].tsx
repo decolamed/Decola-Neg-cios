@@ -16,6 +16,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import tema from '@decola/theme';
 import { Aviso } from '@/componentes/Aviso';
 import { Botao } from '@/componentes/Botao';
+import { CobrancaPix } from '@/componentes/CobrancaPix';
 import { TelaCarregando, TelaMensagem } from '@/componentes/EstadoDaTela';
 import { useSessao } from '@/contexto/SessaoContexto';
 import {
@@ -175,6 +176,21 @@ export default function DetalheDoPedido() {
         {pedido.status === 'aguardando_pagamento' ? (
           <View style={estilos.bloco}>
             <Text style={estilos.rotuloBloco}>Pagamento por Pix</Text>
+
+            {/* A mesma cobrança que o cliente vê na página do pedido, aqui do
+                lado de dentro: é o que permite reenviar o código pelo WhatsApp
+                quando o cliente diz que perdeu o link ou não conseguiu ler. */}
+            <CobrancaPix
+              chave={conta?.empresa.chave_pix ?? null}
+              valor={Number(pedido.subtotal)}
+              nomeRecebedor={conta?.empresa.nome ?? ''}
+              descricao={`Pedido ${pedido.numero}`}
+              nota={
+                `Cobrança de ${moeda(Number(pedido.subtotal))}. Copie o código e mande ao cliente ` +
+                'se ele pedir — é o mesmo que aparece na página do pedido.'
+              }
+            />
+
             <Text style={estilos.texto}>
               O cliente declarou que pagou. Confira o recebimento na sua conta antes de confirmar —
               o sistema não verifica isso sozinho.

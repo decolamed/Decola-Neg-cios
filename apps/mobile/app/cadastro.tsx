@@ -51,6 +51,7 @@ import { Icone, LadrilhoDeIcone } from '@/componentes/Icone';
 import { Marca, AssinaturaDecola } from '@/componentes/Marca';
 import { emailValido, ERRO_CADASTRO_GENERICO, sessaoAtual } from '@/dados/autenticacao';
 import { contratar, type ContratacaoFeita } from '@/dados/contratacao';
+import { documentoValido, mascararDocumento, tipoDoDocumento } from '@decola/pix';
 import {
   buscarPlanoPorId,
   buscarPlanoPorSlug,
@@ -94,6 +95,7 @@ export default function Cadastro() {
 
   const [nome, setNome] = useState('');
   const [email, setEmail] = useState('');
+  const [documento, setDocumento] = useState('');
   const [nomeEmpresa, setNomeEmpresa] = useState('');
   const [aceitouTermos, setAceitouTermos] = useState(false);
 
@@ -176,9 +178,41 @@ export default function Cadastro() {
    * incluindo o aceite dos termos.
    */
   const formularioCompleto = useMemo(() => {
-    const base = nome.trim().length > 0 && nomeEmpresa.trim().length > 0 && aceitouTermos;
+    const base =
+      nome.trim().length > 0 &&
+      nomeEmpresa.trim().length > 0 &&
+      documentoValido(documento) &&
+      aceitouTermos;
     return jaAutenticado ? base : base && emailValido(email);
-  }, [nome, nomeEmpresa, aceitouTermos, jaAutenticado, email]);
+  }, [nome, nomeEmpresa, documento, aceitouTermos, jaAutenticado, email]);
+
+  /**
+   * O erro do documento aparece assim que o número está COMPLETO e não fecha —
+   * não só ao enviar.
+   *
+   * O botão fica desabilitado enquanto o documento não vale, e um botão cinza
+   * sem explicação é um beco: a pessoa digita um CPF com um dígito trocado, vê
+   * o botão apagado e não tem como saber qual campo está errado. Com onze ou
+   * catorze dígitos já dá para afirmar que não fecha; com menos, ela ainda está
+   * digitando e reclamar seria atrapalhar.
+   */
+  const aoMudarDocumento = useCallback((valor: string) => {
+    const formatado = mascararDocumento(valor);
+    setDocumento(formatado);
+
+    const digitos = formatado.replace(/\D/g, '');
+    const completo = digitos.length === 11 || digitos.length === 14;
+
+    setErros((atuais) => ({
+      ...atuais,
+      documento:
+        completo && !documentoValido(formatado)
+          ? digitos.length === 11
+            ? 'Este CPF não é válido. Confira os números.'
+            : 'Este CNPJ não é válido. Confira os números.'
+          : null,
+    }));
+  }, []);
 
   const aoContratar = useCallback(async () => {
     if (preparacao.nome !== 'pronto') return;
@@ -189,6 +223,20 @@ export default function Cadastro() {
     if (nome.trim().length === 0) novosErros.nome = 'Informe seu nome completo.';
     if (nomeEmpresa.trim().length === 0) novosErros.empresa = 'Informe o nome da empresa.';
     if (!jaAutenticado && !emailValido(email)) novosErros.email = 'Informe um e-mail válido.';
+
+    // Dizer QUAL documento está errado poupa a pessoa de conferir o número
+    // certo: quem digitou onze dígitos quis dizer CPF, e é do CPF que se fala.
+    if (!documentoValido(documento)) {
+      const digitos = documento.replace(/\D/g, '');
+      novosErros.documento =
+        digitos.length === 0
+          ? 'Informe o CPF ou CNPJ do responsável.'
+          : digitos.length === 11
+            ? 'Este CPF não é válido. Confira os números.'
+            : digitos.length === 14
+              ? 'Este CNPJ não é válido. Confira os números.'
+              : 'Informe um CPF (11 dígitos) ou CNPJ (14 dígitos).';
+    }
 
     setErros(novosErros);
     if (Object.values(novosErros).some(Boolean)) return;
@@ -203,6 +251,7 @@ export default function Cadastro() {
         nomeEmpresa: nomeEmpresa.trim(),
         planoSlug: preparacao.plano.plano.slug,
         aceitouTermos,
+        cpfCnpj: documento,
       });
 
       setContratado(resultado);
@@ -212,7 +261,7 @@ export default function Cadastro() {
     } finally {
       setCriando(false);
     }
-  }, [preparacao, nome, nomeEmpresa, email, aceitouTermos, jaAutenticado]);
+  }, [preparacao, nome, nomeEmpresa, documento, email, aceitouTermos, jaAutenticado]);
 
   if (preparacao.nome === 'carregando') return <TelaCarregando />;
 
@@ -371,6 +420,24 @@ export default function Cadastro() {
             </View>
           )}
 
+          {/* Exigido pelo Asaas para emitir a cobrança. Fica junto dos dados
+              de quem paga, e não escondido no fim, porque é dado obrigatório
+              e a pessoa costuma precisar buscar o número. */}
+          <CampoTexto
+            rotulo="CPF ou CNPJ do responsável"
+            valor={documento}
+            aoMudar={aoMudarDocumento}
+            erro={erros.documento}
+            bloqueado={criando}
+            tipoTeclado="number-pad"
+            placeholder="000.000.000-00"
+          />
+          <Text style={estilos.dica}>
+            {tipoDoDocumento(documento) === 'cnpj'
+              ? 'CNPJ reconhecido. Ele aparece na nota da assinatura.'
+              : 'É quem vai constar na cobrança. Pode ser o seu CPF, se o negócio ainda não tem CNPJ.'}
+          </Text>
+
           <CampoTexto
             rotulo="Nome da empresa"
             valor={nomeEmpresa}
@@ -467,6 +534,12 @@ const estilos = StyleSheet.create({
     marginBottom: tema.espacamento.xs,
   },
   passo: { ...tema.tipografia.corpo, color: tema.cores.texto },
+  dica: {
+    ...tema.tipografia.legenda,
+    color: tema.cores.textoSuave,
+    marginTop: -tema.espacamento.xs,
+    marginBottom: tema.espacamento.sm,
+  },
   itemPrazo: { ...tema.tipografia.corpo, color: tema.cores.texto },
   forte: { ...tema.tipografia.corpoDestacado, color: tema.cores.texto },
   legenda: {

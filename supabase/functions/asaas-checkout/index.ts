@@ -79,8 +79,15 @@ Deno.serve(async (requisicao) => {
 
   const { data: assinaturas, error } = await supabase
     .from('assinaturas')
+    // `planos!assinaturas_plano_id_fkey`, e não `planos`: a tabela tem DUAS
+    // chaves estrangeiras para planos — `plano_id` e `plano_agendado_id`, da
+    // troca de plano agendada. Com duas, o PostgREST não adivinha qual, recusa
+    // a consulta inteira e devolve "more than one relationship was found for
+    // 'assinaturas' and 'planos'" — que foi o que apareceu, em inglês, na tela
+    // de "Ative sua assinatura".
     .select('id, empresa_id, plano_id, valor_contratado, status, asaas_customer_id, ' +
-            'ativada_manualmente, empresas(nome, cnpj, telefone), planos(nome)')
+            'ativada_manualmente, empresas(nome, cnpj, telefone), ' +
+            'planos!assinaturas_plano_id_fkey(nome)')
     .neq('status', 'cancelada')
     .limit(1);
 
@@ -113,6 +120,9 @@ Deno.serve(async (requisicao) => {
       const cliente = await chamarAsaas('/customers', chave, {
         name: empresa?.nome ?? usuario.nome,
         email: usuario.email,
+        // O Asaas recusa criar cobrança sem documento do pagador. Ele é gravado
+        // na empresa no momento da contratação (migração 0053) justamente para
+        // estar aqui, na renovação do mês seguinte.
         cpfCnpj: empresa?.cnpj ?? undefined,
         phone: empresa?.telefone ?? usuario.telefone ?? undefined,
         // Amarra o cliente do Asaas à empresa, para o webhook reconciliar.

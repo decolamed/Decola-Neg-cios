@@ -9,6 +9,7 @@
  */
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { documentoValido, mascararDocumento } from '@decola/pix';
 import { Aviso, CampoTexto, Carregando } from '@/componentes/Basicos';
 import { contratar, emailValido } from '@/dados/cadastro';
 import { buscarPlanoPorSlug, type PlanoComTrial } from '@/dados/planos';
@@ -31,6 +32,7 @@ export function Cadastro() {
 
   const [nome, setNome] = useState('');
   const [email, setEmail] = useState('');
+  const [documento, setDocumento] = useState('');
   const [nomeEmpresa, setNomeEmpresa] = useState('');
   const [aceitouTermos, setAceitouTermos] = useState(false);
 
@@ -84,6 +86,17 @@ export function Cadastro() {
         nome: nome.trim() ? null : 'Informe seu nome completo.',
         email: emailValido(email) ? null : 'Informe um e-mail válido.',
         nomeEmpresa: nomeEmpresa.trim() ? null : 'Informe o nome do seu negócio.',
+        // Exigido pelo Asaas para emitir a cobrança. Dizer qual dos dois está
+        // errado poupa a pessoa de conferir o número certo.
+        documento: documentoValido(documento)
+          ? null
+          : documento.replace(/\D/g, '').length === 0
+            ? 'Informe o CPF ou CNPJ do responsável.'
+            : documento.replace(/\D/g, '').length === 11
+              ? 'Este CPF não é válido. Confira os números.'
+              : documento.replace(/\D/g, '').length === 14
+                ? 'Este CNPJ não é válido. Confira os números.'
+                : 'Informe um CPF (11 dígitos) ou CNPJ (14 dígitos).',
       };
       setErros(novosErros);
       if (Object.values(novosErros).some(Boolean)) return;
@@ -104,6 +117,7 @@ export function Cadastro() {
           nomeEmpresa,
           planoSlug: slug,
           aceitouTermos,
+          cpfCnpj: documento,
         });
 
         // O link do checkout viaja no estado da navegação, não na URL: ele é
@@ -116,7 +130,7 @@ export function Cadastro() {
         setCriando(false);
       }
     },
-    [preparacao, slug, nome, email, nomeEmpresa, aceitouTermos, navegar],
+    [preparacao, slug, nome, email, nomeEmpresa, documento, aceitouTermos, navegar],
   );
 
   if (preparacao.nome === 'carregando') {
@@ -180,6 +194,14 @@ export function Cadastro() {
           bloqueado={criando}
           autoComplete="email"
           placeholder="voce@exemplo.com"
+        />
+        <CampoTexto
+          rotulo="CPF ou CNPJ do responsável"
+          valor={documento}
+          aoMudar={(v) => setDocumento(mascararDocumento(v))}
+          erro={erros.documento}
+          bloqueado={criando}
+          placeholder="000.000.000-00"
         />
         <CampoTexto
           rotulo="Nome do seu negócio"

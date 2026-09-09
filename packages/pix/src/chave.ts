@@ -19,6 +19,13 @@
  * digitou em vez de só reclamar.
  */
 
+import {
+  cnpjValido,
+  cpfValido,
+  formatarCnpj,
+  formatarCpf,
+} from './documento';
+
 export type TipoDeChavePix = 'cpf' | 'cnpj' | 'email' | 'telefone' | 'aleatoria';
 
 export type ChavePixValida = {
@@ -48,54 +55,9 @@ const SO_DIGITOS = /\D/g;
 const EMAIL = /^[^@\s]+@[^@\s]+\.[^@\s]{2,}$/;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-/** Dígitos verificadores de CPF (módulo 11). */
-function cpfValido(digitos: string): boolean {
-  if (digitos.length !== 11) return false;
-  // 00000000000, 11111111111… passam na conta e não são CPF de ninguém.
-  if (/^(\d)\1{10}$/.test(digitos)) return false;
 
-  for (const [tamanho, peso] of [
-    [9, 10],
-    [10, 11],
-  ] as const) {
-    let soma = 0;
-    for (let i = 0; i < tamanho; i += 1) soma += Number(digitos[i]) * (peso - i);
-    const resto = (soma * 10) % 11;
-    const esperado = resto === 10 ? 0 : resto;
-    if (esperado !== Number(digitos[tamanho])) return false;
-  }
 
-  return true;
-}
 
-/** Dígitos verificadores de CNPJ (módulo 11, pesos 2..9 cíclicos). */
-function cnpjValido(digitos: string): boolean {
-  if (digitos.length !== 14) return false;
-  if (/^(\d)\1{13}$/.test(digitos)) return false;
-
-  for (const tamanho of [12, 13]) {
-    let soma = 0;
-    let peso = tamanho - 7;
-    for (let i = 0; i < tamanho; i += 1) {
-      soma += Number(digitos[i]) * peso;
-      peso -= 1;
-      if (peso < 2) peso = 9;
-    }
-    const resto = soma % 11;
-    const esperado = resto < 2 ? 0 : 11 - resto;
-    if (esperado !== Number(digitos[tamanho])) return false;
-  }
-
-  return true;
-}
-
-function formatarCpf(d: string): string {
-  return `${d.slice(0, 3)}.${d.slice(3, 6)}.${d.slice(6, 9)}-${d.slice(9)}`;
-}
-
-function formatarCnpj(d: string): string {
-  return `${d.slice(0, 2)}.${d.slice(2, 5)}.${d.slice(5, 8)}/${d.slice(8, 12)}-${d.slice(12)}`;
-}
 
 function formatarTelefone(e164: string): string {
   const d = e164.slice(3); // tira o "+55"

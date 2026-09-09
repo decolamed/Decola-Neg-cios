@@ -9,3 +9,4 @@
  */
 export * from './brcode';
 export * from './chave';
+export * from './documento';

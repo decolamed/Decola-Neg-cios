@@ -45,6 +45,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
 // Onde o site está publicado vive em UM arquivo, compartilhado. Ver a nota
 // em `_shared/enderecos.ts` sobre por que não é secret.
 import { URL_DO_SITE } from '../_shared/enderecos.ts';
+import { digitosDoDocumento, documentoValido } from '../_shared/documento.ts';
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -118,6 +119,7 @@ type Situacao = {
     valor_contratado: number;
     asaas_customer_id: string | null;
     empresa_nome: string | null;
+    empresa_documento: string | null;
   };
 };
 
@@ -223,7 +225,14 @@ async function retomarPagamento(
     let clienteId = assinatura.asaas_customer_id;
     if (!clienteId) {
       // Sem cliente no Asaas quando a primeira tentativa morreu justamente ali.
-      const cliente = await chamarAsaas('/customers', chave, { name: nomeDaEmpresa, email });
+      // O documento vem do cadastro da empresa: o Asaas recusa criar cobrança
+      // sem CPF/CNPJ, e sem ele a retomada falharia com a mesma mensagem que a
+      // migração 0053 existe para eliminar.
+      const cliente = await chamarAsaas('/customers', chave, {
+        name: nomeDaEmpresa,
+        email,
+        cpfCnpj: assinatura.empresa_documento ?? undefined,
+      });
       clienteId = cliente.id;
     }
 
@@ -256,6 +265,7 @@ Deno.serve(async (requisicao) => {
     nomeEmpresa?: string;
     planoSlug?: string;
     aceitouTermos?: boolean;
+    cpfCnpj?: string;
   };
   try {
     corpo = await requisicao.json();
@@ -268,10 +278,28 @@ Deno.serve(async (requisicao) => {
   const nomeEmpresa = corpo.nomeEmpresa?.trim() ?? '';
   const planoSlug = corpo.planoSlug?.trim() ?? '';
 
+  // Só dígitos: é o formato que o Asaas espera e o que o banco grava.
+  const documento = digitosDoDocumento(corpo.cpfCnpj ?? '');
+
   if (!nome) return erro('Informe seu nome completo.', 400);
   if (!EMAIL_VALIDO.test(email)) return erro('Informe um e-mail válido.', 400);
   if (!nomeEmpresa) return erro('Informe o nome do seu negócio.', 400);
   if (!planoSlug) return erro('Escolha um plano para continuar.', 400);
+
+  // Conferido AQUI, e não só na tela: o pedido chega por HTTP e a tela não é
+  // garantia de nada. Recusar antes evita criar conta e empresa para um
+  // documento que o Asaas rejeitaria depois — deixando a pessoa cadastrada e
+  // sem conseguir pagar, que é o beco que este fluxo já produziu uma vez.
+  if (!documento) {
+    return erro(
+      'Informe o CPF ou CNPJ do responsável pela assinatura. Ele é exigido para emitir a ' +
+        'cobrança.',
+      400,
+    );
+  }
+  if (!documentoValido(documento)) {
+    return erro('O CPF ou CNPJ informado não é válido. Confira os números e tente de novo.', 400);
+  }
   if (!corpo.aceitouTermos) {
     return erro('É necessário aceitar os Termos de Uso e a Política de Privacidade.', 400);
   }
@@ -361,6 +389,10 @@ Deno.serve(async (requisicao) => {
       p_plano_id: plano.id,
       p_nome_usuario: nome,
       p_email: email,
+      // Gravado na empresa: a renovação do mês seguinte é feita pelo
+      // `asaas-checkout`, que lê o documento dali. Sem isso, a primeira
+      // cobrança funcionaria e a segunda voltaria a falhar.
+      p_documento: documento,
     },
   );
 
@@ -389,6 +421,9 @@ Deno.serve(async (requisicao) => {
     const cliente = await chamarAsaas('/customers', chave, {
       name: nomeEmpresa,
       email,
+      // O Asaas recusa criar cobrança sem documento do pagador: "Para criar
+      // esta cobrança é necessário preencher o CPF ou CNPJ do cliente".
+      cpfCnpj: documento,
       externalReference: usuarioId,
     });
 

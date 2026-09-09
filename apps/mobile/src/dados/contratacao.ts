@@ -47,6 +47,12 @@ export async function contratar(dados: {
   nomeEmpresa: string;
   planoSlug: string;
   aceitouTermos: boolean;
+  /**
+   * CPF ou CNPJ do responsável. O Asaas recusa emitir cobrança sem ele — e a
+   * recusa chegava à tela como "Para criar esta cobrança é necessário preencher
+   * o CPF ou CNPJ do cliente", depois de a conta já ter sido criada.
+   */
+  cpfCnpj: string;
 }): Promise<ContratacaoFeita> {
   await exigirConexao('cadastro');
 

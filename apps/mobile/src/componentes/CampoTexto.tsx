@@ -16,7 +16,12 @@ type Props = {
   senha?: boolean;
   bloqueado?: boolean;
   placeholder?: string;
-  tipoTeclado?: 'default' | 'email-address';
+  /**
+   * `number-pad` para campos que só recebem dígitos — CPF/CNPJ, telefone.
+   * Num celular, oferecer o teclado alfabético para digitar um documento é
+   * pedir que a pessoa troque de teclado antes de cada número.
+   */
+  tipoTeclado?: 'default' | 'email-address' | 'number-pad';
   autoCompletar?: 'email' | 'password' | 'name' | 'off';
   /** Ajuste de layout do campo no contexto da tela (largura, margem). */
   estilo?: ViewStyle;
@@ -60,7 +65,7 @@ export function CampoTexto({
           placeholderTextColor={tema.cores.textoSuave}
           secureTextEntry={oculto}
           keyboardType={tipoTeclado}
-          autoCapitalize={tipoTeclado === 'email-address' ? 'none' : 'sentences'}
+          autoCapitalize={tipoTeclado === 'default' ? 'sentences' : 'none'}
           autoCorrect={false}
           autoComplete={autoCompletar}
           style={[estilos.input, centralizado && estilos.inputCentralizado]}

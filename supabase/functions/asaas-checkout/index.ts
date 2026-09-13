@@ -204,7 +204,13 @@ Deno.serve(async (requisicao) => {
         status: 'pendente',
         vencimento: cobranca.dueDate,
       },
-      { onConflict: 'asaas_payment_id' },
+      // `ignoreDuplicates`: se esta cobrança JÁ existe, quem a escreveu foi o
+      // webhook — e o que ele sabe é mais recente do que isto aqui. Pix
+      // confirma em segundos, e a confirmação pode chegar antes desta linha
+      // rodar; sem isto, a cobrança já marcada como `confirmado` voltava para
+      // `pendente`, com `pago_em` nulo, e o registro financeiro passava a
+      // mentir.
+      { onConflict: 'asaas_payment_id', ignoreDuplicates: true },
     );
 
     // Seção 7.12 — o app abre esta URL numa webview.

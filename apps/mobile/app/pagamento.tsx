@@ -16,7 +16,7 @@
  * (`pendente_pagamento`, Seção 7.12) e a regularização a partir de Meu plano
  * (`carencia` ou `modo_limitado`, Seção 6.6).
  */
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { router } from 'expo-router';
 import { AppState, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -33,8 +33,17 @@ import { textoDoErro } from '@/lib/erros';
 /** Estados em que o acesso está liberado — a tela de pagamento sai de cena. */
 const STATUS_LIBERADOS = ['ativa', 'trial'];
 
-/** Rede de segurança do "poll periódico curto" da Seção 7.12. */
-const INTERVALO_DE_CONFERENCIA_MS = 5000;
+/**
+ * Rede de segurança do "poll periódico curto" da Seção 7.12.
+ *
+ * Dois ritmos, porque as duas esperas são diferentes: quem acabou de sair do
+ * checkout espera uma confirmação de Pix, que vem em segundos; quem chegou
+ * aqui de novo, dias depois, pode estar esperando um boleto compensar. Bater
+ * de 5 em 5 segundos nesse segundo caso seria gastar bateria e dados da pessoa
+ * sem necessidade.
+ */
+const CONFERENCIA_LOGO_APOS_PAGAR_MS = 5000;
+const CONFERENCIA_EM_ESPERA_MS = 20000;
 
 export default function Pagamento() {
   const { carregando, conta, recarregar, sair, temPermissao } = useSessao();
@@ -43,12 +52,6 @@ export default function Pagamento() {
   const [erro, setErro] = useState<string | null>(null);
   const [abrindo, setAbrindo] = useState(false);
   const [aguardando, setAguardando] = useState(false);
-  const aguardandoRef = useRef(false);
-
-  useEffect(() => {
-    aguardandoRef.current = aguardando;
-  }, [aguardando]);
-
   // Seção 7.12 — assim que o webhook marca a assinatura como ativa, o app
   // navega sozinho. O Realtime de `assinaturas` (SessaoContexto) é o caminho
   // principal; o poll abaixo cobre o caso de a conexão ter caído.
@@ -58,21 +61,40 @@ export default function Pagamento() {
     }
   }, [status]);
 
-  useEffect(() => {
-    if (!aguardando) return;
+  /**
+   * ENQUANTO ESTA TELA ESTIVER ABERTA E O PAGAMENTO PENDENTE, CONFERIMOS.
+   *
+   * Antes, o poll só ligava depois de a pessoa tocar em "Pagar agora" NESTA
+   * sessão. Quem pagava e fechava o navegador — ou pagava numa aba e voltava
+   * para a outra, ou voltava no dia seguinte quando o boleto compensou — caía
+   * aqui sem nenhuma conferência rodando. O Realtime resolveria, mas ele é o
+   * caminho principal, não a rede de segurança: em rede que bloqueia WebSocket
+   * não há Realtime nenhum, e a pessoa ficava olhando "ative sua assinatura"
+   * depois de ter pago. Era a reclamação "paguei e não fui liberado", e a rede
+   * de segurança tinha justamente o buraco do caso que ela existe para cobrir.
+   *
+   * A condição certa é o ESTADO, não o clique: se a assinatura ainda não está
+   * liberada, vale perguntar de novo.
+   */
+  const aguardandoLiberacao = Boolean(status) && !STATUS_LIBERADOS.includes(status as string);
 
+  useEffect(() => {
+    if (!aguardandoLiberacao) return;
+
+    const intervalo = aguardando ? CONFERENCIA_LOGO_APOS_PAGAR_MS : CONFERENCIA_EM_ESPERA_MS;
     const timer = setInterval(() => {
       void recarregar();
-    }, INTERVALO_DE_CONFERENCIA_MS);
+    }, intervalo);
 
     return () => clearInterval(timer);
-  }, [aguardando, recarregar]);
+  }, [aguardandoLiberacao, aguardando, recarregar]);
 
   // Voltar ao app depois de pagar no navegador externo também dispara a
-  // conferência, sem esperar o próximo tique.
+  // conferência, sem esperar o próximo tique. Vale mesmo sem ter passado pelo
+  // botão: a pessoa pode ter pago pelo link do e-mail, noutro aparelho.
   useEffect(() => {
     const inscricao = AppState.addEventListener('change', (estado) => {
-      if (estado === 'active' && aguardandoRef.current) void recarregar();
+      if (estado === 'active') void recarregar();
     });
     return () => inscricao.remove();
   }, [recarregar]);

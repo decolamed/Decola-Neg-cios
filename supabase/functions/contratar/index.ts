@@ -196,7 +196,13 @@ async function abrirCobranca(
       status: 'pendente',
       vencimento: cobranca.dueDate,
     },
-    { onConflict: 'asaas_payment_id' },
+    // `ignoreDuplicates`: se esta cobrança JÁ existe, quem a escreveu foi o
+    // webhook — e o que ele sabe é mais recente do que isto aqui. Pix confirma
+    // em segundos, e a confirmação pode chegar antes desta linha rodar; sem
+    // isto, a cobrança já marcada como `confirmado` voltava para `pendente`,
+    // com `pago_em` nulo. O acesso continuava liberado (quem muda a assinatura
+    // é o webhook), mas o registro financeiro passava a mentir.
+    { onConflict: 'asaas_payment_id', ignoreDuplicates: true },
   );
 
   return {

@@ -55,6 +55,14 @@ function responder(corpo: unknown, status = 200): Response {
   });
 }
 
+/** Comparação de tempo constante: não vaza a chave por diferença de tempo. */
+function comparacaoSegura(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  let diferenca = 0;
+  for (let i = 0; i < a.length; i += 1) diferenca |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  return diferenca === 0;
+}
+
 function escaparHtml(texto: string): string {
   return texto
     .replace(/&/g, '&amp;')
@@ -164,28 +172,55 @@ Deno.serve(async (requisicao) => {
     return responder({ error: 'Informe um e-mail válido.' }, 400);
   }
 
-  const admin = createClient(
-    Deno.env.get('SUPABASE_URL') ?? '',
-    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
-  );
+  const chaveDeServico = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
 
-  // Freio antes de qualquer trabalho: sem ele, o endpoint vira ferramenta para
-  // encher a caixa de entrada de terceiros.
-  const { data: liberado, error: erroFreio } = await admin.rpc('registrar_envio_de_acesso', {
-    p_email: email,
-  });
+  const admin = createClient(Deno.env.get('SUPABASE_URL') ?? '', chaveDeServico);
 
-  if (erroFreio) {
-    console.error('enviar-acesso: freio falhou', erroFreio);
-    return responder({ error: 'Não foi possível enviar agora. Tente de novo em instantes.' }, 500);
-  }
+  /**
+   * O FREIO NÃO PODE SEGURAR O E-MAIL QUE LIBERA O ACESSO.
+   *
+   * Ele existe contra abuso: sem ele, este endereço vira ferramenta para encher
+   * a caixa de entrada de terceiros. Mas ele vale por e-mail, por 60 segundos —
+   * e um desses 60 segundos podia ser justamente o instante em que o pagamento
+   * é confirmado. O `asaas-webhook` chama esta função para mandar o link de
+   * "crie sua senha", tomava 429, e engolia a recusa de propósito (para um
+   * problema de e-mail não fazer o Asaas reprocessar o pagamento). Resultado:
+   * quem clicou em "esqueci minha senha" pouco antes de pagar PAGAVA E NÃO
+   * RECEBIA NADA — sem erro em lugar nenhum.
+   *
+   * Quem chama de dentro do servidor apresenta a chave de serviço, que nunca
+   * sai daqui. Ela não é forjável pelo navegador, e uma chamada com ela só
+   * acontece depois de um pagamento de verdade — não há abuso a frear. O tipo
+   * do e-mail NÃO serve para essa distinção: o painel administrativo também
+   * envia `primeiro_acesso`, e ele roda no navegador, com a chave pública.
+   *
+   * Comparação de tempo constante para não vazar a chave por diferença de
+   * tempo de resposta.
+   */
+  const autorizacao = requisicao.headers.get('Authorization') ?? '';
+  const doServidor =
+    chaveDeServico !== '' && comparacaoSegura(autorizacao, `Bearer ${chaveDeServico}`);
 
-  if (!liberado) {
-    // Resposta honesta e específica: quem acabou de pedir sabe que pediu.
-    return responder(
-      { error: 'Já enviamos um e-mail há poucos instantes. Verifique sua caixa de entrada.' },
-      429,
-    );
+  if (!doServidor) {
+    const { data: liberado, error: erroFreio } = await admin.rpc('registrar_envio_de_acesso', {
+      p_email: email,
+    });
+
+    if (erroFreio) {
+      console.error('enviar-acesso: freio falhou', erroFreio);
+      return responder(
+        { error: 'Não foi possível enviar agora. Tente de novo em instantes.' },
+        500,
+      );
+    }
+
+    if (!liberado) {
+      // Resposta honesta e específica: quem acabou de pedir sabe que pediu.
+      return responder(
+        { error: 'Já enviamos um e-mail há poucos instantes. Verifique sua caixa de entrada.' },
+        429,
+      );
+    }
   }
 
   const chave = Deno.env.get('RESEND_API_KEY');
@@ -224,10 +259,36 @@ Deno.serve(async (requisicao) => {
     body: JSON.stringify({ from: remetente, to: [email], subject: assunto, html }),
   });
 
+  /**
+   * O DESFECHO FICA REGISTRADO (migração 0055).
+   *
+   * Quem chama depois de um pagamento é o `asaas-webhook`, e ele engole a falha
+   * de propósito — devolver erro ao Asaas faria ele reprocessar o pagamento
+   * inteiro por causa de um e-mail. O efeito colateral era cegueira: o cliente
+   * pagava, não recebia o link, e não havia onde olhar.
+   *
+   * Gravar o resultado não conserta o envio; conserta a cegueira. "Fulano pagou
+   * e diz que não recebeu" passa a ser uma consulta em vez de um palpite.
+   *
+   * O registro nunca derruba a resposta: se ele próprio falhar, o que importa
+   * continua sendo o que aconteceu com o e-mail.
+   */
+  const anotar = async (ok: boolean, motivo?: string) => {
+    const { error } = await admin.rpc('registrar_resultado_de_envio', {
+      p_email: email,
+      p_ok: ok,
+      p_erro: motivo ?? null,
+    });
+    if (error) console.error('enviar-acesso: nao consegui anotar o resultado', error);
+  };
+
   if (!resposta.ok) {
-    console.error('enviar-acesso: Resend recusou', await resposta.text());
+    const detalhe = await resposta.text();
+    console.error('enviar-acesso: Resend recusou', resposta.status, detalhe);
+    await anotar(false, `HTTP ${resposta.status}: ${detalhe}`);
     return responder({ error: 'Não foi possível enviar o e-mail. Tente novamente.' }, 502);
   }
 
+  await anotar(true);
   return responder({ enviado: true });
 });

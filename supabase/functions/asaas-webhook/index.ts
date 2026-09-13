@@ -51,11 +51,16 @@ function formaDePagamento(tipo: string | undefined): 'pix' | 'boleto' | 'cartao'
  * são dois caminhos para o MESMO e-mail (primeiro acesso pela compra, e o
  * "esqueci minha senha"), e um corpo de e-mail só é um corpo só para manter.
  *
+ * A chamada leva a CHAVE DE SERVIÇO, e isso tem consequência: `enviar-acesso`
+ * reconhece que o pedido veio de dentro do servidor e pula o freio de 60
+ * segundos. Sem isso, quem tivesse clicado em "esqueci minha senha" pouco antes
+ * de pagar tomava 429 bem aqui — e pagava sem receber o link.
+ *
  * FALHAR AQUI NÃO PODE DERRUBAR O WEBHOOK. Se o Resend estiver fora do ar, o
  * pagamento continua confirmado e a assinatura continua ativa — devolver erro
  * ao Asaas faria ele reenviar o evento e reprocessar tudo por causa de um
- * e-mail. O gestor sempre pode pedir o link de novo em "Esqueci minha senha",
- * e o log abaixo diz o que houve.
+ * e-mail. O desfecho de cada envio fica gravado em `envios_de_acesso`
+ * (migração 0055), para que esta resiliência não vire cegueira.
  */
 async function enviarPrimeiroAcesso(supabase: any, empresaId: string): Promise<void> {
   try {
@@ -162,6 +167,21 @@ Deno.serve(async (requisicao) => {
   const vencido = tipo === 'PAYMENT_OVERDUE';
   const cancelado = ['PAYMENT_DELETED', 'PAYMENT_REFUNDED', 'PAYMENT_CHARGEBACK_REQUESTED'].includes(tipo);
 
+  /**
+   * Dinheiro que VOLTOU não é o mesmo que cobrança apagada.
+   *
+   * Estorno e chargeback desfazem um pagamento que já tinha liberado a conta.
+   * Antes, os três eventos só marcavam a cobrança como cancelada e a assinatura
+   * seguia `ativa` para sempre — acesso liberado indevidamente, sem nada no
+   * caminho denunciando.
+   *
+   * `PAYMENT_DELETED` fica de fora de propósito: apagar uma cobrança é ação
+   * administrativa (trocar um boleto por outro, corrigir um valor) e não
+   * significa que o dinheiro voltou. Tirar acesso por causa dela puniria o
+   * cliente por uma correção nossa.
+   */
+  const dinheiroDevolvido = ['PAYMENT_REFUNDED', 'PAYMENT_CHARGEBACK_REQUESTED'].includes(tipo);
+
   // 1. Histórico da cobrança (Seção 4.12.3). Upsert torna o webhook idempotente
   //    — o Asaas reenvia eventos, e reprocessar não pode duplicar nada.
   await supabase.from('cobrancas').upsert(
@@ -239,6 +259,39 @@ Deno.serve(async (requisicao) => {
       mensagem:
         'Não identificamos o pagamento. Todas as funcionalidades continuam disponíveis ' +
         'durante o período de carência — regularize para não entrar em modo limitado.',
+    });
+  } else if (dinheiroDevolvido && ['ativa', 'trial'].includes(assinatura.status)) {
+    /**
+     * O pagamento foi desfeito. A conta não pode continuar ativa — mas também
+     * não é cortada na hora.
+     *
+     * A Seção 6.6 vale aqui pelo mesmo motivo do atraso: ninguém perde o acesso
+     * ao próprio negócio sem aviso e sem chance de resolver. A diferença é que
+     * agora existe um prazo correndo, e uma notificação que diz o que houve —
+     * em vez do silêncio de antes, em que o dinheiro voltava e o acesso ficava.
+     */
+    const { data: config } = await supabase
+      .from('configuracoes_plataforma')
+      .select('carencia_dias')
+      .limit(1)
+      .maybeSingle();
+
+    const carencia = new Date();
+    carencia.setDate(carencia.getDate() + (config?.carencia_dias ?? 7));
+
+    await supabase
+      .from('assinaturas')
+      .update({ status: 'carencia', carencia_expira_em: carencia.toISOString() })
+      .eq('id', assinatura.id);
+
+    await supabase.from('notificacoes').insert({
+      empresa_id: assinatura.empresa_id,
+      categoria: 'assinatura',
+      titulo: 'Pagamento estornado',
+      mensagem:
+        'O pagamento da sua assinatura foi devolvido. Todas as funcionalidades continuam ' +
+        'disponíveis durante o período de carência — regularize em Meu plano para não entrar ' +
+        'em modo limitado.',
     });
   }
 

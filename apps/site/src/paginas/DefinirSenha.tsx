@@ -38,14 +38,37 @@ export function DefinirSenha() {
   useEffect(() => {
     let ativo = true;
 
+    /**
+     * RECARREGAR A PÁGINA NÃO PODE CUSTAR A CONTA.
+     *
+     * O token de recuperação vale UMA vez, e é consumido assim que esta tela
+     * abre. Quem recarregasse — ou voltasse pelo histórico, ou reabrisse o link
+     * do e-mail — recebia "este link expirou ou já foi usado" e ficava sem a
+     * conta que tinha acabado de pagar, porque senha ainda não existe nenhuma.
+     *
+     * Só que a primeira validação deixou uma SESSÃO. Ela é a prova de que o
+     * link era legítimo e de quem é a conta — e é ela, não o token, que
+     * autoriza a troca de senha logo abaixo. Então a ordem passa a ser: já
+     * tenho sessão? Sigo. Não tenho? Aí sim gasto o token.
+     *
+     * Isso também cobre o token vazio: quem chega a `/definir-senha` sem
+     * parâmetro nenhum, depois de já ter validado, continua conseguindo
+     * terminar o que começou.
+     */
     const validar = async () => {
+      const { data: sessaoAtual } = await supabase.auth.getSession();
+      if (!ativo) return;
+
+      if (sessaoAtual.session) {
+        setEtapa({ nome: 'pronto' });
+        return;
+      }
+
       if (!token) {
-        if (ativo) {
-          setEtapa({
-            nome: 'invalido',
-            mensagem: 'Abra esta página pelo link que enviamos por e-mail.',
-          });
-        }
+        setEtapa({
+          nome: 'invalido',
+          mensagem: 'Abra esta página pelo link que enviamos por e-mail.',
+        });
         return;
       }
 

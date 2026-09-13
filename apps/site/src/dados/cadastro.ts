@@ -27,12 +27,24 @@ export function emailValido(email: string): boolean {
   return /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email.trim());
 }
 
-export type ContratacaoFeita = {
-  /** Checkout hospedado do Asaas, onde o cliente escolhe como pagar. */
-  url_checkout: string;
-  valor: number;
-  vencimento: string;
-};
+/**
+ * Dois desfechos possíveis, e a tela precisa distinguir os dois.
+ *
+ * O segundo existe porque o webhook do Asaas já falhou com dinheiro real no
+ * meio: o cliente pagou, o Asaas não avisou, e ao voltar o produto ia pedir
+ * pagamento DE NOVO. Agora o servidor consulta a cobrança antes de abrir outra
+ * — e quando ela já está paga, a resposta não é um link de pagamento, é a
+ * notícia de que a conta está liberada.
+ */
+export type ContratacaoFeita =
+  | {
+      /** Checkout hospedado do Asaas, onde o cliente escolhe como pagar. */
+      url_checkout: string;
+      valor: number;
+      vencimento: string;
+      ja_pago?: false;
+    }
+  | { ja_pago: true; mensagem: string };
 
 export async function contratar(dados: {
   nome: string;
@@ -66,14 +78,26 @@ export async function contratar(dados: {
   }
 
   const corpo = (await resposta.json().catch(() => null)) as
-    | (ContratacaoFeita & { error?: string })
+    | { url_checkout?: string; valor?: number; vencimento?: string; ja_pago?: boolean;
+        mensagem?: string; error?: string }
     | null;
 
   // A função devolve mensagens já escritas para o cliente — inclusive as que
   // explicam que a conta foi criada mas o pagamento não abriu. Repassar é
   // melhor do que trocar por um texto genérico que esconde o que aconteceu.
   if (!resposta.ok) throw new Error(corpo?.error ?? ERRO_GENERICO);
+
+  // Já pago: o servidor consultou a cobrança no Asaas, achou-a paga e liberou a
+  // conta. Não há checkout para abrir — há uma notícia para dar.
+  if (corpo?.ja_pago) {
+    return { ja_pago: true, mensagem: corpo.mensagem ?? 'Sua conta já está liberada.' };
+  }
+
   if (!corpo?.url_checkout) throw new Error(ERRO_GENERICO);
 
-  return corpo;
+  return {
+    url_checkout: corpo.url_checkout,
+    valor: Number(corpo.valor ?? 0),
+    vencimento: corpo.vencimento ?? '',
+  };
 }

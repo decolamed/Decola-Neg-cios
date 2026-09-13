@@ -33,18 +33,57 @@ export function Pagamento() {
   const [indo, setIndo] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
 
+  const checkout = contratacao && !contratacao.ja_pago ? contratacao : null;
+
   const aoPagar = useCallback(() => {
-    if (!contratacao?.url_checkout) {
+    if (!checkout) {
       setErro('O link de pagamento não está disponível nesta página.');
       return;
     }
     setIndo(true);
-    window.location.href = contratacao.url_checkout;
-  }, [contratacao]);
+    window.location.href = checkout.url_checkout;
+  }, [checkout]);
+
+  /**
+   * O pagamento JÁ estava feito e ninguém tinha avisado.
+   *
+   * Acontece quando o Asaas confirma e não notifica o nosso servidor — e foi o
+   * que prendeu um cliente real: ele pagou, voltou, e o produto pediu pagamento
+   * de novo. Agora a contratação consulta a cobrança antes de abrir outra, e
+   * esta tela dá a notícia. Nenhum botão de pagar aqui: pagar duas vezes é
+   * exatamente o que não pode acontecer.
+   */
+  if (contratacao?.ja_pago) {
+    return (
+      <main className="pagina estreita">
+        <div className="cabecalho-pagina">
+          <h1>Seu pagamento já está confirmado</h1>
+          <p>{contratacao.mensagem}</p>
+        </div>
+
+        <div className="card">
+          <h2>O que fazer agora</h2>
+          <p>
+            Abra o e-mail que enviamos e crie sua senha. Depois entre no Decola Negócios com esse
+            e-mail e a senha que você criou.
+          </p>
+          <p className="legenda">
+            Não achou o e-mail? Confira a caixa de spam e, se não estiver lá, use "Esqueci minha
+            senha" na tela de entrada — o link é o mesmo.
+          </p>
+          <div className="acoes" style={{ marginTop: 'var(--espaco-md)' }}>
+            <a className="botao" href={LINK_DO_APP}>
+              Ir para a tela de entrada
+            </a>
+          </div>
+        </div>
+      </main>
+    );
+  }
 
   // Sem o estado da navegação não há o que abrir. Acontece com quem recarrega
   // a página ou digita o endereço direto.
-  if (!contratacao?.url_checkout) {
+  if (!checkout) {
     return (
       <main className="pagina estreita">
         <div className="cabecalho-pagina">
@@ -91,11 +130,11 @@ export function Pagamento() {
       <div className="card">
         <div className="linha-resumo">
           <span className="legenda">Valor da primeira mensalidade</span>
-          <strong>{moeda(contratacao.valor)}</strong>
+          <strong>{moeda(checkout.valor)}</strong>
         </div>
         <div className="linha-resumo">
           <span className="legenda">Vencimento</span>
-          <strong>{new Date(`${contratacao.vencimento}T12:00:00`).toLocaleDateString('pt-BR')}</strong>
+          <strong>{new Date(`${checkout.vencimento}T12:00:00`).toLocaleDateString('pt-BR')}</strong>
         </div>
 
         <p style={{ marginTop: 'var(--espaco-md)' }}>

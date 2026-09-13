@@ -26,7 +26,7 @@ import { Aviso } from '@/componentes/Aviso';
 import { Botao } from '@/componentes/Botao';
 import { TelaCarregando } from '@/componentes/EstadoDaTela';
 import { useSessao } from '@/contexto/SessaoContexto';
-import { iniciarCheckout } from '@/dados/assinatura';
+import { conferirPagamento, iniciarCheckout } from '@/dados/assinatura';
 import { moeda } from '@/lib/formato';
 import { textoDoErro } from '@/lib/erros';
 
@@ -78,32 +78,73 @@ export default function Pagamento() {
    */
   const aguardandoLiberacao = Boolean(status) && !STATUS_LIBERADOS.includes(status as string);
 
+  /**
+   * PERGUNTAR AO NOSSO BANCO NÃO BASTA.
+   *
+   * Reler o banco só descobre o que o webhook do Asaas já tiver escrito lá. E
+   * quando o webhook não vem, o banco NUNCA muda: em 13/09 um cliente pagou por
+   * Pix, o Asaas confirmou e mandou o recibo, e não nos chamou nenhuma vez em
+   * 24 horas. Ele entrou na conta e esta tela pediu pagamento de novo — com o
+   * poll rodando, reconfirmando para sempre a mesma coisa errada.
+   *
+   * Agora cada tique pergunta AO ASAAS. Se o dinheiro entrou, o servidor libera
+   * a conta na hora, e o `recarregar()` seguinte encontra a assinatura ativa e
+   * esta tela sai de cena sozinha.
+   */
+  const conferir = useCallback(async () => {
+    if (await conferirPagamento()) {
+      // Liberou: relê para o contexto enxergar a assinatura ativa. O efeito lá
+      // em cima cuida de navegar.
+      await recarregar();
+      return;
+    }
+    await recarregar();
+  }, [recarregar]);
+
   useEffect(() => {
     if (!aguardandoLiberacao) return;
 
     const intervalo = aguardando ? CONFERENCIA_LOGO_APOS_PAGAR_MS : CONFERENCIA_EM_ESPERA_MS;
     const timer = setInterval(() => {
-      void recarregar();
+      void conferir();
     }, intervalo);
 
     return () => clearInterval(timer);
-  }, [aguardandoLiberacao, aguardando, recarregar]);
+  }, [aguardandoLiberacao, aguardando, conferir]);
+
+  // ENTRAR NA TELA JÁ CONFERE, sem esperar o primeiro tique. É o caso de quem
+  // pagou, fechou tudo, e só voltou depois: a espera dele começou lá atrás.
+  useEffect(() => {
+    if (!aguardandoLiberacao) return;
+    void conferir();
+    // Uma vez por entrada na tela: as repetições são do intervalo acima.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Voltar ao app depois de pagar no navegador externo também dispara a
   // conferência, sem esperar o próximo tique. Vale mesmo sem ter passado pelo
   // botão: a pessoa pode ter pago pelo link do e-mail, noutro aparelho.
   useEffect(() => {
     const inscricao = AppState.addEventListener('change', (estado) => {
-      if (estado === 'active') void recarregar();
+      if (estado === 'active') void conferir();
     });
     return () => inscricao.remove();
-  }, [recarregar]);
+  }, [conferir]);
 
   const pagar = useCallback(async () => {
     setErro(null);
     setAbrindo(true);
 
     try {
+      // ANTES DE ABRIR OUTRA COBRANÇA, CONFIRA SE ELE JÁ PAGOU. Quem toca aqui
+      // com o pagamento já feito — e sem o webhook ter avisado — abriria uma
+      // segunda cobrança para a mesma assinatura. Pagar duas vezes é exatamente
+      // o que não pode acontecer.
+      if (await conferirPagamento()) {
+        await recarregar();
+        return;
+      }
+
       const checkout = await iniciarCheckout();
 
       // Navegador in-app: mantém o usuário dentro do app e devolve o controle

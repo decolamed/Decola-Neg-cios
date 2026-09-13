@@ -181,3 +181,44 @@ export async function iniciarCheckout(): Promise<CheckoutIniciado> {
 
   return corpo as CheckoutIniciado;
 }
+
+/**
+ * Pergunta AO ASAAS se o pagamento já entrou — e não ao nosso banco.
+ *
+ * A tela de pagamento só reconsultava o banco, esperando o webhook do Asaas
+ * mudar o estado. Quando o webhook não vem, o banco nunca muda: em 13/09 um
+ * cliente pagou por Pix, o Asaas confirmou, e nunca nos chamou. Ele entrou na
+ * conta e o produto pediu pagamento de novo — enquanto o poll rodava, confirmando
+ * para sempre a mesma coisa errada.
+ *
+ * Quem decide e escreve continua sendo o servidor: esta chamada só diz "confere
+ * para mim". A Edge Function consulta o Asaas e, achando dinheiro recebido,
+ * grava pela mesma RPC que o webhook usa.
+ *
+ * NÃO LEVANTA ERRO. É rede de segurança de fundo, chamada em laço: uma falha de
+ * rede aqui não pode virar um aviso vermelho na tela de quem está só esperando.
+ */
+export async function conferirPagamento(): Promise<boolean> {
+  try {
+    const { data: sessao } = await supabase.auth.getSession();
+    const token = sessao.session?.access_token;
+    if (!token) return false;
+
+    const resposta = await fetch(`${URL_FUNCOES}/conferir-pagamento`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+        apikey: CHAVE_PUBLICA,
+      },
+      body: JSON.stringify({}),
+    });
+
+    if (!resposta.ok) return false;
+
+    const corpo = (await resposta.json().catch(() => null)) as { liberado?: boolean } | null;
+    return Boolean(corpo?.liberado);
+  } catch {
+    return false;
+  }
+}

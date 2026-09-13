@@ -184,53 +184,63 @@ Deno.serve(async (requisicao) => {
 
   // 1. Histórico da cobrança (Seção 4.12.3). Upsert torna o webhook idempotente
   //    — o Asaas reenvia eventos, e reprocessar não pode duplicar nada.
-  await supabase.from('cobrancas').upsert(
-    {
-      assinatura_id: assinatura.id,
-      asaas_payment_id: pagamento.id,
-      valor: Number(pagamento.value ?? 0),
-      forma_pagamento: formaDePagamento(pagamento.billingType),
-      status: confirmado ? 'confirmado' : vencido ? 'vencido' : cancelado ? 'cancelado' : 'pendente',
-      vencimento: pagamento.dueDate,
-      pago_em: confirmado ? new Date().toISOString() : null,
-    },
-    { onConflict: 'asaas_payment_id' },
-  );
+  //
+  //    A confirmação NÃO passa por aqui: ela é registrada pela RPC abaixo, que
+  //    é o único lugar que decide o que "pago" significa. Este upsert cuida dos
+  //    outros desfechos.
+  if (!confirmado) {
+    await supabase.from('cobrancas').upsert(
+      {
+        assinatura_id: assinatura.id,
+        asaas_payment_id: pagamento.id,
+        valor: Number(pagamento.value ?? 0),
+        forma_pagamento: formaDePagamento(pagamento.billingType),
+        status: vencido ? 'vencido' : cancelado ? 'cancelado' : 'pendente',
+        vencimento: pagamento.dueDate,
+        pago_em: null,
+      },
+      { onConflict: 'asaas_payment_id' },
+    );
+  }
 
   // 2. Estado da assinatura.
   if (confirmado) {
     /**
-     * É a PRIMEIRA vez que esta assinatura é paga?
+     * QUEM DECIDE O QUE "PAGO" SIGNIFICA É O BANCO (migração 0056).
      *
-     * A pergunta precisa ser feita ANTES do update, porque logo abaixo o
-     * status vira 'ativa' e a informação se perde. E ela decide uma coisa que
-     * não dá para errar nos dois sentidos: o e-mail de "crie sua senha" sai
-     * na primeira confirmação e em nenhuma das mensalidades seguintes.
-     * Mandá-lo todo mês seria oferecer, uma vez por mês, um link que troca a
-     * senha de quem já entrou.
+     * Existem DOIS caminhos que liberam acesso: este webhook e a reconciliação
+     * que a contratação faz ao consultar a cobrança no Asaas. O segundo nasceu
+     * porque este aqui falhou com dinheiro real no meio — um cliente pagou, o
+     * Asaas não nos chamou, e a conta ficou presa.
+     *
+     * Se cada caminho tivesse a sua cópia da regra, eles divergiriam, e a
+     * divergência apareceria como acesso liberado por um e não pelo outro — o
+     * tipo de defeito que ninguém encontra. A RPC grava a cobrança, ativa a
+     * assinatura, notifica, e devolve se esta foi a PRIMEIRA confirmação (o que
+     * decide o envio do e-mail de "crie sua senha": ele sai uma vez, nunca nas
+     * mensalidades seguintes).
      */
-    const primeiraConfirmacao = assinatura.status === 'pendente_pagamento';
+    const { data: resultado, error: erroConfirmar } = await supabase.rpc(
+      'assinatura_registrar_pagamento',
+      {
+        p_assinatura_id: assinatura.id,
+        p_asaas_payment_id: pagamento.id,
+        p_valor: Number(pagamento.value ?? 0),
+        p_forma: formaDePagamento(pagamento.billingType),
+        p_vencimento: pagamento.dueDate ?? null,
+      },
+    );
 
-    // Seção 6.6 — "o pagamento é regularizado → acesso completo é restaurado
-    // automaticamente". Vale inclusive saindo do modo limitado.
-    const proximo = new Date();
-    proximo.setMonth(proximo.getMonth() + 1);
+    if (erroConfirmar) {
+      // Devolver erro faz o Asaas reenviar o evento — que é o certo aqui: sem
+      // esta gravação o cliente pagou e não foi liberado.
+      console.error('webhook: falha ao registrar o pagamento', erroConfirmar);
+      return new Response(JSON.stringify({ erro: 'falha ao registrar' }), { status: 500 });
+    }
 
-    await supabase
-      .from('assinaturas')
-      .update({
-        status: 'ativa',
-        proximo_vencimento: proximo.toISOString().slice(0, 10),
-        carencia_expira_em: null,
-      })
-      .eq('id', assinatura.id);
-
-    await supabase.from('notificacoes').insert({
-      empresa_id: assinatura.empresa_id,
-      categoria: 'assinatura',
-      titulo: 'Pagamento confirmado',
-      mensagem: 'Sua assinatura está ativa e o acesso completo foi liberado.',
-    });
+    const primeiraConfirmacao = Boolean(
+      (resultado as unknown as { primeira_confirmacao?: boolean })?.primeira_confirmacao,
+    );
 
     if (primeiraConfirmacao) {
       await enviarPrimeiroAcesso(supabase, assinatura.empresa_id);

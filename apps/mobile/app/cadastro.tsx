@@ -255,7 +255,12 @@ export default function Cadastro() {
       });
 
       setContratado(resultado);
-      await abrirCheckout(resultado.url_checkout);
+
+      // Já pago: o servidor consultou a cobrança no Asaas, achou-a paga e
+      // liberou a conta. Abrir um checkout aqui seria pedir que a pessoa
+      // pagasse DE NOVO — foi o que aconteceu com um cliente real quando o
+      // webhook do Asaas não nos avisou da confirmação.
+      if (!resultado.ja_pago) await abrirCheckout(resultado.url_checkout);
     } catch (e) {
       setMensagem(e instanceof Error && e.message ? e.message : ERRO_CADASTRO_GENERICO);
     } finally {
@@ -284,6 +289,52 @@ export default function Cadastro() {
   // porque boleto que confirma em três dias úteis não é defeito, mas vira
   // reclamação quando ninguém avisou.
   // ---------------------------------------------------------------------------
+  /**
+   * O pagamento JÁ estava feito e ninguém tinha avisado.
+   *
+   * Acontece quando o Asaas confirma e não nos notifica — e foi o que prendeu
+   * um cliente real: ele pagou, voltou, e o produto pediu pagamento de novo.
+   * Agora o servidor consulta a cobrança antes de abrir outra, e esta tela é a
+   * notícia de que a conta está liberada. Nenhum botão de pagar aqui: pagar de
+   * novo é exatamente o que não pode acontecer.
+   */
+  if (contratado?.ja_pago) {
+    return (
+      <SafeAreaView style={estilos.tela}>
+        <ScrollView contentContainerStyle={estilos.conteudo}>
+          <Marca escura comTagline={false} />
+
+          <Text style={estilos.titulo}>Seu pagamento já está confirmado</Text>
+          <Text style={estilos.subtitulo}>{contratado.mensagem}</Text>
+
+          <View style={estilos.cardPasso}>
+            <Text style={estilos.tituloCard}>O que fazer agora</Text>
+            <Text style={estilos.passo}>
+              <Text style={estilos.forte}>1.</Text> Abra o e-mail que enviamos para{' '}
+              {email.trim()} e crie sua senha.
+            </Text>
+            <Text style={estilos.passo}>
+              <Text style={estilos.forte}>2.</Text> Volte aqui e entre com esse e-mail e a senha
+              que você criou.
+            </Text>
+            <Text style={estilos.legenda}>
+              Não achou o e-mail? Confira o spam e, se não estiver lá, use "Esqueci minha senha"
+              na tela de entrada — o link é o mesmo.
+            </Text>
+          </View>
+
+          <View style={estilos.rodape}>
+            <Link href="/login" style={estilos.link}>
+              Ir para a tela de entrada
+            </Link>
+          </View>
+
+          <AssinaturaDecola escura />
+        </ScrollView>
+      </SafeAreaView>
+    );
+  }
+
   if (contratado) {
     return (
       <SafeAreaView style={estilos.tela}>

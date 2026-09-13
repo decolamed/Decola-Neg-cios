@@ -46,6 +46,14 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
 // em `_shared/enderecos.ts` sobre por que não é secret.
 import { URL_DO_SITE } from '../_shared/enderecos.ts';
 import { digitosDoDocumento, documentoValido } from '../_shared/documento.ts';
+// "Ele já pagou?" mora num arquivo só, compartilhado com `conferir-pagamento` e
+// com a varredura. Ver a nota em `_shared/reconciliar.ts`.
+import {
+  AVISO_JA_PAGO,
+  chamarAsaas,
+  enviarAcesso,
+  procurarPagamento,
+} from '../_shared/reconciliar.ts';
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -61,26 +69,6 @@ function responder(corpo: unknown, status = 200): Response {
 }
 
 const erro = (mensagem: string, status: number) => responder({ error: mensagem }, status);
-
-function baseAsaas(): string {
-  return Deno.env.get('ASAAS_AMBIENTE') === 'producao'
-    ? 'https://api.asaas.com/v3'
-    : 'https://api-sandbox.asaas.com/v3';
-}
-
-async function chamarAsaas(caminho: string, chave: string, corpo?: unknown): Promise<any> {
-  const resposta = await fetch(`${baseAsaas()}${caminho}`, {
-    method: corpo ? 'POST' : 'GET',
-    headers: { access_token: chave, 'Content-Type': 'application/json' },
-    body: corpo ? JSON.stringify(corpo) : undefined,
-  });
-
-  const dados = await resposta.json();
-  if (!resposta.ok) {
-    throw new Error(dados?.errors?.[0]?.description ?? 'Erro na comunicação com o Asaas.');
-  }
-  return dados;
-}
 
 /**
  * Senha que existe só para o Auth aceitar a conta — e que ninguém usa.
@@ -235,31 +223,32 @@ async function retomarPagamento(
     );
   }
 
-  const { data: cobranca } = await admin
-    .from('cobrancas')
-    .select('asaas_payment_id')
-    .eq('assinatura_id', assinatura.id)
-    .eq('status', 'pendente')
-    .order('criado_em', { ascending: false })
-    .limit(1)
-    .maybeSingle();
-
   try {
-    // 1. A cobrança que já existe ainda vale? Então é ela.
-    if (cobranca?.asaas_payment_id) {
-      try {
-        const atual = await chamarAsaas(`/payments/${cobranca.asaas_payment_id}`, chave);
-        if (atual?.invoiceUrl && (atual.status === 'PENDING' || atual.status === 'OVERDUE')) {
-          return responder({
-            url_checkout: atual.invoiceUrl,
-            valor: Number(atual.value),
-            vencimento: atual.dueDate,
-            retomada: true,
-          });
-        }
-      } catch {
-        // Sumiu ou o Asaas recusou: segue e abre uma nova, abaixo.
-      }
+    /**
+     * 1. ELE JÁ PAGOU?
+     *
+     * Quem pagou e voltou para o cadastro está a um passo de pagar DE NOVO —
+     * foi o que quase aconteceu em 13/09. Perguntar ao Asaas antes de abrir
+     * outra cobrança custa uma chamada e evita uma cobrança em dobro. A busca
+     * mora em `_shared/reconciliar.ts`, com a explicação inteira.
+     */
+    const achado = await procurarPagamento(admin as any, chave, assinatura.id);
+
+    if (achado.tipo === 'pago') {
+      if (achado.primeiraConfirmacao) await enviarAcesso(email);
+      return responder({ ja_pago: true, mensagem: AVISO_JA_PAGO });
+    }
+
+    // Nada pago, mas há um checkout que ainda serve: é ele, e não um novo.
+    // Duas cobranças abertas para a mesma assinatura fariam o cliente pagar uma
+    // e a outra ficar vencendo.
+    if (achado.tipo === 'em_aberto') {
+      return responder({
+        url_checkout: achado.pagamento.invoiceUrl,
+        valor: Number(achado.pagamento.value),
+        vencimento: achado.pagamento.dueDate,
+        retomada: true,
+      });
     }
 
     // 2. Não havia cobrança aproveitável. Abre outra para a MESMA assinatura.

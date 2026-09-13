@@ -123,7 +123,27 @@ type Situacao = {
   };
 };
 
-/** Abre a cobrança do primeiro ciclo e registra o que o webhook vai reconciliar. */
+/**
+ * Abre a cobrança do primeiro ciclo e registra o que o webhook vai reconciliar.
+ *
+ * O RETORNO AUTOMÁTICO É UM LUXO; PAGAR NÃO É. O `callback.successUrl` traz o
+ * cliente de volta para a nossa página depois de pagar, em vez de largá-lo numa
+ * tela do Asaas sem saber o que vem agora. Só que o Asaas exige que o domínio
+ * dessa URL seja o mesmo cadastrado em Minha Conta → Informações — e quando não
+ * é, ele recusa A COBRANÇA INTEIRA:
+ *
+ *   "É necessário enviar uma URL que use o mesmo domínio cadastrado nas suas
+ *    Minha Conta na aba Informações."
+ *
+ * Ou seja: uma configuração esquecida no painel do gateway impedia o cliente de
+ * pagar. Trocar o fim bom pelo fim nenhum. Então tentamos COM o retorno e, se
+ * for só isso que atrapalha, abrimos a cobrança sem ele: o cliente paga, o
+ * webhook confirma e o e-mail de acesso sai igual — ele apenas não é
+ * redirecionado sozinho no fim.
+ *
+ * A segunda tentativa não corre risco de cobrar duas vezes: `chamarAsaas` só
+ * levanta erro quando a resposta NÃO foi ok, e aí nada foi criado.
+ */
 async function abrirCobranca(
   admin: ReturnType<typeof createClient>,
   chave: string,
@@ -134,7 +154,7 @@ async function abrirCobranca(
     descricao: string;
   },
 ): Promise<{ url_checkout: string; valor: number; vencimento: string }> {
-  const cobranca = await chamarAsaas('/payments', chave, {
+  const pedido = {
     customer: dados.clienteId,
     // UNDEFINED deixa o pagador escolher Pix, boleto ou cartão no checkout.
     billingType: 'UNDEFINED',
@@ -142,8 +162,23 @@ async function abrirCobranca(
     dueDate: vencimentoEmTresDias(),
     description: dados.descricao,
     externalReference: dados.assinaturaId,
-    callback: { successUrl: `${URL_DO_SITE}/pronto`, autoRedirect: true },
-  });
+  };
+
+  let cobranca;
+  try {
+    cobranca = await chamarAsaas('/payments', chave, {
+      ...pedido,
+      callback: { successUrl: `${URL_DO_SITE}/pronto`, autoRedirect: true },
+    });
+  } catch (e) {
+    console.error(
+      'contratar: o Asaas recusou a cobrança com URL de retorno; abrindo sem ela. ' +
+        'Cadastre o domínio do site em Minha Conta → Informações, no Asaas, para o ' +
+        'cliente voltar sozinho depois de pagar. Motivo:',
+      e instanceof Error ? e.message : e,
+    );
+    cobranca = await chamarAsaas('/payments', chave, pedido);
+  }
 
   await admin
     .from('assinaturas')
@@ -183,6 +218,7 @@ async function retomarPagamento(
   admin: ReturnType<typeof createClient>,
   assinatura: NonNullable<Situacao['assinatura']>,
   email: string,
+  documentoInformado: string,
 ): Promise<Response> {
   const chave = Deno.env.get('ASAAS_API_KEY');
   if (!chave) {
@@ -222,16 +258,41 @@ async function retomarPagamento(
 
     // 2. Não havia cobrança aproveitável. Abre outra para a MESMA assinatura.
     const nomeDaEmpresa = assinatura.empresa_nome?.trim() || email;
+
+    /**
+     * O documento tem de existir, e nem toda empresa tem um.
+     *
+     * Empresas criadas antes da 0053, e as que o administrador cria pelo
+     * painel, ficaram sem CPF/CNPJ — e sem ele o Asaas recusa a cobrança. Mas
+     * quem chegou até aqui acabou de preencher o formulário, então o documento
+     * está na mão: a RPC o grava na empresa SE ela não tiver nenhum, e devolve
+     * o que passou a valer. Descartá-lo era condenar essas contas a nunca
+     * pagar.
+     */
+    let documento = assinatura.empresa_documento ?? null;
+    if (!documento) {
+      const { data: gravado, error: erroDoc } = await admin.rpc(
+        'contratacao_definir_documento',
+        { p_assinatura_id: assinatura.id, p_documento: documentoInformado },
+      );
+      if (erroDoc) {
+        console.error('contratar: falha ao gravar o documento na retomada', erroDoc);
+        return erro(
+          'Sua conta já está criada, mas não foi possível registrar o CPF/CNPJ para emitir a ' +
+            'cobrança. Tente novamente.',
+          400,
+        );
+      }
+      documento = gravado as unknown as string;
+    }
+
     let clienteId = assinatura.asaas_customer_id;
     if (!clienteId) {
       // Sem cliente no Asaas quando a primeira tentativa morreu justamente ali.
-      // O documento vem do cadastro da empresa: o Asaas recusa criar cobrança
-      // sem CPF/CNPJ, e sem ele a retomada falharia com a mesma mensagem que a
-      // migração 0053 existe para eliminar.
       const cliente = await chamarAsaas('/customers', chave, {
         name: nomeDaEmpresa,
         email,
-        cpfCnpj: assinatura.empresa_documento ?? undefined,
+        cpfCnpj: documento,
       });
       clienteId = cliente.id;
     }
@@ -335,7 +396,7 @@ Deno.serve(async (requisicao) => {
   }
 
   if (situacao.situacao === 'aguardando_pagamento' && situacao.assinatura) {
-    return await retomarPagamento(admin, situacao.assinatura, email);
+    return await retomarPagamento(admin, situacao.assinatura, email, documento);
   }
 
   const plano = situacao.plano;

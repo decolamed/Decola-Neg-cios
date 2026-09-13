@@ -117,13 +117,23 @@ Deno.serve(async (requisicao) => {
     let clienteId = assinatura.asaas_customer_id;
 
     if (!clienteId) {
+      // O Asaas recusa criar cobrança sem documento do pagador. Ele é gravado
+      // na empresa na contratação (migração 0053) justamente para estar aqui,
+      // na renovação. Quando falta — empresa criada pelo painel administrativo,
+      // ou antes daquela migração — o erro do gateway não diz a quem é dirigido
+      // nem o que fazer. Esta mensagem diz as duas coisas.
+      if (!empresa?.cnpj) {
+        return erro(
+          'Antes de pagar, informe o CPF ou CNPJ do titular em Configurações → Dados da ' +
+            'empresa. Ele é exigido para emitir a cobrança.',
+          400,
+        );
+      }
+
       const cliente = await chamarAsaas('/customers', chave, {
         name: empresa?.nome ?? usuario.nome,
         email: usuario.email,
-        // O Asaas recusa criar cobrança sem documento do pagador. Ele é gravado
-        // na empresa no momento da contratação (migração 0053) justamente para
-        // estar aqui, na renovação do mês seguinte.
-        cpfCnpj: empresa?.cnpj ?? undefined,
+        cpfCnpj: empresa.cnpj,
         phone: empresa?.telefone ?? usuario.telefone ?? undefined,
         // Amarra o cliente do Asaas à empresa, para o webhook reconciliar.
         externalReference: assinatura.empresa_id,
@@ -135,7 +145,7 @@ Deno.serve(async (requisicao) => {
     const vencimento = new Date();
     vencimento.setDate(vencimento.getDate() + 3);
 
-    const cobranca = await chamarAsaas('/payments', chave, {
+    const pedido = {
       customer: clienteId,
       // UNDEFINED deixa o pagador escolher entre Pix, boleto e cartão no
       // checkout hospedado (Seção 6.4).
@@ -144,14 +154,32 @@ Deno.serve(async (requisicao) => {
       dueDate: vencimento.toISOString().slice(0, 10),
       description: `Assinatura ${plano?.nome ?? ''} — Decola Negócios`.trim(),
       externalReference: assinatura.id,
-      // Sem isto o cliente termina de pagar e fica parado numa tela do Asaas,
-      // sem saber que o próximo passo é esperar um e-mail. O retorno é para
-      // uma página NOSSA, que explica exatamente o que vem agora.
-      callback: {
-        successUrl: `${URL_DO_SITE}/pronto`,
-        autoRedirect: true,
-      },
-    });
+    };
+
+    /**
+     * O retorno automático é um luxo; pagar não é.
+     *
+     * O `callback.successUrl` evita que o cliente termine de pagar e fique
+     * parado numa tela do Asaas. Só que o Asaas exige que o domínio dessa URL
+     * seja o mesmo cadastrado em Minha Conta → Informações e, quando não é,
+     * recusa A COBRANÇA INTEIRA — uma configuração esquecida no painel do
+     * gateway virava impedimento para pagar. Se for só isso, abrimos sem o
+     * retorno: o pagamento acontece e o webhook confirma igual.
+     */
+    let cobranca;
+    try {
+      cobranca = await chamarAsaas('/payments', chave, {
+        ...pedido,
+        callback: { successUrl: `${URL_DO_SITE}/pronto`, autoRedirect: true },
+      });
+    } catch (e) {
+      console.error(
+        'asaas-checkout: o Asaas recusou a cobrança com URL de retorno; abrindo sem ela. ' +
+          'Cadastre o domínio do site em Minha Conta → Informações, no Asaas. Motivo:',
+        e instanceof Error ? e.message : e,
+      );
+      cobranca = await chamarAsaas('/payments', chave, pedido);
+    }
 
     // 3. Persiste com a service key: `assinaturas` e `cobrancas` não têm
     //    escrita pelo cliente, de propósito (Seção 6.4).

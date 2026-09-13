@@ -24,6 +24,8 @@
  * O QUE MAIS PRECISA MUDAR JUNTO, fora deste arquivo:
  *   - Supabase → Authentication → URL Configuration (Site URL e Redirect URLs)
  *   - Vercel, no projeto do app/painel: VITE_URL_SITE e EXPO_PUBLIC_URL_SITE
+ *   - Asaas → Minha Conta → Informações: o domínio do site precisa estar
+ *     cadastrado lá, senão o Asaas recusa a URL de retorno da cobrança.
  *   - Vercel, no projeto do site: manter o domínio antigo como apelido SE já
  *     houver lojista com link divulgado. Na troca de 08/09/2026 não havia
  *     nenhum, então o antigo (`site-kappa-five-66`) foi simplesmente

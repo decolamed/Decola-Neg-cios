@@ -112,8 +112,35 @@ Deno.serve(async (requisicao) => {
   const esperado = Deno.env.get('ASAAS_WEBHOOK_TOKEN');
   const recebido = requisicao.headers.get('asaas-access-token');
 
-  if (!esperado || !recebido || !tokensIguais(esperado, recebido)) {
-    console.warn('Webhook recusado: token inválido.');
+  /**
+   * OS DOIS MOTIVOS DE RECUSA SÃO DIFERENTES, E A DIFERENÇA É O DIAGNÓSTICO.
+   *
+   * Antes os dois davam o mesmo 401 e o mesmo log de uma linha. O sintoma
+   * ficava sendo "o webhook está cadastrado e mesmo assim nada acontece", sem
+   * nada que dissesse qual dos dois casos era.
+   *
+   * Sem o secret configurado, qualquer um liberaria acesso de graça mandando um
+   * POST aqui — recusar tudo é o certo, mas o log tem de dizer o que fazer.
+   *
+   * Token divergente é a causa MAIS PROVÁVEL de webhook cadastrado que não
+   * funciona: o valor do painel do Asaas não bate com o do secret. Dizer isso
+   * no log poupa a próxima investigação inteira.
+   */
+  if (!esperado) {
+    console.error(
+      'Webhook do Asaas recebido, mas o secret ASAAS_WEBHOOK_TOKEN não está configurado. ' +
+        'Configure-o em Supabase → Settings → Edge Functions → Secrets com o MESMO valor ' +
+        'do campo "Token de autenticação" do webhook no painel do Asaas.',
+    );
+    return new Response('Webhook não configurado.', { status: 503 });
+  }
+
+  if (!recebido || !tokensIguais(esperado, recebido)) {
+    console.error(
+      'Webhook do Asaas recusado: o token recebido não confere com ASAAS_WEBHOOK_TOKEN. ' +
+        'Os dois valores precisam ser idênticos — confira o campo "Token de autenticação" ' +
+        'do webhook no painel do Asaas.',
+    );
     return new Response('Não autorizado.', { status: 401 });
   }
 
@@ -135,13 +162,31 @@ Deno.serve(async (requisicao) => {
     Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
   );
 
-  // Localiza a cobrança. `externalReference` carrega o id da assinatura desde
-  // a criação (asaas-checkout), o que dispensa depender só do id do pagamento.
-  const { data: cobrancaExistente } = await supabase
+  /**
+   * A CONSULTA FALHOU É DIFERENTE DE A LINHA NÃO EXISTE.
+   *
+   * Estes dois `select` descartavam o erro e caíam no mesmo `if (!achou)`, que
+   * respondia 200 "ignorado". Um 200 faz o Asaas RISCAR o evento da fila: ele
+   * não reenvia mais. Então uma indisponibilidade de um segundo no banco —
+   * enquanto o dinheiro já entrou — apagava para sempre o aviso de que alguém
+   * pagou. Sem erro em lugar nenhum, sem retentativa, sem acesso.
+   *
+   * É o mesmo defeito que a Decola MED já pagou para descobrir e corrigiu em
+   * `confirmar-pagamento.ts`. Aqui vale igual: falha de consulta pede
+   * RETENTATIVA (500, e o Asaas reenvia); só a ausência real da linha — um
+   * `externalReference` que não é desta plataforma — é definitiva, porque
+   * reenviar não faria a linha aparecer.
+   */
+  const { data: cobrancaExistente, error: erroCobranca } = await supabase
     .from('cobrancas')
     .select('id, assinatura_id')
     .eq('asaas_payment_id', pagamento.id)
     .maybeSingle();
+
+  if (erroCobranca) {
+    console.error('webhook: falha ao consultar a cobrança', pagamento.id, erroCobranca);
+    return new Response(JSON.stringify({ erro: 'falha ao consultar' }), { status: 500 });
+  }
 
   const assinaturaId: string | undefined =
     cobrancaExistente?.assinatura_id ?? pagamento.externalReference ?? undefined;
@@ -151,11 +196,16 @@ Deno.serve(async (requisicao) => {
     return new Response(JSON.stringify({ ignorado: true }), { status: 200 });
   }
 
-  const { data: assinatura } = await supabase
+  const { data: assinatura, error: erroAssinatura } = await supabase
     .from('assinaturas')
     .select('id, empresa_id, status')
     .eq('id', assinaturaId)
     .maybeSingle();
+
+  if (erroAssinatura) {
+    console.error('webhook: falha ao consultar a assinatura', assinaturaId, erroAssinatura);
+    return new Response(JSON.stringify({ erro: 'falha ao consultar' }), { status: 500 });
+  }
 
   if (!assinatura) {
     console.warn('Assinatura não encontrada:', assinaturaId);

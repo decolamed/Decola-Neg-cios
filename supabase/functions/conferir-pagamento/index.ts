@@ -44,12 +44,40 @@ function responder(corpo: unknown, status = 200): Response {
 
 const erro = (mensagem: string, status: number) => responder({ error: mensagem }, status);
 
-/** Comparação de tempo constante: não vaza a chave por diferença de tempo. */
-function iguais(a: string, b: string): boolean {
-  if (a.length !== b.length) return false;
-  let diferenca = 0;
-  for (let i = 0; i < a.length; i += 1) diferenca |= a.charCodeAt(i) ^ b.charCodeAt(i);
-  return diferenca === 0;
+/**
+ * Quem está chamando: o papel declarado no crachá, não a igualdade da chave.
+ *
+ * ISTO AQUI COMPARAVA A CHAVE RECEBIDA COM `SUPABASE_SERVICE_ROLE_KEY`, byte a
+ * byte. Parecia certo e falhou na primeira chamada real: a varredura mandou uma
+ * chave de serviço válida, a comparação deu falso — o projeto tem mais de uma
+ * cópia ou geração de chave em circulação — e o pedido caiu no ramo de USUÁRIO.
+ * Pior: aquele ramo monta um cliente com a chave de quem chamou, então uma
+ * chave de serviço ali dentro ignora a RLS e devolve a assinatura de outra
+ * pessoa. Ninguém foi liberado por engano (a resposta foi `ja_estava`), mas a
+ * varredura não varria nada e o erro era invisível: HTTP 200, corpo plausível.
+ *
+ * Agora quem decide é o `role` do JWT. E confiar nele só é honesto porque esta
+ * função roda com `verify_jwt` LIGADO: o gateway do Supabase confere a
+ * assinatura criptográfica ANTES de nos entregar o pedido, então um crachá
+ * forjado não chega até aqui. Sem essa verificação, ler o papel de um JWT que
+ * ninguém validou seria deixar a porta aberta para qualquer um se declarar
+ * servidor.
+ */
+function papelDoChamador(autorizacao: string): string | null {
+  try {
+    const token = autorizacao.replace(/^Bearer\s+/i, '');
+    const miolo = token.split('.')[1];
+    if (!miolo) return null;
+
+    const base64 = miolo.replace(/-/g, '+').replace(/_/g, '/');
+    const bytes = Uint8Array.from(atob(base64.padEnd(Math.ceil(base64.length / 4) * 4, '=')), (c) =>
+      c.charCodeAt(0),
+    );
+    const dados = JSON.parse(new TextDecoder().decode(bytes)) as { role?: string };
+    return dados.role ?? null;
+  } catch {
+    return null;
+  }
 }
 
 /** Estados de assinatura em que ainda se espera dinheiro entrar. */
@@ -144,15 +172,16 @@ Deno.serve(async (requisicao) => {
   }
 
   // ------------------------------------------------------------- varredura
-  const chaveDeServico = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
-  if (chaveDeServico && iguais(autorizacao, `Bearer ${chaveDeServico}`)) {
-    return await varrer(chave);
-  }
+  const papel = papelDoChamador(autorizacao);
+
+  if (papel === 'service_role') return await varrer(chave);
 
   // ------------------------------------------------------ um usuário só
-  // Cliente com o JWT de quem chamou: a RLS garante que ele enxerga apenas a
-  // própria assinatura. É isto que torna desnecessário — e impossível —
-  // receber um id de assinatura pelo corpo do pedido.
+  //
+  // Só chega aqui quem NÃO é servidor. A ordem importa: este cliente carrega a
+  // autorização de quem chamou, então uma chave de serviço aqui dentro passaria
+  // por cima da RLS e devolveria a assinatura de outra pessoa. Decidir o ramo
+  // antes de montar o cliente é o que impede isso.
   const doUsuario = createClient(
     Deno.env.get('SUPABASE_URL') ?? '',
     Deno.env.get('SUPABASE_ANON_KEY') ?? '',

@@ -23,8 +23,21 @@
  * pelo outro, que é o tipo de defeito que ninguém encontra.
  */
 
-/** Estados em que o Asaas considera o dinheiro recebido. */
-export const PAGAS = ['RECEIVED', 'CONFIRMED', 'RECEIVED_IN_CASH'];
+/**
+ * Estados em que o Asaas considera o dinheiro recebido.
+ *
+ * `RECEIVED_IN_CASH` fica DE FORA de propósito, como na Decola MED: é baixa
+ * manual registrada no painel do Asaas ("recebi em dinheiro"), não pagamento
+ * pelo checkout. Tratá-la como confirmação faria uma anotação administrativa
+ * liberar acesso e disparar o e-mail de primeiro acesso — e essa é uma decisão
+ * de quem administra, não um efeito colateral de marcar uma caixa.
+ *
+ * É também a mesma lista que o webhook reconhece (`PAYMENT_CONFIRMED` e
+ * `PAYMENT_RECEIVED`), e os dois caminhos precisam concordar: se a varredura
+ * liberasse por um estado que o webhook ignora, o acesso dependeria de quem
+ * chegou primeiro.
+ */
+export const PAGAS = ['RECEIVED', 'CONFIRMED'];
 
 /** Formas do Asaas → enum `cobranca_forma_pagamento`. */
 export function formaDePagamento(tipo: string | undefined): 'pix' | 'boleto' | 'cartao' {

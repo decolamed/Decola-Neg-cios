@@ -300,7 +300,21 @@ const estilos = StyleSheet.create({
     justifyContent: 'center',
   },
   textoBadge: { ...tema.tipografia.micro, color: tema.cores.textoInverso },
-  grade: { flexDirection: 'row', flexWrap: 'wrap', gap: tema.espacamento.md },
+  /**
+   * `gap` separa os cards UNS DOS OUTROS; ele não separa a grade do que vem
+   * depois dela. O cartão da loja é irmão da grade, não filho — então ficava
+   * encostado no card de estoque baixo, sem respiro nenhum.
+   *
+   * A margem repete o valor do `gap` de propósito: assim o espaço depois da
+   * grade é o mesmo espaço de dentro dela, e qualquer bloco novo colocado
+   * abaixo já nasce alinhado — em vez de precisar de um empurrão próprio.
+   */
+  grade: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: tema.espacamento.md,
+    marginBottom: tema.espacamento.md,
+  },
   cardDestaque: {
     flexBasis: '100%',
     backgroundColor: tema.cores.primariaFundo,

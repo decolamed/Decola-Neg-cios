@@ -145,7 +145,7 @@ export default function Login() {
       >
         <ScrollView contentContainerStyle={estilos.conteudo} keyboardShouldPersistTaps="handled">
           <View style={estilos.cabecalho}>
-            <Marca escura comTagline={false} tamanho="lg" />
+            <Marca comTagline={false} tamanho="lg" />
           </View>
 
           <Text style={estilos.saudacao}>Bem-vindo de volta!</Text>
@@ -209,7 +209,7 @@ export default function Login() {
             </Link>
           </View>
 
-          <AssinaturaDecola escura />
+          <AssinaturaDecola />
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>

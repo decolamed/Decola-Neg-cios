@@ -64,7 +64,7 @@ export default function AceitarConvite() {
   return (
     <SafeAreaView style={estilos.tela}>
       <ScrollView contentContainerStyle={estilos.conteudo}>
-        <Marca escura />
+        <Marca />
 
         <Text style={estilos.titulo}>Convite para participar de uma empresa</Text>
 

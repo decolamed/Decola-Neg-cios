@@ -192,7 +192,7 @@ export default function Perfil() {
         ))}
 
         <View style={estilos.rodape}>
-          <AssinaturaDecola escura />
+          <AssinaturaDecola />
         </View>
       </ScrollView>
     </SafeAreaView>

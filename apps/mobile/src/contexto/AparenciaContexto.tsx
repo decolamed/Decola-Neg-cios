@@ -70,3 +70,15 @@ export function useAparencia(): Estado {
   if (!estado) throw new Error('useAparencia precisa estar dentro de ProvedorDeAparencia.');
   return estado;
 }
+
+/**
+ * A mesma coisa, para quem pode ser desenhado FORA da árvore.
+ *
+ * A marca aparece na tela de erro, que é o limite de erro do aplicativo — ela
+ * roda justamente quando alguma coisa acima dela quebrou, e o provedor pode não
+ * estar lá. Uma tela de erro que quebra ao tentar descobrir o tema é a pior
+ * falha possível: some o único lugar que ia explicar o que houve.
+ */
+export function useAparenciaOpcional(): Estado | null {
+  return useContext(Contexto);
+}

@@ -17,10 +17,14 @@ import { Marca } from './Marca';
 export function TelaCarregando({ comMarca = false }: { comMarca?: boolean }) {
   return (
     <View style={[estilos.centro, comMarca && estilos.sobreMarca]}>
-      {comMarca ? <Marca escura comSimbolo tamanho="lg" /> : null}
+      {comMarca ? <Marca fundo="marca" comSimbolo tamanho="lg" /> : null}
+      {/* Sobre o amarelo da marca o giro precisa de cor FIXA, pelo mesmo motivo
+          da frase: `cores.primaria` acompanha o tema e clareava justamente onde
+          o fundo não clareia nunca. Nas demais telas ele segue o tema, que é o
+          certo — ali o fundo acompanha junto. */}
       <ActivityIndicator
         size="large"
-        color={tema.cores.primaria}
+        color={comMarca ? tema.paleta.azulMarinho : tema.cores.primaria}
         style={{ marginTop: tema.espacamento.lg }}
       />
     </View>
@@ -43,11 +47,18 @@ export function TelaMensagem({
 }: MensagemProps) {
   return (
     <View style={[estilos.centro, sobreMarca && estilos.sobreMarca]}>
-      {sobreMarca ? <Marca escura comSimbolo tamanho="lg" /> : null}
+      {sobreMarca ? <Marca fundo="marca" comSimbolo tamanho="lg" /> : null}
 
-      <Text style={estilos.mensagem}>{mensagem}</Text>
+      {/* Sobre o amarelo da marca, o texto é fixo: aquele fundo não acompanha
+          o tema, então nada por cima dele pode acompanhar. Fora dali, o texto
+          segue o tema junto com o fundo da tela. */}
+      <Text style={[estilos.mensagem, sobreMarca && estilos.sobreAmarelo]}>{mensagem}</Text>
 
-      {complemento ? <Text style={estilos.complemento}>{complemento}</Text> : null}
+      {complemento ? (
+        <Text style={[estilos.complemento, sobreMarca && estilos.sobreAmarelo]}>
+          {complemento}
+        </Text>
+      ) : null}
 
       {aoTentarNovamente ? (
         <Botao
@@ -70,6 +81,8 @@ const estilos = StyleSheet.create({
     backgroundColor: tema.cores.fundo,
   },
   sobreMarca: { backgroundColor: tema.cores.destaque },
+  /** Texto legível sobre o amarelo da marca, em qualquer tema. */
+  sobreAmarelo: { color: tema.paleta.azulMarinho },
   mensagem: {
     ...tema.tipografia.corpo,
     color: tema.cores.texto,

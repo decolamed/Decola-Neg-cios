@@ -139,7 +139,7 @@ export default function Splash() {
     return (
       <View style={estilos.tela}>
         <View style={estilos.miolo}>
-          <Marca escura comSimbolo tamanho="lg" />
+          <Marca fundo="marca" comSimbolo tamanho="lg" />
           <Text style={estilos.aviso}>
             A abertura está demorando mais que o normal. Isso costuma ser a internet do aparelho.
           </Text>
@@ -156,7 +156,7 @@ export default function Splash() {
           />
         </View>
 
-        <AssinaturaDecola escura />
+        <AssinaturaDecola fundo="marca" />
       </View>
     );
   }
@@ -165,15 +165,18 @@ export default function Splash() {
   return (
     <View style={estilos.tela}>
       <View style={estilos.miolo}>
-        <Marca escura comSimbolo tamanho="lg" />
+        <Marca fundo="marca" comSimbolo tamanho="lg" />
+        {/* Cor FIXA: esta tela é amarela em qualquer tema, e `cores.primaria`
+            acompanha o tema — era o que deixava o giro lavado sobre o amarelo
+            quando o aparelho estava no escuro. */}
         <ActivityIndicator
           size="large"
-          color={tema.cores.primaria}
+          color={tema.paleta.azulMarinho}
           style={{ marginTop: tema.espacamento.xl }}
         />
       </View>
 
-      <AssinaturaDecola escura />
+      <AssinaturaDecola fundo="marca" />
     </View>
   );
 }

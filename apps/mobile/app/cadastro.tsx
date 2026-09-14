@@ -302,7 +302,7 @@ export default function Cadastro() {
     return (
       <SafeAreaView style={estilos.tela}>
         <ScrollView contentContainerStyle={estilos.conteudo}>
-          <Marca escura comTagline={false} />
+          <Marca comTagline={false} />
 
           <Text style={estilos.titulo}>Seu pagamento já está confirmado</Text>
           <Text style={estilos.subtitulo}>{contratado.mensagem}</Text>
@@ -329,7 +329,7 @@ export default function Cadastro() {
             </Link>
           </View>
 
-          <AssinaturaDecola escura />
+          <AssinaturaDecola />
         </ScrollView>
       </SafeAreaView>
     );
@@ -339,7 +339,7 @@ export default function Cadastro() {
     return (
       <SafeAreaView style={estilos.tela}>
         <ScrollView contentContainerStyle={estilos.conteudo}>
-          <Marca escura comTagline={false} />
+          <Marca comTagline={false} />
 
           <Text style={estilos.titulo}>Recebemos seu pedido</Text>
           <Text style={estilos.subtitulo}>
@@ -384,7 +384,7 @@ export default function Cadastro() {
             </Link>
           </View>
 
-          <AssinaturaDecola escura />
+          <AssinaturaDecola />
         </ScrollView>
       </SafeAreaView>
     );
@@ -397,7 +397,7 @@ export default function Cadastro() {
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <ScrollView contentContainerStyle={estilos.conteudo} keyboardShouldPersistTaps="handled">
-          <Marca escura comTagline={false} />
+          <Marca comTagline={false} />
 
           <Text style={estilos.titulo}>Criar conta</Text>
           <Text style={estilos.subtitulo}>Comece a organizar suas vendas hoje</Text>
@@ -527,7 +527,7 @@ export default function Cadastro() {
             </Link>
           </View>
 
-          <AssinaturaDecola escura />
+          <AssinaturaDecola />
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>

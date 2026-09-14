@@ -86,12 +86,47 @@ export function AjustarImagem({
   const inicio = useRef({ x: 0, y: 0 });
   const atual = useRef(centralizar(escalaMinima));
 
+  /**
+   * A escala também num ref, além do estado.
+   *
+   * O gesto de pinça lê e escreve a escala DENTRO do mesmo movimento do dedo, e
+   * o estado do React só chega no render seguinte. Ler o estado ali daria o
+   * valor de um quadro atrás, e a imagem "escorregaria" atrás dos dedos.
+   */
+  const escalaRef = useRef(escalaMinima);
+
+  /** Onde a moldura está na tela — necessário para achar o meio dos dedos. */
+  const molduraNaTela = useRef({ x: 0, y: 0 });
+  const molduraRef = useRef<View>(null);
+
+  /**
+   * O estado de uma pinça em andamento: a distância entre os dedos quando ela
+   * começou, a escala daquele instante, e o ponto DA IMAGEM que estava sob o
+   * meio dos dedos. É esse ponto que fica parado enquanto os dedos abrem e
+   * fecham — é o que faz a pinça parecer que está agarrando a foto.
+   */
+  const pinca = useRef<{
+    distancia: number;
+    escala: number;
+    imagemX: number;
+    imagemY: number;
+    focoX: number;
+    focoY: number;
+  } | null>(null);
+
+  const medirMoldura = useCallback(() => {
+    molduraRef.current?.measureInWindow((x, y) => {
+      molduraNaTela.current = { x, y };
+    });
+  }, []);
+
   // Girar o aparelho muda a largura da moldura, e com ela a escala mínima: o
   // enquadramento anterior deixaria buraco. Recomeçar do meio é o único estado
   // que continua válido em qualquer tamanho de tela.
   useEffect(() => {
     const inicial = centralizar(escalaMinima);
     atual.current = inicial;
+    escalaRef.current = escalaMinima;
     setEscala(escalaMinima);
     setDeslocamento(inicial);
   }, [escalaMinima, centralizar]);
@@ -114,25 +149,107 @@ export function AjustarImagem({
     [larguraOriginal, alturaOriginal, larguraMoldura, alturaMoldura],
   );
 
+  const escalaMaxima = escalaMinima * 5;
+
+  /**
+   * Um dedo arrasta; dois dedos aproximam. O mesmo gesto, sem botão nenhum.
+   *
+   * A pinça é o jeito como as pessoas já mexem em foto em qualquer aparelho —
+   * os botões + e − continuam ali para quem está no computador, com mouse, onde
+   * pinça não existe.
+   *
+   * O PONTO DIFÍCIL É A TROCA DE NÚMERO DE DEDOS no meio do movimento. O
+   * `PanResponder` concede o gesto UMA vez, e o `gesto.dx` continua somando
+   * desde aquele instante; quem põe o segundo dedo e depois o tira levaria a
+   * imagem para longe de um salto, porque o `dx` acumulado durante a pinça
+   * seria aplicado de uma vez como arrasto. Por isso, ao voltar para um dedo, a
+   * referência do arrasto é recalculada a partir do `dx` atual — e não do valor
+   * de quando o gesto começou.
+   */
   const arrastar = useMemo(
     () =>
       PanResponder.create({
         onStartShouldSetPanResponder: () => true,
         onMoveShouldSetPanResponder: () => true,
+        // Ninguém tira este gesto da mão no meio do caminho: um ScrollView por
+        // fora roubaria o arrasto vertical e a foto travaria.
+        onPanResponderTerminationRequest: () => false,
         onPanResponderGrant: () => {
           inicio.current = { ...atual.current };
+          pinca.current = null;
+          medirMoldura();
         },
-        onPanResponderMove: (_evento, gesto) => {
+        onPanResponderMove: (evento, gesto) => {
+          const toques = evento.nativeEvent.touches;
+
+          // ---------------------------------------------------- dois dedos
+          if (toques.length >= 2) {
+            const [a, b] = toques;
+            const distancia = Math.hypot(a.pageX - b.pageX, a.pageY - b.pageY);
+            if (distancia < 1) return;
+
+            // Meio dos dedos, em coordenadas da moldura.
+            const focoX = (a.pageX + b.pageX) / 2 - molduraNaTela.current.x;
+            const focoY = (a.pageY + b.pageY) / 2 - molduraNaTela.current.y;
+
+            if (!pinca.current) {
+              // Começou agora (ou o segundo dedo acabou de entrar): guarda o
+              // ponto da IMAGEM que está sob o meio dos dedos.
+              pinca.current = {
+                distancia,
+                escala: escalaRef.current,
+                imagemX: (focoX - atual.current.x) / escalaRef.current,
+                imagemY: (focoY - atual.current.y) / escalaRef.current,
+                focoX,
+                focoY,
+              };
+              return;
+            }
+
+            const proxima = Math.max(
+              escalaMinima,
+              Math.min(pinca.current.escala * (distancia / pinca.current.distancia), escalaMaxima),
+            );
+
+            // O ponto agarrado continua sob os dedos — inclusive se eles se
+            // moverem juntos, o que faz a pinça arrastar e aproximar de uma vez.
+            const preso = limitar(
+              focoX - pinca.current.imagemX * proxima,
+              focoY - pinca.current.imagemY * proxima,
+              proxima,
+            );
+
+            atual.current = preso;
+            escalaRef.current = proxima;
+            setEscala(proxima);
+            setDeslocamento(preso);
+            return;
+          }
+
+          // ------------------------------------------------------- um dedo
+          if (pinca.current) {
+            // Saímos da pinça. Reancora o arrasto no ponto atual, descontando o
+            // `dx` que se acumulou enquanto os dois dedos estavam na tela.
+            inicio.current = { x: atual.current.x - gesto.dx, y: atual.current.y - gesto.dy };
+            pinca.current = null;
+          }
+
           const proximo = limitar(
             inicio.current.x + gesto.dx,
             inicio.current.y + gesto.dy,
-            escala,
+            escalaRef.current,
           );
           atual.current = proximo;
           setDeslocamento(proximo);
         },
+        onPanResponderRelease: () => {
+          pinca.current = null;
+        },
+        onPanResponderTerminate: () => {
+          pinca.current = null;
+        },
       }),
-    [escala, limitar],
+    [limitar, escalaMinima, escalaMaxima, medirMoldura],
   );
 
   const mudarZoom = useCallback(
@@ -150,6 +267,7 @@ export function AjustarImagem({
 
       const preso = limitar(bruto.x, bruto.y, proxima);
       atual.current = preso;
+      escalaRef.current = proxima;
       setEscala(proxima);
       setDeslocamento(preso);
     },
@@ -182,13 +300,15 @@ export function AjustarImagem({
     <View style={estilos.tela}>
       <Text style={estilos.titulo}>{titulo}</Text>
       <Text style={estilos.dica}>
-        Arraste a foto para escolher o que aparece. Use + e − para aproximar.
+        Arraste a foto para escolher o que aparece. Use dois dedos para aproximar.
       </Text>
 
       {/* A moldura no meio da tela, e não colada no texto: é ela que a pessoa
           está olhando, e o polegar precisa de espaço em volta para arrastar. */}
       <View style={estilos.palco}>
         <View
+          ref={molduraRef}
+          onLayout={medirMoldura}
           style={[estilos.moldura, { width: larguraMoldura, height: alturaMoldura }]}
           {...arrastar.panHandlers}
         >

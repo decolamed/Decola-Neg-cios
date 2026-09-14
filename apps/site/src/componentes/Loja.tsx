@@ -9,7 +9,7 @@
  * o resto do arquivo só as consome — nenhuma cor de marca aparece escrita nos
  * componentes, senão a loja de cada cliente sairia igual à nossa.
  */
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import {
   moeda,
@@ -121,59 +121,244 @@ export function CabecalhoDaLoja({ loja }: { loja: Loja }) {
 
 /* ============================================================= banners == */
 
+/** De quanto da largura a pessoa precisa arrastar para trocar de banner. */
+const FRACAO_PARA_TROCAR = 0.2;
+
+/** Quanto tempo o carrossel espera, depois de um toque, antes de voltar a andar. */
+const PAUSA_APOS_TOQUE_MS = 9000;
+
 /**
- * Carrossel de banners.
+ * Carrossel de banners: passa sozinho, e também no dedo.
  *
- * Passa sozinho a cada cinco segundos, e para de vez quando alguém toca num
- * ponto: se a pessoa escolheu um banner, trocá-lo debaixo dela é tirar o que
- * ela quis ver. Com um banner só não há carrossel — nem timer, nem pontos,
- * porque não há para onde ir.
+ * O QUE ESTAVA ERRADO. Ele já passava sozinho a cada cinco segundos — mas tocar
+ * num ponto o parava PARA SEMPRE. Como quem abre a loja quase sempre toca num
+ * ponto para ver o resto, o carrossel morria no primeiro toque e passava a
+ * depender só dos pontinhos. Era o relato: "passa somente se você clicar na
+ * bola". A intenção de não trocar o banner debaixo de quem escolheu estava
+ * certa; o prazo é que estava errado — ela vale por alguns segundos, não pela
+ * visita inteira.
+ *
+ * E FALTAVA O DEDO. Numa vitrine aberta no celular, arrastar é o gesto óbvio; o
+ * ponto tem seis pixels e serve para saber ONDE se está, não para navegar. Agora
+ * os banners ficam num trilho que acompanha o dedo enquanto arrasta, e solta no
+ * banner mais próximo — com um quinto da largura bastando para trocar, porque
+ * exigir metade faz o gesto parecer que não pegou.
  *
  * Sem `alt` descritivo porque banner é peça promocional cujo conteúdo já está
  * na imagem; um alt inventado por nós seria pior que nenhum.
  */
 export function CarrosselDaLoja({ loja }: { loja: Loja }) {
   const banners = loja.banners ?? [];
+  const total = banners.length;
+
   const [atual, setAtual] = useState(0);
-  const [parado, setParado] = useState(false);
+  /**
+   * Quanto o dedo já arrastou, em pixels. Zero quando ninguém está tocando.
+   *
+   * DUAS CÓPIAS, e não por descuido. O estado é o que o trilho desenha; o ref é
+   * o que a DECISÃO lê ao soltar. Com só o estado, soltar o dedo decidia com o
+   * valor de um render atrás — e quando os eventos de toque chegam juntos, esse
+   * valor ainda é zero, então o arrasto não trocava de banner. Com o dedo real
+   * costumava funcionar, porque os eventos vêm espaçados; "costumava" não é
+   * garantia de nada.
+   */
+  const [arrasto, setArrasto] = useState(0);
+  const arrastoRef = useRef(0);
+  const [arrastando, setArrastando] = useState(false);
+  /** Enquanto for maior que agora, o relógio não anda. */
+  const pausadoAte = useRef(0);
+
+  const trilho = useRef<HTMLDivElement>(null);
+  /**
+   * A largura de um quadro, medida — e não lida durante o render.
+   *
+   * Ler `clientWidth` no meio do render dá o valor de antes na primeira pintura
+   * e, pior, nunca mais muda: girar o aparelho ou redimensionar a janela
+   * deixaria o trilho parado num deslocamento calculado para a largura antiga,
+   * e o banner apareceria cortado pela metade.
+   */
+  const [largura, setLargura] = useState(0);
 
   useEffect(() => {
-    if (banners.length < 2 || parado) return;
-    const relogio = setInterval(() => {
-      setAtual((i) => (i + 1) % banners.length);
-    }, 5000);
-    return () => clearInterval(relogio);
-  }, [banners.length, parado]);
+    const alvo = trilho.current;
+    if (!alvo) return;
 
-  if (banners.length === 0) return null;
+    const medir = () => setLargura(alvo.clientWidth);
+    medir();
 
-  const banner = banners[Math.min(atual, banners.length - 1)];
-  const imagem = (
-    <img className="loja-banner" src={urlDaLoja(banner.caminho)} alt="" loading="lazy" />
+    if (typeof ResizeObserver === 'undefined') {
+      window.addEventListener('resize', medir);
+      return () => window.removeEventListener('resize', medir);
+    }
+
+    const observador = new ResizeObserver(medir);
+    observador.observe(alvo);
+    return () => observador.disconnect();
+  }, [total]);
+
+  const inicioX = useRef(0);
+  const inicioY = useRef(0);
+  /** `null` até saber se o gesto é horizontal (carrossel) ou vertical (rolagem). */
+  const horizontal = useRef<boolean | null>(null);
+
+  const ir = useCallback(
+    (destino: number) => {
+      if (total < 2) return;
+      setAtual(((destino % total) + total) % total);
+    },
+    [total],
   );
 
-  return (
-    <div className="loja-carrossel">
-      {banner.link ? (
-        <a href={banner.link} target="_blank" rel="noreferrer noopener">
-          {imagem}
-        </a>
-      ) : (
-        imagem
-      )}
+  /**
+   * Um relógio só, que a cada volta pergunta se já pode andar.
+   *
+   * Poderia ser um timer recriado a cada interação, mas aí cada toque
+   * cancelaria e recriaria o relógio — e um `setInterval` recriado no meio do
+   * caminho reinicia a contagem, fazendo o banner pular logo depois de a pessoa
+   * soltar. Perguntar as horas é mais simples de acertar.
+   */
+  useEffect(() => {
+    if (total < 2) return;
+    const relogio = setInterval(() => {
+      if (Date.now() < pausadoAte.current) return;
+      setAtual((i) => (i + 1) % total);
+    }, 5000);
+    return () => clearInterval(relogio);
+  }, [total]);
 
-      {banners.length > 1 ? (
+  const adiar = useCallback(() => {
+    pausadoAte.current = Date.now() + PAUSA_APOS_TOQUE_MS;
+  }, []);
+
+  // ------------------------------------------------------------- o gesto
+  const comecar = useCallback(
+    (x: number, y: number) => {
+      inicioX.current = x;
+      inicioY.current = y;
+      arrastoRef.current = 0;
+      horizontal.current = null;
+      setArrastando(true);
+      adiar();
+    },
+    [adiar],
+  );
+
+  const mover = useCallback((x: number, y: number) => {
+    const dx = x - inicioX.current;
+    const dy = y - inicioY.current;
+
+    /**
+     * HORIZONTAL OU VERTICAL? Decidido uma vez, no começo do movimento.
+     *
+     * Sem isso, começar a rolar a página com o dedo em cima do banner
+     * arrastaria o carrossel junto — e rolar uma vitrine é muito mais comum do
+     * que trocar de banner. Depois de decidido, o gesto não muda de ideia no
+     * meio: senão ele treme quando o dedo sobe um pouco.
+     */
+    if (horizontal.current === null) {
+      if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return;
+      horizontal.current = Math.abs(dx) > Math.abs(dy);
+    }
+    if (!horizontal.current) return;
+
+    arrastoRef.current = dx;
+    setArrasto(dx);
+  }, []);
+
+  const soltar = useCallback(() => {
+    const percorrido = arrastoRef.current;
+    const passou = Math.abs(percorrido) > Math.max(1, largura) * FRACAO_PARA_TROCAR;
+
+    if (passou && horizontal.current) ir(atual + (percorrido < 0 ? 1 : -1));
+
+    arrastoRef.current = 0;
+    setArrasto(0);
+    setArrastando(false);
+    horizontal.current = null;
+    adiar();
+  }, [atual, ir, adiar, largura]);
+
+  if (total === 0) return null;
+
+  const indice = Math.min(atual, total - 1);
+  const deslocamento = largura > 0 ? -indice * largura + arrasto : 0;
+
+  return (
+    <div
+      className="loja-carrossel"
+      // `onTouchMove` não é passivo aqui porque precisamos impedir a rolagem
+      // quando o gesto é horizontal — daí o `touch-action` no CSS, que resolve
+      // isso sem bloquear a rolagem vertical.
+      onTouchStart={(e) => comecar(e.touches[0].clientX, e.touches[0].clientY)}
+      onTouchMove={(e) => mover(e.touches[0].clientX, e.touches[0].clientY)}
+      onTouchEnd={soltar}
+      onTouchCancel={soltar}
+      // No computador o mesmo gesto vale com o mouse apertado.
+      onPointerDown={(e) => {
+        if (e.pointerType === 'touch') return;
+        comecar(e.clientX, e.clientY);
+      }}
+      onPointerMove={(e) => {
+        if (e.pointerType === 'touch' || !arrastando) return;
+        mover(e.clientX, e.clientY);
+      }}
+      onPointerUp={(e) => {
+        if (e.pointerType === 'touch') return;
+        soltar();
+      }}
+      onPointerLeave={() => {
+        if (arrastando) soltar();
+      }}
+    >
+      <div
+        ref={trilho}
+        className={arrastando ? 'loja-carrossel-trilho arrastando' : 'loja-carrossel-trilho'}
+        style={{ transform: `translate3d(${deslocamento}px, 0, 0)` }}
+      >
+        {banners.map((banner) => {
+          const imagem = (
+            <img
+              className="loja-banner"
+              src={urlDaLoja(banner.caminho)}
+              alt=""
+              loading="lazy"
+              draggable={false}
+            />
+          );
+          return (
+            <div className="loja-carrossel-quadro" key={banner.caminho}>
+              {banner.link ? (
+                <a
+                  href={banner.link}
+                  target="_blank"
+                  rel="noreferrer noopener"
+                  // Arrastar não pode virar clique no link do banner.
+                  onClick={(e) => {
+                    if (Math.abs(arrastoRef.current) > 4) e.preventDefault();
+                  }}
+                >
+                  {imagem}
+                </a>
+              ) : (
+                imagem
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      {total > 1 ? (
         <div className="loja-carrossel-pontos">
           {banners.map((b, i) => (
             <button
               key={b.caminho}
               type="button"
-              aria-label={`Banner ${i + 1} de ${banners.length}`}
-              aria-current={i === atual}
-              className={i === atual ? 'ponto ativo' : 'ponto'}
+              aria-label={`Banner ${i + 1} de ${total}`}
+              aria-current={i === indice}
+              className={i === indice ? 'ponto ativo' : 'ponto'}
               onClick={() => {
-                setAtual(i);
-                setParado(true);
+                ir(i);
+                adiar();
               }}
             />
           ))}

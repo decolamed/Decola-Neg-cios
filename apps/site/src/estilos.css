@@ -392,6 +392,28 @@ a.botao {
   border-radius: var(--raio-lg);
   overflow: hidden;
   background: var(--cor-fundoCampo);
+  /* `pan-y` deixa a página rolar com o dedo em cima do banner e entrega o
+     movimento horizontal ao carrossel. Sem isto, ou o carrossel não recebe o
+     arrasto, ou a vitrine deixa de rolar — e rolar é muito mais comum. */
+  touch-action: pan-y;
+}
+
+/* Os banners lado a lado. O trilho desliza; cada quadro ocupa a largura toda. */
+.loja-carrossel-trilho {
+  display: flex;
+  transition: transform 320ms ease;
+  will-change: transform;
+}
+
+/* Enquanto o dedo está na tela, nada de animação: o trilho tem de acompanhar
+   o dedo, e uma transição faria ele chegar atrasado. */
+.loja-carrossel-trilho.arrastando {
+  transition: none;
+}
+
+.loja-carrossel-quadro {
+  flex: 0 0 100%;
+  width: 100%;
 }
 
 .loja-banner {
@@ -399,6 +421,9 @@ a.botao {
   width: 100%;
   aspect-ratio: 16 / 7;
   object-fit: cover;
+  /* Arrastar o banner não pode virar "arrastar a imagem" do navegador. */
+  user-select: none;
+  -webkit-user-drag: none;
 }
 
 .loja-carrossel-pontos {

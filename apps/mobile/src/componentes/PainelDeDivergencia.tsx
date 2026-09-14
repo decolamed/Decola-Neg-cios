@@ -99,6 +99,7 @@ export function PainelDeDivergencia({
                 rotulo="Unidades encontradas a mais"
                 valor={quantidade}
                 aoMudar={(v) => setQuantidade(v.replace(/[^0-9]/g, ''))}
+                tipoTeclado="number-pad"
                 erro={erro}
                 bloqueado={salvando}
               />

@@ -71,6 +71,31 @@ export default function Mais() {
 
   if (conta.ehGestor) {
     itens.push(
+      /**
+       * A LOJA SOBE PARA CÁ, saindo de Configurações.
+       *
+       * Ela estava em Mais → Configurações → Loja virtual: quatro toques para
+       * chegar ao link que o lojista manda para o cliente, e três para mudar um
+       * banner. "É configuração" não quer dizer "fica em Configurações" — o que
+       * decide o lugar de um botão é a frequência com que se toca nele.
+       *
+       * O caminho antigo continua funcionando: quem aprendeu a ir por
+       * Configurações não perde o pé.
+       */
+      {
+        titulo: 'Minha loja virtual',
+        descricao: 'Link da loja, produtos publicados e pedidos.',
+        destino: '/configuracoes/loja',
+        icone: 'vendas',
+        cor: tema.cores.acaoPrimaria,
+      },
+      {
+        titulo: 'Aparência da loja',
+        descricao: 'Logo, cores e banners que seus clientes veem.',
+        destino: '/configuracoes/aparencia-da-loja',
+        icone: 'produtos',
+        cor: tema.cores.destaque,
+      },
       {
         titulo: 'Funcionários',
         descricao: 'Convites, papéis e permissões da equipe.',
@@ -83,7 +108,7 @@ export default function Mais() {
         descricao: 'Dados da empresa, chave Pix, categorias e alertas.',
         destino: '/configuracoes',
         icone: 'configuracoes',
-        cor: tema.cores.destaque,
+        cor: tema.cores.secundaria,
       },
     );
   }

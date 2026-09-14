@@ -52,7 +52,7 @@ const estilos = StyleSheet.create({
     marginRight: tema.espacamento.sm,
   },
   caixaMarcada: {
-    backgroundColor: tema.cores.primaria,
+    backgroundColor: tema.cores.primariaFundo,
     borderColor: tema.cores.primaria,
   },
   marca: {

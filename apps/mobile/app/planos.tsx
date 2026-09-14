@@ -283,7 +283,7 @@ const estilos = StyleSheet.create({
   textoSelo: { ...tema.tipografia.rotulo, color: tema.cores.textoSobreAcao },
   seloAtual: {
     alignSelf: 'flex-start',
-    backgroundColor: tema.cores.primaria,
+    backgroundColor: tema.cores.primariaFundo,
     borderRadius: tema.raio.pill,
     paddingHorizontal: tema.espacamento.md,
     paddingVertical: 5,

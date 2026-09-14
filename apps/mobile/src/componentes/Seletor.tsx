@@ -117,7 +117,7 @@ const estilos = StyleSheet.create({
     paddingVertical: 9,
     backgroundColor: tema.cores.fundoCampo,
   },
-  chipAtivo: { backgroundColor: tema.cores.primaria, borderColor: tema.cores.primaria },
+  chipAtivo: { backgroundColor: tema.cores.primariaFundo, borderColor: tema.cores.primariaFundo },
   chipTexto: { ...tema.tipografia.rotulo, color: tema.cores.textoSuave },
   chipTextoAtivo: { color: tema.cores.textoInverso },
   erro: { ...tema.tipografia.legenda, color: tema.cores.erro, marginTop: tema.espacamento.xs },

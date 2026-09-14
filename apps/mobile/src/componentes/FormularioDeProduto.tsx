@@ -173,6 +173,7 @@ export function FormularioDeProduto({
           rotulo="Quantidade inicial em estoque"
           valor={valores.quantidadeInicial}
           aoMudar={(v) => definir('quantidadeInicial', v.replace(/[^0-9]/g, ''))}
+          tipoTeclado="number-pad"
           erro={erros.quantidadeInicial}
           bloqueado={bloqueado}
         />

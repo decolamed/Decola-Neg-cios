@@ -6,9 +6,30 @@
  * documento uma única vez — assim o painel e o app cliente mudam juntos quando
  * a paleta mudar, e o CSS continua sendo CSS.
  */
-import tema from '@decola/theme';
+import tema, { aplicarAparencia, instalarCoresDoTema } from '@decola/theme';
 
 export function aplicarTokens(): void {
+  /**
+   * PRIMEIRO as variáveis do tema, depois as pontes daqui.
+   *
+   * As cores do pacote agora são `var(--dn-*)` no navegador, para que o app
+   * possa trocar entre claro e escuro sem reescrever os estilos das telas. As
+   * linhas abaixo passam a escrever `--cor-fundo: var(--dn-fundo)` — uma
+   * indireção que só resolve se `--dn-fundo` existir. Sem esta instalação, toda
+   * cor daqui viraria nada.
+   */
+  instalarCoresDoTema();
+
+  /**
+   * E AQUI FICA NO CLARO, explicitamente.
+   *
+   * O tema escuro é do aplicativo, onde a pessoa escolhe. Deixar a vitrine
+   * pública e o painel seguirem o sistema faria a loja de cada lojista mudar de
+   * cara para metade dos visitantes, sem ninguém ter pedido e sem ninguém ter
+   * olhado o resultado. Quando isso for desejado, é trocar esta linha.
+   */
+  aplicarAparencia('claro', false);
+
   const raiz = document.documentElement.style;
 
   for (const [nome, valor] of Object.entries(tema.cores)) {

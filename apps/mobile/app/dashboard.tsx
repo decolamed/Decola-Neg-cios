@@ -15,11 +15,13 @@ import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'r
 import { SafeAreaView } from 'react-native-safe-area-context';
 import tema from '@decola/theme';
 import { Aviso } from '@/componentes/Aviso';
+import { CartaoDaLoja } from '@/componentes/CartaoDaLoja';
 import { TelaCarregando, TelaMensagem } from '@/componentes/EstadoDaTela';
 import { Icone, LadrilhoDeIcone, type NomeDeIcone } from '@/componentes/Icone';
 import { MenuInferior } from '@/componentes/MenuInferior';
 import { useSessao } from '@/contexto/SessaoContexto';
 import { carregarResumo, observarAvisos, type ResumoDoDashboard } from '@/dados/dashboard';
+import { enderecoCompleto } from '@/dados/loja';
 import { moeda } from '@/lib/formato';
 import { textoDoErro } from '@/lib/erros';
 
@@ -193,6 +195,20 @@ export default function Dashboard() {
             aoTocar={() => router.push('/estoque-baixo')}
           />
         </View>
+
+        {/* A loja fica AQUI, e não em Configurações. Mandar o link para um
+            cliente é a venda começando — não é um ajuste que se faz uma vez.
+            Só o Gestor vê: publicar e mudar a aparência são ações dele. */}
+        {conta.ehGestor ? (
+          <CartaoDaLoja
+            nomeDaEmpresa={conta.empresa.nome}
+            link={
+              conta.empresa.loja_slug && conta.empresa.loja_ativa
+                ? enderecoCompleto(conta.empresa.loja_slug)
+                : null
+            }
+          />
+        ) : null}
       </ScrollView>
 
       <MenuInferior />
@@ -287,7 +303,7 @@ const estilos = StyleSheet.create({
   grade: { flexDirection: 'row', flexWrap: 'wrap', gap: tema.espacamento.md },
   cardDestaque: {
     flexBasis: '100%',
-    backgroundColor: tema.cores.primaria,
+    backgroundColor: tema.cores.primariaFundo,
     borderRadius: tema.raio.lg,
     padding: tema.espacamento.lg,
     ...tema.elevacao.card,

@@ -140,7 +140,7 @@ const estilos = StyleSheet.create({
     paddingVertical: tema.espacamento.sm,
     backgroundColor: tema.cores.superficie,
   },
-  opcaoAtiva: { backgroundColor: tema.cores.primaria, borderColor: tema.cores.primaria },
+  opcaoAtiva: { backgroundColor: tema.cores.primariaFundo, borderColor: tema.cores.primariaFundo },
   opcaoTexto: { ...tema.tipografia.legenda, color: tema.cores.texto },
   opcaoTextoAtivo: { color: tema.cores.textoInverso },
   erro: { ...tema.tipografia.legenda, color: tema.cores.erro, marginTop: tema.espacamento.xs },

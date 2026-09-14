@@ -20,6 +20,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import tema from '@decola/theme';
 import { Aviso } from '@/componentes/Aviso';
 import { Botao } from '@/componentes/Botao';
+import { CampoQuantidade } from '@/componentes/CampoQuantidade';
 import { CampoTexto } from '@/componentes/CampoTexto';
 import { LadrilhoDeIcone } from '@/componentes/Icone';
 import { PainelDeDesconto } from '@/componentes/PainelDeDesconto';
@@ -343,15 +344,11 @@ function ItemCarrinho({
           <Text style={estilos.simbolo}>−</Text>
         </Pressable>
 
-        <CampoTexto
-          rotulo=""
+        <CampoQuantidade
           estilo={estilos.campoQuantidade}
-          centralizado
-          valor={String(item.quantidade)}
-          aoMudar={(texto) => {
-            const numero = Number(texto.replace(/[^0-9]/g, ''));
-            aoAlterar(Number.isFinite(numero) ? numero : 0);
-          }}
+          valor={item.quantidade}
+          aoMudar={aoAlterar}
+          rotuloAcessivel={`Quantidade de ${item.nome}`}
         />
 
         <Pressable

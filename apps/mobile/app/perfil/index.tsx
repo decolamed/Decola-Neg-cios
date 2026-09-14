@@ -10,11 +10,13 @@ import { useState } from 'react';
 import { router } from 'expo-router';
 import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import tema from '@decola/theme';
+import tema, { type Aparencia } from '@decola/theme';
 import { Aviso } from '@/componentes/Aviso';
 import { TelaCarregando, TelaMensagem } from '@/componentes/EstadoDaTela';
 import { Icone, LadrilhoDeIcone, type NomeDeIcone } from '@/componentes/Icone';
 import { AssinaturaDecola } from '@/componentes/Marca';
+import { Seletor } from '@/componentes/Seletor';
+import { useAparencia } from '@/contexto/AparenciaContexto';
 import { useSessao } from '@/contexto/SessaoContexto';
 import { ROTULO_PAPEL } from '@/dados/funcionarios';
 import { EMAIL_SUPORTE } from '@/dados/planos';
@@ -40,6 +42,7 @@ function iniciais(nome: string): string {
 
 export default function Perfil() {
   const { carregando, conta, sessao, erro, recarregar, sair } = useSessao();
+  const { aparencia, emVigor, escolher } = useAparencia();
   const [avisoSuporte, setAvisoSuporte] = useState<string | null>(null);
 
   if (carregando) return <TelaCarregando />;
@@ -143,6 +146,34 @@ export default function Perfil() {
 
         {avisoSuporte ? <Aviso mensagem={avisoSuporte} tom="alerta" /> : null}
 
+        {/**
+          * A escolha do tema fica AQUI, à vista, e não atrás de mais um toque.
+          *
+          * Três opções em vez de um interruptor: "Automático" respeita o que a
+          * pessoa já configurou no aparelho, e as outras duas existem para quem
+          * quer o contrário disso — trabalhar no claro com o celular no escuro,
+          * por exemplo. Um interruptor de dois estados não saberia dizer a
+          * diferença entre "quero claro" e "ainda não escolhi".
+          */}
+        <View style={estilos.blocoTema}>
+          <Seletor
+            rotulo="Aparência"
+            opcoes={[
+              { valor: 'sistema', rotulo: 'Automático' },
+              { valor: 'claro', rotulo: 'Claro' },
+              { valor: 'escuro', rotulo: 'Escuro' },
+            ]}
+            selecionado={aparencia}
+            aoSelecionar={(v) => escolher((v ?? 'sistema') as Aparencia)}
+            horizontal
+          />
+          <Text style={estilos.notaTema}>
+            {aparencia === 'sistema'
+              ? `Seguindo o aparelho — agora está ${emVigor}.`
+              : 'Vale só neste aparelho.'}
+          </Text>
+        </View>
+
         {itens.map((item) => (
           <Pressable
             key={item.titulo}
@@ -180,7 +211,7 @@ const estilos = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: tema.cores.primaria,
+    backgroundColor: tema.cores.primariaFundo,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: tema.espacamento.md,
@@ -204,4 +235,12 @@ const estilos = StyleSheet.create({
   itemTituloDestrutivo: { color: tema.cores.destrutiva },
   itemDescricao: { ...tema.tipografia.legenda, color: tema.cores.textoSuave, marginTop: 2 },
   rodape: { marginTop: tema.espacamento.xl },
+  blocoTema: {
+    backgroundColor: tema.cores.fundoCard,
+    borderRadius: tema.raio.lg,
+    padding: tema.espacamento.md,
+    marginBottom: tema.espacamento.sm,
+    ...tema.elevacao.card,
+  },
+  notaTema: { ...tema.tipografia.legenda, color: tema.cores.textoSuave },
 });

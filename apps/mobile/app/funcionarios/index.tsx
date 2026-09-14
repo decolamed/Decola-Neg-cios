@@ -227,7 +227,7 @@ const estilos = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: tema.raio.pill,
-    backgroundColor: tema.cores.primaria,
+    backgroundColor: tema.cores.primariaFundo,
     alignItems: 'center',
     justifyContent: 'center',
   },

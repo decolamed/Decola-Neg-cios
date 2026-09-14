@@ -194,6 +194,7 @@ export default function CadastroRapido() {
             rotulo="Quantidade em estoque *"
             valor={quantidade}
             aoMudar={(v) => setQuantidade(v.replace(/[^0-9]/g, ''))}
+            tipoTeclado="number-pad"
             erro={erros.quantidade}
             bloqueado={salvando}
           />

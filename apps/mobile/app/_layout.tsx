@@ -8,6 +8,7 @@ import { Cabecalho } from '@/componentes/Cabecalho';
 import { HospedeiroDeDialogos } from '@/componentes/Dialogos';
 import { TelaCarregando } from '@/componentes/EstadoDaTela';
 import { TelaQueFalhou } from '@/componentes/TelaQueFalhou';
+import { ProvedorDeAparencia, useAparencia } from '@/contexto/AparenciaContexto';
 import { ProvedorDeCarrinho } from '@/contexto/CarrinhoContexto';
 import { ProvedorDeSessao } from '@/contexto/SessaoContexto';
 import {
@@ -70,9 +71,12 @@ export default function LayoutRaiz() {
 
   return (
     <SafeAreaProvider>
+      {/* A aparência envolve tudo: ela instala as variáveis de cor antes de
+          qualquer tela pintar, e a barra de status lá dentro precisa dela. */}
+      <ProvedorDeAparencia>
       <ProvedorDeSessao>
         <ProvedorDeCarrinho>
-          <StatusBar style="dark" />
+          <BarraDeStatus />
           {aguardandoFontes ? (
             <TelaCarregando comMarca />
           ) : (
@@ -93,6 +97,18 @@ export default function LayoutRaiz() {
           <HospedeiroDeDialogos />
         </ProvedorDeCarrinho>
       </ProvedorDeSessao>
+      </ProvedorDeAparencia>
     </SafeAreaProvider>
   );
+}
+
+/**
+ * A barra do sistema acompanha o tema.
+ *
+ * Ícones escuros sobre a barra clara, claros sobre a escura — sem isto, no tema
+ * escuro a hora e a bateria somem no topo da tela.
+ */
+function BarraDeStatus() {
+  const { emVigor } = useAparencia();
+  return <StatusBar style={emVigor === 'escuro' ? 'light' : 'dark'} />;
 }

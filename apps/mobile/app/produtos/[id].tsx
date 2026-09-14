@@ -287,6 +287,7 @@ export default function DetalhesDoProduto() {
               rotulo="Quantidade"
               valor={quantidade}
               aoMudar={(v) => setQuantidade(v.replace(/[^0-9]/g, ''))}
+              tipoTeclado="number-pad"
               erro={erroQuantidade}
               bloqueado={processando}
             />

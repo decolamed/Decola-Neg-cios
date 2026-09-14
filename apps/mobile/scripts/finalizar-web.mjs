@@ -48,6 +48,26 @@ const TAGS = `
          aparecia como um flash claro antes do amarelo. */
       html, body { background-color: #F2B532; }
     </style>
+    <script>
+      /* O TEMA ESCOLHIDO, ANTES DA PRIMEIRA PINTURA.
+       *
+       * A preferência é lida pelo app em JavaScript, e o JavaScript só roda
+       * depois de o pacote baixar. Quem escolheu o tema escuro veria, nesse
+       * intervalo, um lampejo claro a cada abertura — o defeito que todo site
+       * com tema escuro tem quando aplica a escolha tarde demais.
+       *
+       * Este trecho é minúsculo e roda inline, antes do resto: lê a mesma chave
+       * que o app grava e marca o elemento raiz. O CSS do tema faz o resto.
+       * Envolto em try/catch porque em janela anônima o armazenamento pode
+       * simplesmente lançar — e um erro aqui pararia a página inteira.
+       */
+      try {
+        var escolha = localStorage.getItem('decola:aparencia');
+        if (escolha === 'claro' || escolha === 'escuro') {
+          document.documentElement.setAttribute('data-tema', escolha);
+        }
+      } catch (e) {}
+    </script>
 `;
 
 let html = readFileSync(arquivo, 'utf8');

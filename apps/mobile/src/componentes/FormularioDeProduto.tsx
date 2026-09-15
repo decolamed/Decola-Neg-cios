@@ -275,6 +275,10 @@ export function FormularioDeProduto({
             valor={valores.descricao}
             aoMudar={(v) => definir('descricao', v)}
             bloqueado={bloqueado}
+            /* O catálogo devolve descrição com quebras de linha (o que é, a
+               ficha, os ingredientes). Numa caixa de uma linha o lojista via
+               um pedaço e não tinha como conferir o resto. */
+            multiplasLinhas
             placeholder="O que o cliente precisa saber sobre o produto"
           />
 

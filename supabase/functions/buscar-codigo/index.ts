@@ -25,10 +25,19 @@
  * O PREÇO NÃO VEM DE LUGAR NENHUM. É de cada loja, e sugerir o preço de outra
  * pessoa seria o pior tipo de ajuda.
  *
- * NOTA SOBRE ESTE ARQUIVO E O QUE ESTÁ NO AR: são o mesmo código, com este
- * cabeçalho mais longo. A função publicada leva um resumo dele; as notas sobre
- * os defeitos encontrados (o dígito verificador e o `Accept` da imagem) estão
- * nos dois, porque são elas que impedem a volta.
+ * O NOME QUE VOLTA É O COMPLETO. As bases guardam o nome curto num campo e a
+ * marca noutro — a creatina da Integral Médica chega como "Creatina". Nome e
+ * descrição são MONTADOS na resposta, a partir das peças guardadas, e não
+ * gravados prontos: assim toda melhoria na montagem vale também para os
+ * códigos que já estão no catálogo, sem consultar ninguém de novo.
+ *
+ * NOTA SOBRE ESTE ARQUIVO E O QUE ESTÁ NO AR. Este arquivo é a fonte: a versão
+ * publicada é gerada dele, inteiro, e não mais um resumo com o cabeçalho
+ * cortado — um publicado diferente do versionado torna impossível conferir de
+ * fora o que está rodando. Quem alterar aqui precisa publicar de novo; o que
+ * garante que bateu não é a semelhança do texto, é rodar a função e conferir a
+ * resposta (foi assim que o nome completo e a descrição foram verificados,
+ * contra os códigos reais 7891000100103 e 7896311708314).
  */
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
 
@@ -102,6 +111,139 @@ function texto(valor: unknown): string | null {
   return limpo === '' ? null : limpo;
 }
 
+/* ================================ nome completo e descrição ============== */
+
+/** Sem acento, sem pontuação, minúsculo — para comparar texto de gente. */
+function achatar(t: string): string {
+  return t
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim();
+}
+
+/** "Nestlé, Moça" → "Nestlé". A primeira marca é a marca; o resto é submarca. */
+function marcaPrincipal(marca: string | null): string | null {
+  return texto(marca?.split(',')[0] ?? null);
+}
+
+/**
+ * O NOME QUE O LOJISTA QUER VER.
+ *
+ * As bases guardam o nome curto num campo e a marca noutro: a Creatina da
+ * Integral Médica chega como nome "Creatina" e marca "Integral Medica". Ver
+ * "Creatina" sozinho no cadastro é pior do que parece — é o nome que vai para
+ * a etiqueta e para a vitrine, e numa loja com três creatinas ele não
+ * distingue nada.
+ *
+ * A montagem só ACRESCENTA o que ainda não está escrito. "Leite Condensado
+ * Integral moça" da marca "Nestlé, Moça" não vira "...moça Nestlé Moça": a
+ * palavra já está lá.
+ *
+ * É montado na RESPOSTA, e não gravado: o que fica guardado são as peças, como
+ * a base devolveu. Assim toda melhoria aqui vale também para os códigos que já
+ * estão no catálogo, sem precisar consultar ninguém de novo.
+ */
+function nomeCompleto(
+  nome: string,
+  marca: string | null,
+  dados: Record<string, unknown>,
+): string {
+  const jaTem = achatar(nome).split(' ');
+  const pedacos = [nome];
+
+  const primeira = marcaPrincipal(marca);
+  if (primeira) {
+    const faltando = achatar(primeira)
+      .split(' ')
+      .filter((p) => p && !jaTem.includes(p));
+    // Só entra a marca se ela acrescenta ALGUMA palavra nova — e entra
+    // inteira, porque "Integral" sem "Medica" seria pior que nada.
+    if (faltando.length > 0) pedacos.push(primeira);
+  }
+
+  const quantidade = texto(dados.quantidade as string | undefined);
+  if (quantidade && !achatar(nome).includes(achatar(quantidade))) pedacos.push(quantidade);
+
+  return pedacos.join(' ');
+}
+
+/**
+ * A descrição, para a vitrine.
+ *
+ * O produto do catálogo vai ser exibido na loja online, e uma ficha com só um
+ * nome vende menos que uma com o que a coisa é e quanto vem dentro. O que
+ * existir é aproveitado; o que não existir simplesmente não é escrito — nada
+ * aqui é preenchido com suposição.
+ *
+ * A CATEGORIA FICA DE FORA de propósito: as bases abertas devolvem em inglês
+ * ("Bodybuilding supplements", "Condensed milks"), e inglês na vitrine de um
+ * mercadinho brasileiro é pior que silêncio. Ela continua vindo à parte, para
+ * o lojista, mas não entra no texto que o cliente lê.
+ */
+function descricaoDoProduto(
+  nome: string,
+  marca: string | null,
+  dados: Record<string, unknown>,
+): string | null {
+  const linhas: string[] = [];
+
+  // O que a coisa É, quando a base sabe dizer melhor que o nome comercial.
+  const generico = texto(dados.generico as string | undefined);
+  if (generico && achatar(generico) !== achatar(nome)) linhas.push(`${generico}.`);
+
+  const ficha: string[] = [];
+  const primeira = marcaPrincipal(marca);
+  if (primeira) ficha.push(`Marca: ${primeira}`);
+
+  const quantidade = texto(dados.quantidade as string | undefined);
+  if (quantidade) ficha.push(`Conteúdo: ${quantidade}`);
+
+  const porcao = texto(dados.porcao as string | undefined);
+  if (porcao) ficha.push(`Porção: ${porcao}`);
+
+  const modelo = texto(dados.modelo as string | undefined);
+  if (modelo) ficha.push(`Modelo: ${modelo}`);
+
+  const tamanho = texto(dados.tamanho as string | undefined);
+  if (tamanho) ficha.push(`Tamanho: ${tamanho}`);
+
+  const cor = texto(dados.cor as string | undefined);
+  if (cor) ficha.push(`Cor: ${cor}`);
+
+  if (ficha.length > 0) linhas.push(`${ficha.join('. ')}.`);
+
+  const ingredientes = texto(dados.ingredientes as string | undefined);
+  if (ingredientes) linhas.push(`Ingredientes: ${ingredientes}`);
+
+  // A descrição livre do UPCitemdb vem por último: é a menos previsível.
+  const livre = texto(dados.descricao as string | undefined);
+  if (livre && achatar(livre) !== achatar(nome)) linhas.push(livre);
+
+  return linhas.length > 0 ? linhas.join('\n') : null;
+}
+
+/** A forma final, montada a partir das peças guardadas. */
+function paraOAplicativo(linha: {
+  codigo: string;
+  nome: string;
+  marca: string | null;
+  categoria: string | null;
+  imagem: string | null;
+  dados?: Record<string, unknown> | null;
+}) {
+  const dados = linha.dados ?? {};
+  return {
+    codigo: linha.codigo,
+    nome: nomeCompleto(linha.nome, linha.marca, dados),
+    marca: marcaPrincipal(linha.marca),
+    categoria: linha.categoria,
+    descricao: descricaoDoProduto(linha.nome, linha.marca, dados),
+    imagem: linha.imagem,
+  };
+}
+
 /** Tempo máximo de espera por uma API externa. */
 const PACIENCIA_MS = 6000;
 
@@ -164,7 +306,10 @@ async function nasBasesAbertas(codigo: string): Promise<Achado | null> {
   for (const base of BASES_ABERTAS) {
     const resposta = await buscar(
       `https://${base.host}/api/v2/product/${codigo}.json` +
-        '?fields=product_name,product_name_pt,brands,categories,image_front_url,image_url,quantity',
+        '?fields=product_name,product_name_pt,brands,categories,image_front_url,image_url,quantity' +
+        // Para a descrição da vitrine. `generic_name` é o que a coisa É
+        // ("Leite Condensado"), separado do nome comercial ("Moça").
+        ',generic_name,generic_name_pt,ingredients_text,ingredients_text_pt,serving_size',
     );
     if (!resposta?.ok) continue;
 
@@ -192,7 +337,12 @@ async function nasBasesAbertas(codigo: string): Promise<Achado | null> {
       categoria: texto(produto.categories)?.split(',')[0]?.trim() ?? null,
       imagem: texto(produto.image_front_url) ?? texto(produto.image_url),
       origem: base.nome,
-      dados: { quantidade: texto(produto.quantity) },
+      dados: {
+        quantidade: texto(produto.quantity),
+        generico: texto(produto.generic_name_pt) ?? texto(produto.generic_name),
+        ingredientes: texto(produto.ingredients_text_pt) ?? texto(produto.ingredients_text),
+        porcao: texto(produto.serving_size),
+      },
     };
   }
   return null;
@@ -229,7 +379,12 @@ async function noUpcItemDb(codigo: string): Promise<Achado | null> {
     categoria: texto(item.category)?.split('>').pop()?.trim() ?? null,
     imagem: texto(imagens[0]),
     origem: 'upcitemdb',
-    dados: { modelo: texto(item.model) },
+    dados: {
+      modelo: texto(item.model),
+      descricao: texto(item.description),
+      tamanho: texto(item.size),
+      cor: texto(item.color),
+    },
   };
 }
 
@@ -373,7 +528,10 @@ Deno.serve(async (requisicao) => {
   // ------------------------------------------- 1. o catálogo da Decola
   const { data: guardado, error: erroDeLeitura } = await admin
     .from('catalogo_codigos')
-    .select('codigo, nome, marca, categoria, imagem, origem')
+    // `dados` entra na leitura porque o nome completo e a descrição são
+    // MONTADOS na resposta, a partir das peças. Sem ele, um código que já está
+    // no catálogo voltaria mais pobre que um recém-consultado.
+    .select('codigo, nome, marca, categoria, imagem, origem, dados')
     .eq('codigo', codigo)
     .maybeSingle();
 
@@ -386,7 +544,8 @@ Deno.serve(async (requisicao) => {
   }
 
   if (guardado) {
-    return responder({ encontrado: true, origem: 'decola', produto: guardado });
+    const linha = guardado as unknown as Parameters<typeof paraOAplicativo>[0];
+    return responder({ encontrado: true, origem: 'decola', produto: paraOAplicativo(linha) });
   }
 
   // --------------------------------------------- 2 e 3. as APIs externas
@@ -423,12 +582,6 @@ Deno.serve(async (requisicao) => {
   return responder({
     encontrado: true,
     origem: achado.origem,
-    produto: {
-      codigo: achado.codigo,
-      nome: achado.nome,
-      marca: achado.marca,
-      categoria: achado.categoria,
-      imagem,
-    },
+    produto: paraOAplicativo({ ...achado, imagem }),
   });
 });

@@ -28,6 +28,15 @@ type Props = {
   /** Texto centralizado — usado em campos curtos, como quantidade. */
   centralizado?: boolean;
   /**
+   * Texto de mais de uma linha, com o campo alto o suficiente para mostrá-las.
+   *
+   * A descrição da vitrine passou a chegar pronta do catálogo, com quebras de
+   * linha (o que o produto é, a ficha, os ingredientes). Numa caixa de uma
+   * linha o lojista via um pedaço e não tinha como conferir o resto sem
+   * arrastar o cursor pelo texto inteiro.
+   */
+  multiplasLinhas?: boolean;
+  /**
    * Muda de valor e o campo recebe o foco.
    *
    * Um NÚMERO, e não um booleano: no cadastro rápido o foco volta para o mesmo
@@ -58,6 +67,7 @@ export function CampoTexto({
   autoCompletar = 'off',
   estilo,
   centralizado = false,
+  multiplasLinhas = false,
   focarQuando,
   aoConfirmar,
 }: Props) {
@@ -90,8 +100,11 @@ export function CampoTexto({
           ref={campo}
           value={valor}
           onChangeText={aoMudar}
-          returnKeyType={aoConfirmar ? 'done' : undefined}
-          onSubmitEditing={aoConfirmar}
+          multiline={multiplasLinhas}
+          /* Num campo de várias linhas o "done" seria a tecla de nova linha, e
+             sequestrá-la impediria o lojista de quebrar o texto dele. */
+          returnKeyType={aoConfirmar && !multiplasLinhas ? 'done' : undefined}
+          onSubmitEditing={multiplasLinhas ? undefined : aoConfirmar}
           onBlur={aoConfirmar}
           editable={!bloqueado}
           placeholder={placeholder}
@@ -101,7 +114,11 @@ export function CampoTexto({
           autoCapitalize={tipoTeclado === 'default' ? 'sentences' : 'none'}
           autoCorrect={false}
           autoComplete={autoCompletar}
-          style={[estilos.input, centralizado && estilos.inputCentralizado]}
+          style={[
+            estilos.input,
+            centralizado && estilos.inputCentralizado,
+            multiplasLinhas && estilos.inputAlto,
+          ]}
           accessibilityLabel={rotulo}
         />
 
@@ -150,6 +167,7 @@ const estilos = StyleSheet.create({
     color: tema.cores.texto,
     paddingVertical: 0,
   },
+  inputAlto: { minHeight: 96, paddingTop: tema.espacamento.sm, textAlignVertical: 'top' },
   inputCentralizado: { ...tema.tipografia.corpoDestacado, textAlign: 'center' },
   alternar: {
     ...tema.tipografia.rotulo,

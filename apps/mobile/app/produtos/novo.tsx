@@ -38,7 +38,11 @@ import { useSessao } from '@/contexto/SessaoContexto';
 import { listarCamposAtivos, type CampoConfigurado } from '@/dados/camposProduto';
 import { Checkbox } from '@/componentes/Checkbox';
 import { listarCategorias, type Categoria } from '@/dados/categorias';
-import { consultarCatalogo } from '@/dados/catalogoDeCodigos';
+import {
+  consultarCatalogo,
+  ehOMesmoProduto,
+  type ProdutoDoCatalogo,
+} from '@/dados/catalogoDeCodigos';
 import { salvarImagensDoProduto } from '@/dados/imagensProduto';
 import {
   buscarProdutoPorCodigoParaCadastro,
@@ -72,7 +76,7 @@ export default function NovoProduto() {
    * de a pessoa ter preenchido tudo.
    */
   const [existente, setExistente] = useState<ProdutoComStatus | null>(null);
-  const [doCatalogo, setDoCatalogo] = useState<{ nome: string; marca: string | null; imagem: string | null } | null>(null);
+  const [doCatalogo, setDoCatalogo] = useState<ProdutoDoCatalogo | null>(null);
   const [semResultado, setSemResultado] = useState(false);
   const [buscandoCodigo, setBuscandoCodigo] = useState(false);
 
@@ -162,10 +166,32 @@ export default function NovoProduto() {
           return;
         }
 
-        setDoCatalogo({ nome: achado.nome, marca: achado.marca, imagem: achado.imagem });
-        // Só preenche o nome se ele estiver VAZIO. Quem já digitou não quer ver
-        // o próprio texto ser substituído por um do catálogo.
-        setValores((atual) => (atual.nome.trim() ? atual : { ...atual, nome: achado.nome }));
+        setDoCatalogo(achado);
+
+        /**
+         * O QUE O CATÁLOGO SABE PREVALECE — quando é o mesmo produto.
+         *
+         * Campo vazio é fácil: preenche. O caso que importa é o outro: quem
+         * digitou "Creatina" e bipou a Integral Médica escreveu o mesmo
+         * produto com menos palavras, e o nome completo é melhor do que o dele
+         * em todo lugar que importa (etiqueta, busca do estoque, vitrine).
+         *
+         * MAS SÓ QUANDO BATE. Se o que ele escreveu não aparece no nome do
+         * catálogo, o texto dele fica — trocar seria apagar trabalho por conta
+         * própria, e a tela oferece a troca num botão logo abaixo.
+         *
+         * A DESCRIÇÃO só é preenchida se estiver vazia: ela é dele, e é o campo
+         * onde o lojista escreve o que quer que o cliente leia.
+         */
+        setValores((atual) => {
+          const meu = atual.nome.trim();
+          const trocarNome = meu === '' || ehOMesmoProduto(meu, achado.nome);
+          return {
+            ...atual,
+            nome: trocarNome ? achado.nome : atual.nome,
+            descricao: atual.descricao.trim() ? atual.descricao : (achado.descricao ?? ''),
+          };
+        });
         setErros((atual) => ({ ...atual, nome: null }));
       } catch (e) {
         // Procurar é conveniência: falhar aqui não pode impedir o cadastro.
@@ -347,12 +373,27 @@ export default function NovoProduto() {
       ) : null}
       <View style={estilos.faixaCorpo}>
         <Text style={estilos.faixaTitulo}>Encontrado pelo código</Text>
+        <Text style={estilos.faixaTexto}>{doCatalogo.nome}</Text>
+        {/* O nome do catálogo não entrou porque o que estava escrito é outro
+            produto. A troca fica à mão, mas é decisão de quem digitou — a tela
+            não apaga o trabalho de ninguém por conta própria. */}
+        {valores.nome.trim() !== doCatalogo.nome ? (
+          <Pressable
+            onPress={() =>
+              setValores((atual) => ({
+                ...atual,
+                nome: doCatalogo.nome,
+                descricao: atual.descricao.trim() ? atual.descricao : (doCatalogo.descricao ?? ''),
+              }))
+            }
+          >
+            <Text style={estilos.faixaLink}>Usar este nome</Text>
+          </Pressable>
+        ) : null}
         <Text style={estilos.faixaTexto}>
-          {doCatalogo.nome}
-          {doCatalogo.marca ? ` · ${doCatalogo.marca}` : ''}
-        </Text>
-        <Text style={estilos.faixaTexto}>
-          Confira o nome e informe o preço — o preço é sempre seu.
+          {doCatalogo.descricao
+            ? 'Nome e descrição vieram daqui. Confira e informe o preço — o preço é sempre seu.'
+            : 'Confira o nome e informe o preço — o preço é sempre seu.'}
         </Text>
       </View>
     </View>

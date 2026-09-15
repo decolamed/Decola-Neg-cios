@@ -429,3 +429,19 @@ export {
   temaEmVigor,
   type Aparencia,
 } from './aparencia';
+
+/**
+ * A paleta da vitrine, derivada das três cores do lojista.
+ *
+ * Fica exportada daqui para o site e o aplicativo lerem a MESMA conta — a
+ * vitrine pinta, a prévia promete, e as duas têm de dizer a mesma coisa.
+ */
+export {
+  CORES_PADRAO,
+  contraste,
+  corValida as corDeLojaValida,
+  paletaDaLoja,
+  textoAutomatico,
+  type CoresEscolhidas,
+  type PaletaDaLoja,
+} from './paletaDaLoja';

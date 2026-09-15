@@ -99,8 +99,17 @@ export type Empresa = {
   // -- Personalização da vitrine (0043) ------------------------------------
   /** Nome exibido na loja. Nulo significa usar `nome`. */
   loja_nome: string | null;
-  /** Cor de destaque em #RRGGBB. Nula significa a cor da plataforma. */
+  /** Cor de DESTAQUE em #RRGGBB. Nula significa a cor da plataforma. */
   loja_cor: string | null;
+  /**
+   * Fundo e texto da vitrine (0061). Nulos = o padrão do desenho.
+   *
+   * São só três cores porque as outras nove que a loja usa são derivadas delas
+   * no site, com o contraste conferido antes de aplicar — ver
+   * `apps/site/src/dados/paleta.ts`.
+   */
+  loja_cor_fundo: string | null;
+  loja_cor_texto: string | null;
   /** Banners do carrossel, em ordem. Caminhos no bucket `loja`. */
   loja_banners: BannerDaLoja[];
   /** Interruptor do carrossel, separado da lista: desligar não apaga. */

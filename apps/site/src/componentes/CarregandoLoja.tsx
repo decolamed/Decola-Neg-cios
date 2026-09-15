@@ -25,7 +25,7 @@
  * a resposta não chega.
  */
 import { useEffect, useState } from 'react';
-import { CORES_PADRAO, corValida } from '@/dados/paleta';
+import { CORES_PADRAO, corDeLojaValida } from '@decola/theme';
 
 const CHAVE = 'decola-cara-da-loja';
 
@@ -70,7 +70,7 @@ export function lembrarCaraDaLoja(slug: string, cara: CaraDaLoja): void {
 export function caraDaLojaGuardada(slug: string | undefined): CaraDaLoja | null {
   if (!slug) return null;
   const guardada = ler()[slug.toLowerCase()];
-  if (!guardada || !corValida(guardada.destaque) || !corValida(guardada.fundo)) return null;
+  if (!guardada || !corDeLojaValida(guardada.destaque) || !corDeLojaValida(guardada.fundo)) return null;
   return guardada;
 }
 

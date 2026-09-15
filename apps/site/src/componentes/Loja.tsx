@@ -17,7 +17,7 @@ import {
   resumoDaSemana,
 } from '@/dados/horario';
 import { lembrarCaraDaLoja } from '@/componentes/CarregandoLoja';
-import { paletaDaLoja } from '@/dados/paleta';
+import { paletaDaLoja } from '@decola/theme';
 import {
   moeda,
   urlDaImagem,

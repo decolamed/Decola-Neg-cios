@@ -63,6 +63,9 @@ export type PersonalizacaoDaLoja = {
   loja_nome: string | null;
   logo_url: string | null;
   loja_cor: string | null;
+  /** Fundo e texto da vitrine (0061). Nulos = o padrão do desenho. */
+  loja_cor_fundo: string | null;
+  loja_cor_texto: string | null;
   loja_banners: BannerDaLoja[];
   loja_banners_ativos: boolean;
 };
@@ -209,6 +212,8 @@ export function extrairPersonalizacao(empresa: Empresa): PersonalizacaoDaLoja {
     loja_nome: empresa.loja_nome,
     logo_url: empresa.logo_url,
     loja_cor: empresa.loja_cor,
+    loja_cor_fundo: empresa.loja_cor_fundo,
+    loja_cor_texto: empresa.loja_cor_texto,
     loja_banners: Array.isArray(empresa.loja_banners) ? empresa.loja_banners : [],
     loja_banners_ativos: empresa.loja_banners_ativos,
   };
@@ -226,6 +231,8 @@ export async function salvarPersonalizacao(
       loja_nome: dados.loja_nome?.trim() || null,
       logo_url: dados.logo_url,
       loja_cor: dados.loja_cor,
+      loja_cor_fundo: dados.loja_cor_fundo,
+      loja_cor_texto: dados.loja_cor_texto,
       loja_banners: dados.loja_banners,
       loja_banners_ativos: dados.loja_banners_ativos,
     })
@@ -233,7 +240,11 @@ export async function salvarPersonalizacao(
 
   if (error) {
     const texto = error.message.toLowerCase();
-    if (texto.includes('empresas_loja_cor_formato')) {
+    if (
+      texto.includes('empresas_loja_cor_fundo_formato') ||
+      texto.includes('empresas_loja_cor_texto_formato') ||
+      texto.includes('empresas_loja_cor_formato')
+    ) {
       throw new Error('A cor precisa estar no formato #RRGGBB.');
     }
     if (texto.includes('empresas_loja_banners_formato')) {

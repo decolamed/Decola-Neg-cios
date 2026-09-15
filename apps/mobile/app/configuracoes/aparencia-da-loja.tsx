@@ -13,9 +13,10 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import tema from '@decola/theme';
+import tema, { paletaDaLoja } from '@decola/theme';
 import type { BannerDaLoja } from '@decola/types';
 import { AjustarImagem } from '@/componentes/AjustarImagem';
+import { SeletorDeCor } from '@/componentes/SeletorDeCor';
 import { Aviso } from '@/componentes/Aviso';
 import { Botao } from '@/componentes/Botao';
 import { CampoTexto } from '@/componentes/CampoTexto';
@@ -50,12 +51,23 @@ type EmAjuste = {
   altura: number;
 };
 
+/**
+ * O que vale quando o lojista não escolheu nada — os mesmos valores que o site
+ * usa em `paletaDaLoja`. Escritos aqui porque o aplicativo precisa MOSTRAR o
+ * ponto de partida no seletor, e não dá para perguntar ao site.
+ */
+const PADRAO_DESTAQUE = '#01395E';
+const PADRAO_FUNDO = '#EEF3F9';
+const PADRAO_TEXTO = '#10283F';
+
 export default function AparenciaDaLoja() {
   const { carregando, conta, podeEscrever, recarregar } = useSessao();
 
   const [nome, setNome] = useState('');
   const [logo, setLogo] = useState<string | null>(null);
   const [cor, setCor] = useState<string | null>(null);
+  const [corFundo, setCorFundo] = useState<string | null>(null);
+  const [corTexto, setCorTexto] = useState<string | null>(null);
   const [banners, setBanners] = useState<BannerDaLoja[]>([]);
   const [emAjuste, setEmAjuste] = useState<EmAjuste | null>(null);
   const [bannersAtivos, setBannersAtivos] = useState(true);
@@ -70,6 +82,8 @@ export default function AparenciaDaLoja() {
     setNome(atual.loja_nome ?? '');
     setLogo(atual.logo_url);
     setCor(atual.loja_cor);
+    setCorFundo(atual.loja_cor_fundo);
+    setCorTexto(atual.loja_cor_texto);
     setBanners(atual.loja_banners);
     setBannersAtivos(atual.loja_banners_ativos);
   }, [conta?.empresa.id]);
@@ -85,6 +99,8 @@ export default function AparenciaDaLoja() {
           loja_nome: nome.trim() || null,
           logo_url: parcial?.logo !== undefined ? parcial.logo : logo,
           loja_cor: cor,
+          loja_cor_fundo: corFundo,
+          loja_cor_texto: corTexto,
           loja_banners: parcial?.banners ?? banners,
           loja_banners_ativos: bannersAtivos,
         });
@@ -96,7 +112,10 @@ export default function AparenciaDaLoja() {
         setOcupado(false);
       }
     },
-    [conta, nome, logo, cor, banners, bannersAtivos, recarregar],
+    // `corFundo` e `corTexto` PRECISAM estar aqui. Sem elas, `salvar` fica
+    // preso ao valor de quando foi criado: a tela mostrava as três cores
+    // escolhidas e gravava só a de destaque, sem erro nenhum na tela.
+    [conta, nome, logo, cor, corFundo, corTexto, banners, bannersAtivos, recarregar],
   );
 
   /**
@@ -204,8 +223,17 @@ export default function AparenciaDaLoja() {
     );
   }
 
-  const corEfetiva = cor ?? tema.cores.primaria;
-  const corDoTexto = textoSobre(corEfetiva);
+  /**
+   * A prévia usa A MESMA CONTA da vitrine.
+   *
+   * `paletaDaLoja` vem de `@decola/theme`, que é o mesmo módulo que o site
+   * consulta para pintar a loja de verdade. Refazer a derivação aqui — "o
+   * cartão é branco, o texto é escuro" — seria prometer ao lojista uma coisa e
+   * entregar outra na primeira vez que a regra mudasse.
+   */
+  const paleta = paletaDaLoja({ destaque: cor, fundo: corFundo, texto: corTexto });
+  const corEfetiva = paleta.destaque;
+  const corDoTexto = paleta.sobreBarra;
   const nomeExibido = nome.trim() || conta.empresa.nome;
   const podeAlterar = podeEscrever && !ocupado;
   const bannersCheios = banners.length >= MAXIMO_DE_BANNERS;
@@ -244,13 +272,27 @@ export default function AparenciaDaLoja() {
             />
           ) : null}
 
-          <View style={estilos.previaCorpo}>
-            <View style={estilos.previaProduto} />
-            <View style={estilos.previaProduto} />
+          <View style={[estilos.previaCorpo, { backgroundColor: paleta.fundo }]}>
+            <View style={[estilos.previaProduto, { backgroundColor: paleta.superficie }]}>
+              <View style={[estilos.previaFoto, { backgroundColor: paleta.ladrilho }]} />
+              <Text style={[estilos.previaProdutoNome, { color: paleta.tinta }]} numberOfLines={1}>
+                Produto
+              </Text>
+              <Text style={[estilos.previaPreco, { color: paleta.destaque }]}>R$ 39,90</Text>
+            </View>
+            <View style={[estilos.previaProduto, { backgroundColor: paleta.superficie }]}>
+              <View style={[estilos.previaFoto, { backgroundColor: paleta.ladrilho }]} />
+              <Text style={[estilos.previaProdutoNome, { color: paleta.tinta }]} numberOfLines={1}>
+                Produto
+              </Text>
+              <Text style={[estilos.previaPreco, { color: paleta.destaque }]}>R$ 12,00</Text>
+            </View>
           </View>
 
           <View style={[estilos.previaBotao, { backgroundColor: corEfetiva }]}>
-            <Text style={[estilos.previaBotaoTexto, { color: corDoTexto }]}>Adicionar ao carrinho</Text>
+            <Text style={[estilos.previaBotaoTexto, { color: paleta.sobreDestaque }]}>
+              Adicionar ao carrinho
+            </Text>
           </View>
         </View>
 
@@ -302,8 +344,16 @@ export default function AparenciaDaLoja() {
           </View>
         </View>
 
-        {/* ---------------------------------------------------------- cor */}
-        <Text style={estilos.rotuloSecao}>Cor de destaque</Text>
+        {/* ---------------------------------------------------------- cores */}
+        <Text style={estilos.rotuloSecao}>Cores da loja</Text>
+        <Text style={estilos.dica}>
+          Três cores bastam. Tudo o mais na loja — o branco dos cartões, as linhas, o texto
+          secundário — sai destas três, e o contraste é conferido antes de aplicar: nenhuma escolha
+          sua deixa a loja ilegível para o seu cliente.
+        </Text>
+
+        {/* As sugestões continuam, mas agora como ATALHO do seletor, não como a
+            escolha inteira. Seis lojas com a mesma cor não é personalização. */}
         <View style={estilos.paleta}>
           {CORES_SUGERIDAS.map((opcao) => (
             <Pressable
@@ -321,20 +371,32 @@ export default function AparenciaDaLoja() {
           ))}
         </View>
 
-        <CampoTexto
-          rotulo="Ou digite a cor (#RRGGBB)"
-          valor={cor ?? ''}
-          aoMudar={(v) => setCor(v.trim() || null)}
+        <SeletorDeCor
+          rotulo="Cor de destaque"
+          valor={cor}
+          aoMudar={setCor}
+          padrao={PADRAO_DESTAQUE}
           bloqueado={!podeAlterar}
-          placeholder="#01395E"
+          dica="Pinta a barra do topo, o preço e os botões."
         />
-        {cor && !corValida(cor) ? (
-          <Aviso mensagem="A cor precisa estar no formato #RRGGBB — por exemplo, #C0392B." />
-        ) : null}
-        <Text style={estilos.dica}>
-          A cor pinta o topo e os botões. O texto sobre ela é escolhido sozinho para continuar
-          legível, então nenhuma cor deixa sua loja ilegível.
-        </Text>
+
+        <SeletorDeCor
+          rotulo="Cor de fundo"
+          valor={corFundo}
+          aoMudar={setCorFundo}
+          padrao={PADRAO_FUNDO}
+          bloqueado={!podeAlterar}
+          dica="O fundo das páginas da loja. Os cartões saem de um tom acima dela."
+        />
+
+        <SeletorDeCor
+          rotulo="Cor dos textos"
+          valor={corTexto}
+          aoMudar={setCorTexto}
+          padrao={PADRAO_TEXTO}
+          bloqueado={!podeAlterar}
+          dica="O nome dos produtos e o texto em geral. Sobre a barra de destaque ela só é usada se der para ler; senão, a loja escolhe sozinha."
+        />
 
         {/* ------------------------------------------------------ banners */}
         <Text style={estilos.rotuloSecao}>Banners</Text>
@@ -398,7 +460,10 @@ export default function AparenciaDaLoja() {
             titulo="Salvar aparência"
             aoPressionar={() => void salvar()}
             carregando={ocupado}
-            desabilitado={!podeAlterar || Boolean(cor && !corValida(cor))}
+            desabilitado={
+              !podeAlterar ||
+              [cor, corFundo, corTexto].some((c) => Boolean(c && !corValida(c)))
+            }
           />
         </View>
       </ScrollView>
@@ -447,10 +512,13 @@ const estilos = StyleSheet.create({
   previaCorpo: { flexDirection: 'row', gap: tema.espacamento.sm, padding: tema.espacamento.md },
   previaProduto: {
     flex: 1,
-    height: 54,
     borderRadius: tema.raio.md,
-    backgroundColor: tema.cores.fundoCampo,
+    padding: 6,
+    gap: 4,
   },
+  previaFoto: { height: 46, borderRadius: tema.raio.sm },
+  previaProdutoNome: { ...tema.tipografia.legenda },
+  previaPreco: { ...tema.tipografia.legenda, fontWeight: '800' },
   previaBotao: {
     margin: tema.espacamento.md,
     marginTop: 0,

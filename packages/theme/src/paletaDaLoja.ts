@@ -1,6 +1,13 @@
 /**
  * As três cores do lojista viram a paleta inteira da vitrine.
  *
+ * MORA NO PACOTE COMPARTILHADO, e não dentro do site, porque DUAS pessoas
+ * precisam da mesma resposta: a vitrine, que pinta a loja de verdade, e a
+ * prévia dentro do aplicativo do lojista, que promete a ele como vai ficar.
+ * Duas implementações dessa conta divergiriam na primeira mudança — e a
+ * divergência apareceria como "na prévia estava diferente", que é a pior forma
+ * de descobrir.
+ *
  * O LOJISTA ESCOLHE TRÊS: fundo, destaque e texto. A vitrine precisa de uma
  * dúzia — superfície dos cartões, texto secundário, linhas divisórias, o
  * ladrilho atrás da foto do produto, a cor do nome sobre a barra. Derivar as

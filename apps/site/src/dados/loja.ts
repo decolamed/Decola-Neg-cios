@@ -24,8 +24,12 @@ export type Loja = {
   /** Só o usuário, sem @ — quem monta o endereço é o site. */
   instagram: string | null;
   aceita_pix: boolean;
-  /** Cor escolhida pelo lojista (0043). Nula = a cor da plataforma. */
+  /** Cor de DESTAQUE escolhida pelo lojista (0043). Nula = a da plataforma. */
   loja_cor: string | null;
+  /** Fundo da vitrine (0061). Nula = o cinza-azulado do desenho. */
+  loja_cor_fundo: string | null;
+  /** Cor do texto (0061). Nula = o azul-tinta do desenho. */
+  loja_cor_texto: string | null;
   /**
    * Sete posições na ordem do `Date.getDay()` (0059). `null` = o lojista ainda
    * não configurou, que é diferente de "fechada". Quem interpreta é

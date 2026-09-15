@@ -41,13 +41,32 @@ function ler(): Guardado {
  */
 const EVENTO = 'decola:carrinho';
 
-function gravar(dados: Guardado): void {
+/**
+ * Quem leva o carrinho para o servidor, quando há cliente identificado.
+ *
+ * INJETADO, e não importado. `@/dados/cliente` já importa deste arquivo (para
+ * juntar o carrinho local com o guardado), e importar de volta fecharia um
+ * ciclo entre os dois módulos. Quem amarra as pontas é `main.tsx`, uma vez.
+ *
+ * Enquanto ninguém amarra, o carrinho funciona exatamente como sempre
+ * funcionou: local, e só. A sincronização é um acréscimo, não uma dependência.
+ */
+let sincronizar: ((slug: string, itens: ItemCarrinho[]) => void) | null = null;
+
+export function ligarSincronizacaoDoCarrinho(
+  quando: (slug: string, itens: ItemCarrinho[]) => void,
+): void {
+  sincronizar = quando;
+}
+
+function gravar(dados: Guardado, slug?: string): void {
   try {
     localStorage.setItem(CHAVE, JSON.stringify(dados));
   } catch {
     /* idem */
   }
   if (typeof document !== 'undefined') document.dispatchEvent(new Event(EVENTO));
+  if (slug && sincronizar) sincronizar(slug, dados[slug] ?? []);
 }
 
 /** Assina as mudanças do carrinho. Devolve a função que cancela a assinatura. */
@@ -69,7 +88,7 @@ export function salvarCarrinho(slug: string, itens: ItemCarrinho[]): void {
   const dados = ler();
   if (itens.length === 0) delete dados[slug];
   else dados[slug] = itens;
-  gravar(dados);
+  gravar(dados, slug);
 }
 
 export function adicionarAoCarrinho(slug: string, produtoId: string, quantidade = 1): void {

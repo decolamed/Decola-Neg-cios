@@ -11,7 +11,8 @@
  */
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { Aviso, CampoTexto, Carregando } from '@/componentes/Basicos';
+import { Aviso, CampoTexto } from '@/componentes/Basicos';
+import { CarregandoLoja } from '@/componentes/CarregandoLoja';
 import { AvisoDeLojaFechada } from '@/componentes/Loja';
 import { itensDoCarrinho, limparCarrinho } from '@/dados/carrinho';
 import { estadoDaLoja, lerHorario } from '@/dados/horario';
@@ -170,9 +171,7 @@ export function Checkout() {
 
   if (resumo === null) {
     return (
-      <main className="pagina estreita">
-        <Carregando />
-      </main>
+      <CarregandoLoja slug={slug} />
     );
   }
 

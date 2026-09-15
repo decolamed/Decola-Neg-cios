@@ -16,9 +16,10 @@ import {
   lerHorario,
   resumoDaSemana,
 } from '@/dados/horario';
+import { lembrarCaraDaLoja } from '@/componentes/CarregandoLoja';
+import { paletaDaLoja } from '@/dados/paleta';
 import {
   moeda,
-  textoSobre,
   urlDaImagem,
   urlDaLoja,
   urlDoInstagram,
@@ -26,16 +27,6 @@ import {
   type Loja,
   type ProdutoVitrine,
 } from '@/dados/loja';
-
-/**
- * O azul-marinho da marca, quando o lojista não escolheu cor nenhuma.
- *
- * Escrito aqui como hexadecimal, e não lido de `@decola/theme`, porque
- * `textoSobre` precisa de um valor de verdade para medir a luminância — e no
- * navegador os papéis do tema são `var(--dn-…)`, que só o CSS resolve. É o
- * mesmo `#01395E` do desenho aprovado.
- */
-const COR_PADRAO_DA_LOJA = '#01395E';
 
 /**
  * A cor do lojista, aplicada como variáveis CSS num escopo só.
@@ -55,7 +46,26 @@ const COR_PADRAO_DA_LOJA = '#01395E';
  * só — inclusive para o `color-mix`, que não aceita reserva.
  */
 export function CoresDaLoja({ loja, children }: { loja: Loja; children: React.ReactNode }) {
-  const cor = loja.loja_cor || COR_PADRAO_DA_LOJA;
+  /**
+   * TRÊS CORES ENTRAM, uma dúzia sai.
+   *
+   * O lojista escolhe fundo, destaque e texto; superfície dos cartões, texto
+   * secundário, linhas e o ladrilho das fotos são derivados — e a legibilidade
+   * é conferida antes, em `@/dados/paleta`. Sem essa derivação, personalizar a
+   * loja seria escolher doze cores; com ela, é escolher três e o resto
+   * acompanha sem quebrar.
+   */
+  const paleta = useMemo(
+    () =>
+      paletaDaLoja({
+        destaque: loja.loja_cor,
+        fundo: loja.loja_cor_fundo,
+        texto: loja.loja_cor_texto,
+      }),
+    [loja.loja_cor, loja.loja_cor_fundo, loja.loja_cor_texto],
+  );
+
+  const cor = paleta.destaque;
 
   /**
    * O fundo do documento também vira a cor da loja.
@@ -73,13 +83,38 @@ export function CoresDaLoja({ loja, children }: { loja: Loja; children: React.Re
     };
   }, [cor]);
 
+  /**
+   * Guarda a cara da loja para a PRÓXIMA abertura.
+   *
+   * É o que faz a tela de carregamento já ter a cor certa quando o cliente
+   * volta — na primeira visita não há como, porque as cores vêm da consulta que
+   * a própria tela está esperando.
+   */
+  useEffect(() => {
+    lembrarCaraDaLoja(loja.slug, {
+      nome: loja.nome,
+      destaque: paleta.destaque,
+      fundo: paleta.fundo,
+    });
+  }, [loja.slug, loja.nome, paleta.destaque, paleta.fundo]);
+
   return (
     <div
       className="vitrine"
       style={
         {
-          '--cor-loja': cor,
-          '--cor-sobre-loja': textoSobre(cor),
+          '--cor-loja': paleta.destaque,
+          '--cor-sobre-loja': paleta.sobreDestaque,
+          '--cor-sobre-barra': paleta.sobreBarra,
+          // Os tokens do desenho, agora vindos da escolha do lojista. Os nomes
+          // são os mesmos do bloco `.vitrine` em estilos.css — lá eles têm o
+          // valor do desenho; aqui, o da loja.
+          '--v-fundo': paleta.fundo,
+          '--v-superficie': paleta.superficie,
+          '--v-ladrilho': paleta.ladrilho,
+          '--v-tinta': paleta.tinta,
+          '--v-suave': paleta.suave,
+          '--v-linha': paleta.linha,
         } as React.CSSProperties
       }
     >

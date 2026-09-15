@@ -721,6 +721,26 @@ export type Database = {
         Args: { p_loja_slug?: string | null };
         Returns: Json;
       };
+      /**
+       * Pedidos de um telefone DIGITADO, presos a uma loja (0061).
+       *
+       * Sem verificação por código, por decisão do produto: quem souber o
+       * número de outra pessoa vê os pedidos dela NAQUELA loja. A loja é o
+       * limite — `p_loja_slug` é obrigatório e a consulta é presa a ele.
+       */
+      vitrine_pedidos_do_telefone: {
+        Args: { p_loja_slug: string; p_telefone: string };
+        Returns: Json;
+      };
+      /** Carrinho guardado daquele telefone naquela loja (0061). */
+      vitrine_carrinho_ler: {
+        Args: { p_loja_slug: string; p_telefone: string };
+        Returns: Json;
+      };
+      vitrine_carrinho_gravar: {
+        Args: { p_loja_slug: string; p_telefone: string; p_itens: Json };
+        Returns: undefined;
+      };
       pedido_confirmar_pagamento: {
         Args: { p_pedido_id: string };
         Returns: undefined;

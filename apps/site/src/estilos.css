@@ -1581,10 +1581,14 @@ a.botao {
 
 /* ---------------------------------------------------------- a marca ------ */
 
+/* A COR DO TEXTO AQUI É OUTRA PERGUNTA. Este bloco fica sobre a cor de
+   DESTAQUE, não sobre o fundo da loja — então a cor de texto escolhida pelo
+   lojista só vale aqui se der para ler sobre o destaque. Quem decide isso é
+   `paletaDaLoja`, e a resposta chega em `--cor-sobre-barra`. */
 .loja-marca {
   position: relative;
   background: var(--cor-loja);
-  color: var(--cor-sobre-loja);
+  color: var(--cor-sobre-barra, var(--cor-sobre-loja));
   border-radius: 0 0 28px 28px;
   overflow: hidden;
 }
@@ -2136,7 +2140,7 @@ a.botao {
   position: relative;
   margin-top: 36px;
   background: var(--cor-loja);
-  color: var(--cor-sobre-loja);
+  color: var(--cor-sobre-barra, var(--cor-sobre-loja));
   border-radius: 28px 28px 0 0;
   overflow: hidden;
 }
@@ -2438,4 +2442,77 @@ body:has(.loja-rodape) > * > .rodape {
   flex: none;
   margin-top: 2px;
   color: var(--cor-loja, var(--cor-primaria));
+}
+
+/* ------------------------------------------------ abertura da vitrine --- */
+
+.vitrine-carregando {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  padding: 24px;
+  text-align: center;
+}
+
+.vitrine-carregando .giro {
+  animation: loja-girando 900ms linear infinite;
+  /* Aparece suave: um giro que surge no primeiro quadro pisca em conexão boa,
+     onde a loja chega antes de a animação valer a pena. */
+  animation-name: loja-girando, loja-surgindo;
+  animation-duration: 900ms, 260ms;
+  animation-timing-function: linear, ease-out;
+  animation-iteration-count: infinite, 1;
+}
+
+@keyframes loja-girando {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes loja-surgindo {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.vitrine-carregando .nome {
+  font-family: 'Plus Jakarta Sans', 'Montserrat', system-ui, sans-serif;
+  font-weight: 800;
+  font-size: clamp(17px, 4.6vw, 22px);
+  letter-spacing: -0.035em;
+  opacity: 0;
+  transition: opacity 240ms ease;
+  min-height: 1.2em;
+}
+
+.vitrine-carregando .nome.visivel {
+  opacity: 0.9;
+}
+
+/* Só para leitor de tela: o texto existe, mas não ocupa a tela. */
+.sr-apenas {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Na abertura, o rodapé da plataforma também sai de cena — era ele que
+   escrevia "Loja online feita com Decola Negócios" embaixo do "Carregando". */
+body:has(.vitrine-carregando) > * > .rodape {
+  display: none;
 }

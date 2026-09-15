@@ -8,7 +8,8 @@
  */
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { Aviso, Carregando } from '@/componentes/Basicos';
+import { Aviso } from '@/componentes/Basicos';
+import { CarregandoLoja } from '@/componentes/CarregandoLoja';
 import { CapaDoProduto } from '@/componentes/Loja';
 import { MolduraDaLoja } from '@/componentes/MolduraDaLoja';
 import { definirQuantidade, itensDoCarrinho, removerDoCarrinho } from '@/dados/carrinho';
@@ -114,9 +115,7 @@ export function Carrinho() {
 
   if (linhas === null) {
     return comMoldura(
-      <main className="pagina estreita">
-        <Carregando />
-      </main>,
+      <CarregandoLoja slug={slug} />,
     );
   }
 

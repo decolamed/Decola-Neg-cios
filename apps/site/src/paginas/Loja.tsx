@@ -13,7 +13,8 @@
  */
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { Aviso, Carregando } from '@/componentes/Basicos';
+import { Aviso } from '@/componentes/Basicos';
+import { CarregandoLoja } from '@/componentes/CarregandoLoja';
 import {
   BuscaDeProdutos,
   CabecalhoDoCatalogo,
@@ -96,9 +97,7 @@ export function Loja() {
 
   if (estado.nome === 'carregando') {
     return (
-      <main className="pagina">
-        <Carregando texto="Carregando a loja…" />
-      </main>
+      <CarregandoLoja slug={slug} />
     );
   }
 

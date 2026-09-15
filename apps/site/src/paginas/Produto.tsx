@@ -7,7 +7,8 @@
  */
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { Aviso, Carregando } from '@/componentes/Basicos';
+import { Aviso } from '@/componentes/Basicos';
+import { CarregandoLoja } from '@/componentes/CarregandoLoja';
 import { CapaDoProduto } from '@/componentes/Loja';
 import { MolduraDaLoja } from '@/componentes/MolduraDaLoja';
 import { adicionarAoCarrinho } from '@/dados/carrinho';
@@ -55,9 +56,7 @@ export function Produto() {
 
   if (estado.nome === 'carregando') {
     return (
-      <main className="pagina">
-        <Carregando />
-      </main>
+      <CarregandoLoja slug={slug} />
     );
   }
 

@@ -25,11 +25,28 @@ import '@fontsource/public-sans/400.css';
 import '@fontsource/public-sans/500.css';
 import '@fontsource/public-sans/600.css';
 import { App } from '@/App';
+import { ligarSincronizacaoDoCarrinho } from '@/dados/carrinho';
+import { clienteDaLoja, enviarCarrinho } from '@/dados/cliente';
 import { aplicarTokens } from '@/lib/tokens';
 import './estilos.css';
 
 // Os tokens do tema viram variáveis CSS antes do primeiro render.
 aplicarTokens();
+
+/**
+ * O carrinho passa a acompanhar o cliente identificado.
+ *
+ * Amarrado AQUI, e não dentro de um dos dois módulos, porque `cliente` já
+ * importa `carrinho` — a seta de volta fecharia um ciclo. Enquanto ninguém
+ * amarra, o carrinho continua exatamente como sempre foi: local, e só.
+ *
+ * Sem cliente identificado naquela loja, nada é enviado: quem nunca digitou o
+ * telefone não tem carrinho no servidor, e não passa a ter por acidente.
+ */
+ligarSincronizacaoDoCarrinho((slug, itens) => {
+  const telefone = clienteDaLoja(slug);
+  if (telefone) void enviarCarrinho(slug, telefone, itens);
+});
 
 const raiz = document.getElementById('raiz');
 if (!raiz) throw new Error('Elemento #raiz não encontrado no index.html.');

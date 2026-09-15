@@ -9,8 +9,11 @@
  * escolheu a foto, era.
  *
  * O QUE MUDA. A foto aparece inteira, com a moldura do formato final por cima.
- * Arrastar move; os botões de zoom aproximam e afastam. O que estiver dentro da
- * moldura é exatamente o que vai ser gravado — nada de surpresa depois.
+ * Arrastar move em qualquer direção; a pinça de dois dedos dá zoom, e no
+ * computador a rodinha do mouse faz o mesmo. Os botões + e − continuam ali como
+ * reserva — para quem está num computador sem rodinha, e para quem prefere um
+ * passo de cada vez. O que estiver dentro da moldura é exatamente o que vai ser
+ * gravado — nada de surpresa depois.
  *
  * COMO O RECORTE É CALCULADO. A tela trabalha em pixels de tela; o corte
  * acontece em pixels da imagem original. A conversão mora em `@/lib/recorte`,
@@ -21,14 +24,19 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Image,
   PanResponder,
+  Platform,
   StyleSheet,
   Text,
   View,
   useWindowDimensions,
+  type ViewStyle,
 } from 'react-native';
 import tema from '@decola/theme';
 import { Botao } from '@/componentes/Botao';
 import { recorteEmPixels, type AreaDeRecorte } from '@/lib/recorte';
+
+/** Quantas vezes a foto pode ser aproximada além do mínimo que cobre a moldura. */
+const ZOOM_MAXIMO = 5;
 
 type Props = {
   uri: string;
@@ -100,6 +108,19 @@ export function AjustarImagem({
   const molduraRef = useRef<View>(null);
 
   /**
+   * A escala mínima e a função que prende a imagem, em refs.
+   *
+   * O ouvinte da rodinha do mouse é registrado UMA vez no nó do DOM — se ele
+   * fosse recriado a cada mudança de escala, cada giro trocaria o ouvinte no
+   * meio do gesto. Um ouvinte fixo que lê refs continua sempre com o valor de
+   * agora, sem depender de quando foi criado.
+   */
+  const escalaMinimaRef = useRef(escalaMinima);
+  const limitarRef = useRef<(x: number, y: number, escalaAtual: number) => { x: number; y: number }>(
+    () => ({ x: 0, y: 0 }),
+  );
+
+  /**
    * O estado de uma pinça em andamento: a distância entre os dedos quando ela
    * começou, a escala daquele instante, e o ponto DA IMAGEM que estava sob o
    * meio dos dedos. É esse ponto que fica parado enquanto os dedos abrem e
@@ -120,6 +141,77 @@ export function AjustarImagem({
     });
   }, []);
 
+  /**
+   * NO NAVEGADOR, O GESTO PRECISA SER PEDIDO — não basta escutá-lo.
+   *
+   * Este aplicativo roda como site. Ali, dois dedos sobre a página significam
+   * "aumentar a página inteira" e um dedo arrastando significa "rolar" — o
+   * navegador decide isso ANTES de qualquer código nosso ver o toque, e a partir
+   * daí para de mandar os eventos. Era isso que sobrava para quem enquadrava uma
+   * foto: dava para empurrar a imagem de lado (o pouco que o navegador não
+   * reivindica), a pinça aumentava a página em vez da foto, e o zoom só
+   * acontecia mesmo pelos botões + e −.
+   *
+   * `touch-action: none` é como se diz ao navegador "esta parte da tela é minha".
+   * É uma propriedade de CSS: não existe no aparelho, e lá esta linha não faz
+   * nada — o `PanResponder` nativo já recebe tudo.
+   */
+  const semGestoDoNavegador =
+    Platform.OS === 'web' ? ({ touchAction: 'none' } as unknown as ViewStyle) : null;
+
+  /**
+   * A rodinha do mouse aproxima e afasta, no computador.
+   *
+   * Pinça não existe com mouse, e o desenho pedia zoom "natural" — no
+   * computador, natural é a rodinha. Ela é registrada à mão no elemento porque
+   * `onWheel` não é um evento do React Native: só chega até aqui indo direto ao
+   * nó do DOM, que no navegador é o que o `ref` guarda.
+   *
+   * `passive: false` é o que permite o `preventDefault`. Sem ele a rodinha
+   * aproximaria a foto E rolaria a página junto.
+   */
+  useEffect(() => {
+    if (Platform.OS !== 'web') return;
+    const no = molduraRef.current as unknown as HTMLElement | null;
+    if (!no || typeof no.addEventListener !== 'function') return;
+
+    const aoRodar = (evento: WheelEvent) => {
+      evento.preventDefault();
+      medirMoldura();
+
+      // Um "clique" de rodinha costuma ser 100; o expoente deixa o passo suave e
+      // simétrico — aproximar e afastar o mesmo tanto volta ao mesmo lugar.
+      const fator = Math.exp(-evento.deltaY / 320);
+      const proxima = Math.max(
+        escalaMinimaRef.current,
+        Math.min(escalaRef.current * fator, escalaMinimaRef.current * ZOOM_MAXIMO),
+      );
+      if (proxima === escalaRef.current) return;
+
+      // Aproxima em direção ao PONTEIRO, como qualquer mapa: o que está sob o
+      // cursor fica onde está.
+      const caixa = no.getBoundingClientRect();
+      const focoX = evento.clientX - caixa.left;
+      const focoY = evento.clientY - caixa.top;
+      const imagemX = (focoX - atual.current.x) / escalaRef.current;
+      const imagemY = (focoY - atual.current.y) / escalaRef.current;
+
+      const preso = limitarRef.current(
+        focoX - imagemX * proxima,
+        focoY - imagemY * proxima,
+        proxima,
+      );
+
+      atual.current = preso;
+      escalaRef.current = proxima;
+      setEscala(proxima);
+      setDeslocamento(preso);
+    };
+
+    no.addEventListener('wheel', aoRodar, { passive: false });
+    return () => no.removeEventListener('wheel', aoRodar);
+  }, [medirMoldura]);
+
   // Girar o aparelho muda a largura da moldura, e com ela a escala mínima: o
   // enquadramento anterior deixaria buraco. Recomeçar do meio é o único estado
   // que continua válido em qualquer tamanho de tela.
@@ -127,6 +219,7 @@ export function AjustarImagem({
     const inicial = centralizar(escalaMinima);
     atual.current = inicial;
     escalaRef.current = escalaMinima;
+    escalaMinimaRef.current = escalaMinima;
     setEscala(escalaMinima);
     setDeslocamento(inicial);
   }, [escalaMinima, centralizar]);
@@ -149,7 +242,11 @@ export function AjustarImagem({
     [larguraOriginal, alturaOriginal, larguraMoldura, alturaMoldura],
   );
 
-  const escalaMaxima = escalaMinima * 5;
+  // O ouvinte da rodinha é fixo e lê daqui; sem esta linha ele continuaria
+  // prendendo a imagem com as medidas de antes de girar o aparelho.
+  limitarRef.current = limitar;
+
+  const escalaMaxima = escalaMinima * ZOOM_MAXIMO;
 
   /**
    * Um dedo arrasta; dois dedos aproximam. O mesmo gesto, sem botão nenhum.
@@ -254,7 +351,7 @@ export function AjustarImagem({
 
   const mudarZoom = useCallback(
     (fator: number) => {
-      const proxima = Math.max(escalaMinima, Math.min(escala * fator, escalaMinima * 5));
+      const proxima = Math.max(escalaMinima, Math.min(escala * fator, escalaMaxima));
 
       // Aproxima em direção ao CENTRO da moldura, e não ao canto: é o que a
       // pessoa está olhando quando toca no "+".
@@ -300,7 +397,8 @@ export function AjustarImagem({
     <View style={estilos.tela}>
       <Text style={estilos.titulo}>{titulo}</Text>
       <Text style={estilos.dica}>
-        Arraste a foto para escolher o que aparece. Use dois dedos para aproximar.
+        Arraste a foto para escolher o que aparece. Junte ou afaste dois dedos para dar zoom — no
+        computador, use a rodinha do mouse.
       </Text>
 
       {/* A moldura no meio da tela, e não colada no texto: é ela que a pessoa
@@ -309,7 +407,11 @@ export function AjustarImagem({
         <View
           ref={molduraRef}
           onLayout={medirMoldura}
-          style={[estilos.moldura, { width: larguraMoldura, height: alturaMoldura }]}
+          style={[
+            estilos.moldura,
+            { width: larguraMoldura, height: alturaMoldura },
+            semGestoDoNavegador,
+          ]}
           {...arrastar.panHandlers}
         >
           <Image
@@ -337,7 +439,7 @@ export function AjustarImagem({
             titulo="+"
             variante="contorno"
             aoPressionar={() => mudarZoom(1.25)}
-            desabilitado={escala >= escalaMinima * 5 - 0.001}
+            desabilitado={escala >= escalaMaxima - 0.001}
             estilo={estilos.botaoZoom}
           />
         </View>

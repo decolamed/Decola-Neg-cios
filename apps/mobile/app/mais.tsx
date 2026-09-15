@@ -44,6 +44,24 @@ export default function Mais() {
       icone: 'alerta',
       cor: tema.cores.negativo,
     },
+    /**
+     * Cobrar por Pix sem abrir uma venda.
+     *
+     * Fica aqui em cima, e não dentro de Configurações, porque é uma ação de
+     * balcão com o cliente esperando: serviço, conserto, acerto de conta. Antes
+     * o único Pix do aplicativo vivia dentro de "Finalizar venda" — quem
+     * precisava cobrar algo que não era produto abria o banco no outro celular.
+     *
+     * Disponível para qualquer pessoa da equipe, como a tela de venda: quem
+     * atende no balcão é quem cobra.
+     */
+    {
+      titulo: 'Cobrança Pix',
+      descricao: 'QR Code com o valor, sem precisar registrar uma venda.',
+      destino: '/cobranca-pix',
+      icone: 'financeiro',
+      cor: tema.cores.secundaria,
+    },
   ];
 
   // Atender pedido é ação de Gestor: as quatro RPCs (confirmar pagamento,

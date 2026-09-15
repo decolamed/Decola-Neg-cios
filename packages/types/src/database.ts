@@ -108,9 +108,32 @@ export type Empresa = {
   /** Usuário do Instagram da loja, sem @ e sem URL (0047). */
   loja_instagram: string | null;
 
+  // -- Atendimento (0059) --------------------------------------------------
+  /**
+   * Horário de funcionamento. `null` = o lojista ainda não configurou, que é
+   * DIFERENTE de fechada: a vitrine então não afirma nada sobre o assunto.
+   */
+  horario_funcionamento: HorarioSemanal | null;
+
   criado_em: string;
   atualizado_em: string;
 };
+
+/**
+ * Horário de funcionamento (0059).
+ *
+ * SETE POSIÇÕES, na ordem do `Date.getDay()` do JavaScript: a posição 0 é
+ * domingo e a 6 é sábado. Essa escolha é o que dispensa uma tabela de conversão
+ * entre o banco e as telas — e tabela de conversão é onde nasce o bug de "a
+ * loja aparece aberta no domingo".
+ *
+ * `null` numa posição significa fechado naquele dia. `fecha` MENOR que `abre` é
+ * legítimo: é como se escreve a madrugada (abre 18:00, fecha 02:00).
+ *
+ * O `CHECK` da migração é quem garante a forma; este tipo só a descreve.
+ */
+export type IntervaloDoDia = { abre: string; fecha: string };
+export type HorarioSemanal = (IntervaloDoDia | null)[];
 
 /** Um banner do carrossel da vitrine (0043). */
 export type BannerDaLoja = {
@@ -447,6 +470,8 @@ export type VitrineLojaRow = {
    * desenha a página só precisa saber o que mostrar, não conferir bandeira.
    */
   banners: BannerDaLoja[];
+  /** Horário de atendimento (0059). `null` = não configurado. */
+  horario_funcionamento: HorarioSemanal | null;
 };
 
 /** View `vitrine_produtos` (0032) — a superfície pública do catálogo. */

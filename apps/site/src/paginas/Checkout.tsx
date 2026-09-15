@@ -9,10 +9,12 @@
  * A tela repete em texto o que já está no banco como regra — sobretudo que o
  * frete não está incluso, e ANTES de confirmar, não depois.
  */
-import { useCallback, useEffect, useState, type FormEvent } from 'react';
+import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { Aviso, CampoTexto, Carregando } from '@/componentes/Basicos';
+import { AvisoDeLojaFechada } from '@/componentes/Loja';
 import { itensDoCarrinho, limparCarrinho } from '@/dados/carrinho';
+import { estadoDaLoja, lerHorario } from '@/dados/horario';
 import { carregarLoja, listarProdutos, moeda, type Loja } from '@/dados/loja';
 import { criarPedido, type FormaPagamento, type Modalidade } from '@/dados/pedido';
 import { lembrarPedido } from '@/dados/pedidosDoCliente';
@@ -38,6 +40,22 @@ export function Checkout() {
 
   const [erro, setErro] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
+
+  /**
+   * A loja está fechada NESTE instante?
+   *
+   * Calculado uma vez, quando a loja carrega — e não a cada minuto como o selo
+   * da barra da marca. Aqui a pergunta é sobre o momento em que a pessoa está
+   * fechando o pedido; um aviso que aparecesse ou sumisse sozinho no meio do
+   * preenchimento do formulário seria pior do que não avisar.
+   */
+  const estado = useMemo(() => {
+    const horario = loja ? lerHorario(loja.horario_funcionamento) : null;
+    return horario ? estadoDaLoja(horario) : null;
+  }, [loja]);
+
+  const fechadaAgora = estado !== null && !estado.aberta;
+  const proximaAbertura = estado?.proximaAbertura ?? null;
 
   const montar = useCallback(async () => {
     const itens = itensDoCarrinho(slug);
@@ -113,14 +131,41 @@ export function Checkout() {
           criadoEm: new Date().toISOString(),
         });
 
-        navegar(`/pedido/${criado.token}`, { replace: true });
+        /**
+         * O aviso de loja fechada viaja com a navegação.
+         *
+         * Ele pertence ao MOMENTO da compra — "seu pedido foi recebido, a loja
+         * será avisada quando abrir" — e a tela do pedido não tem como saber
+         * disso sozinha: ela carrega o pedido por um token, e o pedido não
+         * guarda o horário da loja. Mandar a decisão junto evita mexer na RPC
+         * que cria o pedido só para carregar um aviso de tela.
+         *
+         * Recarregar a página do pedido perde o aviso, e está certo que perca:
+         * o texto fala de um instante ("foi recebido"), não do estado da loja
+         * daqui a três horas.
+         */
+        navegar(`/pedido/${criado.token}`, {
+          replace: true,
+          state: fechadaAgora ? { lojaFechada: true } : undefined,
+        });
       } catch (e) {
         setErro(e instanceof Error ? e.message : 'Não foi possível enviar seu pedido.');
       } finally {
         setEnviando(false);
       }
     },
-    [modalidade, pagamento, slug, nome, telefone, endereco, ciente, observacao, navegar],
+    [
+      modalidade,
+      pagamento,
+      slug,
+      nome,
+      telefone,
+      endereco,
+      ciente,
+      observacao,
+      navegar,
+      fechadaAgora,
+    ],
   );
 
   if (resumo === null) {
@@ -160,6 +205,20 @@ export function Checkout() {
       </div>
 
       {erro ? <Aviso mensagem={erro} /> : null}
+
+      {/* ANTES DE PAGAR, e não depois. Quem manda um pedido às 23h de domingo
+          merece saber que ninguém vai separá-lo hoje — descobrir isso só na
+          tela seguinte é descobrir tarde demais. O pedido continua podendo ser
+          feito: o objetivo é combinar a expectativa, não impedir a venda. */}
+      {fechadaAgora ? (
+        <AvisoDeLojaFechada
+          titulo="A loja está fechada agora"
+          texto={
+            (proximaAbertura ? `${proximaAbertura}. ` : '') +
+            'Você pode enviar seu pedido normalmente — ele será atendido quando a loja abrir.'
+          }
+        />
+      ) : null}
 
       <form onSubmit={aoEnviar} noValidate>
         <div className="card">

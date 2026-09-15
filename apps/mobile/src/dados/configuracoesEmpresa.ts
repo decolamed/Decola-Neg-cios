@@ -1,6 +1,7 @@
 /**
  * Configurações da empresa — Seções 4.1, 7.9, 8.3.
  */
+import type { HorarioSemanal } from '@decola/types';
 import { supabase } from '@/lib/supabase';
 import { exigirConexao } from '@/lib/conectividade';
 import { mensagemDeErro } from '@/lib/erros';
@@ -57,6 +58,42 @@ export async function salvarDadosDaEmpresa(
       telefone: dados.telefone?.trim() || null,
       chave_pix: dados.chave_pix?.trim() || null,
     })
+    .eq('id', empresaId);
+
+  if (error) throw new Error(mensagemDeErro(error));
+}
+
+/**
+ * Grava o horário de funcionamento (0059).
+ *
+ * `null` apaga: a loja volta a não informar horário, que é diferente de estar
+ * fechada a semana toda — para isso existem sete posições nulas.
+ *
+ * A VALIDAÇÃO DE VERDADE ESTÁ NO BANCO, num `CHECK` que confere as sete
+ * posições e o formato "HH:MM". A conferência daqui é por cortesia com quem
+ * digitou; a que impede dado torto de chegar na vitrine de um lojista é a de
+ * lá, como manda a regra do projeto.
+ */
+export async function salvarHorarioDeFuncionamento(
+  empresaId: string,
+  horario: HorarioSemanal | null,
+): Promise<void> {
+  await exigirConexao();
+
+  if (horario !== null) {
+    if (horario.length !== 7) throw new Error('O horário precisa ter os sete dias da semana.');
+    const hora = /^([01][0-9]|2[0-3]):[0-5][0-9]$/;
+    for (const dia of horario) {
+      if (dia === null) continue;
+      if (!hora.test(dia.abre) || !hora.test(dia.fecha)) {
+        throw new Error('Confira os horários. Use o formato 08:00.');
+      }
+    }
+  }
+
+  const { error } = await supabase
+    .from('empresas')
+    .update({ horario_funcionamento: horario })
     .eq('id', empresaId);
 
   if (error) throw new Error(mensagemDeErro(error));

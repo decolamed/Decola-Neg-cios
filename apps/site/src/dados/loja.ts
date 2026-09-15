@@ -26,6 +26,12 @@ export type Loja = {
   aceita_pix: boolean;
   /** Cor escolhida pelo lojista (0043). Nula = a cor da plataforma. */
   loja_cor: string | null;
+  /**
+   * Sete posições na ordem do `Date.getDay()` (0059). `null` = o lojista ainda
+   * não configurou, que é diferente de "fechada". Quem interpreta é
+   * `@/dados/horario`.
+   */
+  horario_funcionamento: unknown;
   /** Já vem vazio quando o carrossel está desligado — a view resolve isso. */
   banners: BannerDaLoja[];
 };

@@ -12,6 +12,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
+  estadoDaLoja,
+  lerHorario,
+  resumoDaSemana,
+} from '@/dados/horario';
+import {
   moeda,
   textoSobre,
   urlDaImagem,
@@ -121,6 +126,7 @@ export function BarraDaMarca({ loja, itensNoCarrinho }: { loja: Loja; itensNoCar
         <Link to={`/${loja.slug}`} className="loja-marca-texto">
           <span className="loja-marca-nome">{loja.nome}</span>
           {loja.descricao ? <span className="loja-marca-tagline">{loja.descricao}</span> : null}
+          <SeloDeAtendimento loja={loja} />
         </Link>
 
         <div className="loja-marca-acoes">
@@ -149,6 +155,87 @@ export function BarraDaMarca({ loja, itensNoCarrinho }: { loja: Loja; itensNoCar
           </Link>
         </div>
       </div>
+    </div>
+  );
+}
+
+/* =========================================================== horário == */
+
+/**
+ * "Aberta agora" / "Fechada · Abre amanhã às 08:00", na barra da marca.
+ *
+ * O SELO SÓ APARECE SE HOUVER HORÁRIO. Sem ele não dizemos nada — uma loja que
+ * nunca configurou não pode receber um carimbo de "fechada" que ela não pediu,
+ * e também não pode receber um "aberta" que talvez seja mentira.
+ *
+ * O relógio anda enquanto a página está aberta: quem entra às 17h59 de uma loja
+ * que fecha às 18h vê o selo virar sozinho, sem recarregar. Um minuto de
+ * intervalo é o passo certo — é a menor unidade que o horário tem.
+ */
+export function SeloDeAtendimento({ loja }: { loja: Loja }) {
+  const horario = useMemo(() => lerHorario(loja.horario_funcionamento), [loja.horario_funcionamento]);
+  const [agora, setAgora] = useState(() => new Date());
+
+  useEffect(() => {
+    if (!horario) return;
+    const relogio = setInterval(() => setAgora(new Date()), 60_000);
+    return () => clearInterval(relogio);
+  }, [horario]);
+
+  if (!horario) return null;
+
+  const estado = estadoDaLoja(horario, agora);
+
+  return (
+    <span className={estado.aberta ? 'loja-selo-horario aberta' : 'loja-selo-horario'}>
+      <span className="loja-selo-ponto" aria-hidden="true" />
+      {estado.aberta
+        ? `Aberta agora${estado.fechaAs ? ` · fecha às ${estado.fechaAs}` : ''}`
+        : `Fechada${estado.proximaAbertura ? ` · ${estado.proximaAbertura.toLowerCase()}` : ''}`}
+    </span>
+  );
+}
+
+/**
+ * O aviso de loja fechada, nas duas telas em que ele aparece.
+ *
+ * Um componente, e não dois textos parecidos: ele aparece na hora de fechar o
+ * pedido e de novo na tela do pedido pronto — os dois momentos em que a pessoa
+ * já pagou ou está prestes a pagar. Dizer coisas diferentes nos dois lugares é
+ * o que faz alguém achar que deu errado e mandar mensagem no WhatsApp da loja
+ * perguntando se o pedido chegou.
+ */
+export function AvisoDeLojaFechada({ titulo, texto }: { titulo: string; texto: string }) {
+  return (
+    <div className="aviso-fechada" role="status">
+      <span className="relogio" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="20" height="20" {...traco}>
+          <circle cx="12" cy="12" r="8.5" />
+          <path d="M12 7.5V12l3 1.8" />
+        </svg>
+      </span>
+      <span>
+        <strong>{titulo}</strong>
+        {texto}
+      </span>
+    </div>
+  );
+}
+
+/** A semana inteira, para o rodapé. */
+function HorarioDaLoja({ loja }: { loja: Loja }) {
+  const horario = useMemo(() => lerHorario(loja.horario_funcionamento), [loja.horario_funcionamento]);
+  if (!horario) return null;
+
+  return (
+    <div>
+      <h2>Atendimento</h2>
+      {resumoDaSemana(horario).map((linha) => (
+        <p key={linha.dias} className="loja-rodape-horario">
+          <span>{linha.dias}</span>
+          <span>{linha.faixa}</span>
+        </p>
+      ))}
     </div>
   );
 }
@@ -221,6 +308,8 @@ export function RodapeDaLoja({ loja }: { loja: Loja }) {
             ) : null}
           </div>
         ) : null}
+
+        <HorarioDaLoja loja={loja} />
 
         <div>
           <h2>Navegar</h2>

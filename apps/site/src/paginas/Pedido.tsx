@@ -11,9 +11,11 @@
  * a alternativa é o cliente ir embora achando que está pago.
  */
 import { useCallback, useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useLocation, useParams } from 'react-router-dom';
 import { Aviso, Carregando } from '@/componentes/Basicos';
+import { AvisoDeLojaFechada } from '@/componentes/Loja';
 import { QrCodePix } from '@/componentes/QrCodePix';
+import { AVISO_LOJA_FECHADA } from '@/dados/horario';
 import { moeda } from '@/dados/loja';
 import {
   ROTULO_STATUS,
@@ -25,6 +27,8 @@ import {
 
 export function Pedido() {
   const { token = '' } = useParams<{ token: string }>();
+  // O checkout marca aqui que o pedido entrou com a loja fechada.
+  const lojaFechada = (useLocation().state as { lojaFechada?: boolean } | null)?.lojaFechada === true;
 
   const [pedido, setPedido] = useState<PedidoConsultado | null>(null);
   const [erro, setErro] = useState<string | null>(null);
@@ -74,6 +78,14 @@ export function Pedido() {
       <div className={`faixa-status ${pedido.status}`}>
         {ROTULO_STATUS[pedido.status] ?? pedido.status}
       </div>
+
+      {/* Só quando o pedido ACABOU de ser enviado com a loja fechada. O checkout
+          manda esse sinal junto com a navegação; ele não sobrevive a um
+          recarregamento, e é assim que deve ser — o texto fala de um instante
+          ("foi recebido"), não do estado da loja daqui a três horas. */}
+      {lojaFechada ? (
+        <AvisoDeLojaFechada titulo="Pedido recebido fora do horário" texto={AVISO_LOJA_FECHADA} />
+      ) : null}
 
       {/* ---------------------------------------------------- retirada + pix */}
       {pedido.modalidade === 'retirada' && pedido.pagamento === 'pix_online' ? (

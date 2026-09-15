@@ -72,6 +72,19 @@ export default function Configuracoes() {
       cor: tema.cores.primaria,
       disponivel: true,
     },
+    /**
+     * O horário fica ao lado da loja virtual, e não perdido no fim: é dela que
+     * ele fala. Um pedido que entra fora do horário sem aviso é o cliente
+     * achando que foi ignorado.
+     */
+    {
+      titulo: 'Horário de funcionamento',
+      descricao: 'Dias e horários em que você atende. Aparece na sua loja virtual.',
+      destino: '/configuracoes/horario',
+      icone: 'relatorios',
+      cor: tema.cores.apoio,
+      disponivel: true,
+    },
     {
       titulo: 'Loja virtual',
       descricao: 'Publique seus produtos numa página pública e receba pedidos.',

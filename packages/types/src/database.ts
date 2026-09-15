@@ -586,6 +586,16 @@ export type Database = {
       convidar_funcionario: { Args: { p_nome: string; p_email: string }; Returns: string };
       reenviar_convite: { Args: { p_vinculo_id: string }; Returns: string };
       aceitar_convite: { Args: { p_vinculo_id: string }; Returns: string };
+      /**
+       * O convite em aberto para o e-mail da sessão, se houver (0063).
+       *
+       * Devolve LISTA porque a função é `returns table` — com no máximo uma
+       * linha, pelo `limit 1`.
+       */
+      meu_convite_pendente: {
+        Args: Record<never, never>;
+        Returns: { vinculo_id: string; empresa_nome: string; convite_expira_em: string }[];
+      };
       alterar_papel_usuario: {
         Args: { p_vinculo_id: string; p_papel: Enums['papel_usuario'] };
         Returns: undefined;

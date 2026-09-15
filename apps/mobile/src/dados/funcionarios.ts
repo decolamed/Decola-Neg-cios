@@ -163,6 +163,27 @@ export async function aceitarConvite(vinculoId: string): Promise<string> {
   return data as unknown as string;
 }
 
+/**
+ * Existe um convite esperando por quem acabou de entrar? (migração 0063)
+ *
+ * Quem entra sem empresa lia "procure o Gestor" — mesmo tendo um convite aberto
+ * no próprio e-mail. A RLS de `empresa_usuarios` não deixa o convidado ler o
+ * próprio convite, então a resposta vem de uma RPC `security definer` que só
+ * enxerga convites do e-mail DA SESSÃO.
+ *
+ * FALHAR AQUI NÃO É ERRO DE LOGIN. Isto é uma pergunta a mais feita no caminho;
+ * se ela não responder, a tela segue com a mensagem que sempre teve.
+ */
+export async function convitePendente(): Promise<{ id: string; empresa: string } | null> {
+  const { data, error } = await supabase.rpc('meu_convite_pendente');
+  if (error) {
+    console.warn('[convite] não consegui procurar convite pendente:', error.message);
+    return null;
+  }
+  const linha = data?.[0];
+  return linha ? { id: linha.vinculo_id, empresa: linha.empresa_nome } : null;
+}
+
 /** Seção 7.8 — promover Funcionário → Gestor, ou rebaixar. */
 export async function alterarPapel(vinculoId: string, papel: Papel): Promise<void> {
   await exigirConexao();

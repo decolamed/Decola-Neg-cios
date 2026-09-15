@@ -26,13 +26,21 @@ import {
   sair,
 } from '@/dados/autenticacao';
 import { carregarContextoDaConta, destinoDaConta } from '@/dados/empresa';
+import { convitePendente } from '@/dados/funcionarios';
 import { assinarMudancaDeConexao, MENSAGENS_SEM_CONEXAO } from '@/lib/conectividade';
 import { textoDoErro } from '@/lib/erros';
 
 export default function Login() {
-  const params = useLocalSearchParams<{ aviso?: string; convite?: string }>();
+  const params = useLocalSearchParams<{ aviso?: string; convite?: string; email?: string }>();
 
-  const [email, setEmail] = useState('');
+  /**
+   * O e-mail já vem preenchido quando o link soube qual é.
+   *
+   * É o caso de quem acabou de criar a conta pelo convite, no site, e chega
+   * aqui para entrar pela primeira vez: redigitar o endereço é o passo em que
+   * se erra uma letra e se lê "e-mail ou senha incorretos".
+   */
+  const [email, setEmail] = useState(params.email ?? '');
   const [senha, setSenha] = useState('');
   const [erroEmail, setErroEmail] = useState<string | null>(null);
   const [erroSenha, setErroSenha] = useState<string | null>(null);
@@ -78,6 +86,22 @@ export default function Login() {
     // em vez de encerrar a sessão, segue para o aceite.
     if (params.convite) {
       router.replace(`/convite/${params.convite}`);
+      return;
+    }
+
+    /**
+     * Sem empresa, MAS COM CONVITE ABERTO.
+     *
+     * Este é o caso que mandava o funcionário para o lugar errado. Ele criava a
+     * conta pelo convite, o aceite não chegava a acontecer, e no login seguinte
+     * lia "você não está vinculado a nenhuma empresa — procure o Gestor". A
+     * frase era verdadeira e inútil: o convite estava lá, com o nome dele, para
+     * aquele mesmo e-mail. Agora a tela do aceite abre sozinha, e um clique
+     * fecha o que ficou pela metade.
+     */
+    const convite = await convitePendente();
+    if (convite) {
+      router.replace(`/convite/${convite.id}`);
       return;
     }
 

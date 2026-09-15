@@ -9,6 +9,16 @@
  *
  * Consequência de projeto: não há como "espiar" um convite alheio por aqui.
  * Quem tenta com outro e-mail é recusado pelo banco, não pela interface.
+ *
+ * A CONTA NOVA NASCE NO SERVIDOR, e não mais com `auth.signUp()` daqui.
+ *
+ * Este era o único lugar do produto que criava conta pelo navegador. O efeito:
+ * o Supabase mandava um SEGUNDO e-mail, para confirmar o mesmo endereço que
+ * tinha acabado de receber o convite; sem sessão, o aceite não acontecia; o
+ * aviso saía em vermelho como se fosse erro; e o link daquele e-mail, por não
+ * estar na lista de Redirect URLs do Auth, largava o funcionário na página de
+ * planos. A função `aceitar-convite` cria a conta como `admin-criar-empresa`
+ * sempre criou — no servidor, com `email_confirm`, sem e-mail nenhum.
  */
 import { supabase } from '@/lib/supabase';
 
@@ -22,58 +32,51 @@ export async function entrarComSenha(email: string, senha: string): Promise<void
   if (error) throw new Error('E-mail ou senha incorretos.');
 }
 
+/** Um convite que já tem conta: a pessoa entra com a senha dela, não com uma nova. */
+export class ContaJaExiste extends Error {
+  constructor(readonly email: string) {
+    super('Este e-mail já tem conta no Decola Negócios. Entre com a sua senha para aceitar.');
+    this.name = 'ContaJaExiste';
+  }
+}
+
+/**
+ * Cria a conta do convidado e deixa a sessão aberta.
+ *
+ * O E-MAIL NÃO VAI DAQUI. Quem decide para qual endereço a conta é criada é o
+ * convite, no banco — o que a pessoa digitou na tela serve só para ela conferir
+ * que está no convite certo. Mandar o e-mail digitado seria deixar o navegador
+ * escolher em que endereço abrir conta.
+ */
 export async function criarContaDoConvidado(
   nome: string,
-  email: string,
   senha: string,
-  /** O convite que trouxe a pessoa até aqui. Ver a nota abaixo. */
   vinculoId: string,
-): Promise<void> {
-  const { data, error } = await supabase.auth.signUp({
-    email: email.trim(),
-    password: senha,
-    options: {
-      data: { nome: nome.trim() },
-      /**
-       * SE O PROJETO EXIGIR CONFIRMAÇÃO DE E-MAIL, o link de confirmação traz a
-       * pessoa DE VOLTA PARA ESTE CONVITE — e não para a porta da frente do
-       * site, que é o padrão.
-       *
-       * Sem isto, o caminho de quem precisa confirmar termina num beco: a conta
-       * existe, o vínculo não, e a pessoa está numa página que não sabe que
-       * havia um convite. Ela teria de achar o e-mail do convite de novo, e o
-       * botão dele, para fechar o que começou.
-       *
-       * Quando a confirmação está desligada (que é como o projeto está hoje),
-       * esta linha não custa nada: o Supabase simplesmente não usa.
-       */
-      emailRedirectTo: `${window.location.origin}/convite/${vinculoId}`,
-    },
+): Promise<{ email: string }> {
+  const { data, error } = await supabase.functions.invoke('aceitar-convite', {
+    body: { vinculo_id: vinculoId, nome: nome.trim(), senha },
   });
 
   if (error) {
-    const jaExiste =
-      error.message.toLowerCase().includes('already registered') ||
-      error.message.toLowerCase().includes('user already exists');
+    // `invoke` não traz o corpo do erro: ele vem no `context` da resposta.
+    const resposta = (error as { context?: Response }).context;
+    const detalhe = resposta ? await resposta.json().catch(() => null) : null;
     throw new Error(
-      jaExiste
-        ? 'Este e-mail já tem conta. Use a opção "Já tenho conta" para entrar.'
-        : 'Não foi possível criar a conta. Tente novamente.',
+      (detalhe as { error?: string } | null)?.error ??
+        'Não foi possível criar a conta. Tente novamente.',
     );
   }
 
-  if (data.user && data.user.identities && data.user.identities.length === 0) {
-    throw new Error('Este e-mail já tem conta. Use a opção "Já tenho conta" para entrar.');
-  }
+  const resultado = data as { conta_criada?: boolean; conta_ja_existe?: boolean; email?: string };
 
-  if (!data.session) {
-    // O `emailRedirectTo` acima faz o link da confirmação voltar para esta
-    // mesma página, então a instrução pode ser curta e verdadeira.
-    throw new Error(
-      'Sua conta foi criada. Abra o e-mail de confirmação que acabamos de enviar ' +
-        'e clique no link — ele traz você de volta para cá e o convite é aceito.',
-    );
-  }
+  if (resultado?.conta_ja_existe) throw new ContaJaExiste(resultado.email ?? '');
+  if (!resultado?.conta_criada || !resultado.email) throw new Error(ERRO_GENERICO);
+
+  // A conta nasceu confirmada, então entrar é imediato — e é isto que dá à
+  // próxima linha (`aceitar_convite`) a identidade que ela precisa conferir.
+  await supabase.auth.signInWithPassword({ email: resultado.email, password: senha });
+
+  return { email: resultado.email };
 }
 
 /**

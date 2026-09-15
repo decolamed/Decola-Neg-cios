@@ -10,7 +10,7 @@
  * componentes, senão a loja de cada cliente sairia igual à nossa.
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   moeda,
   textoSobre,
@@ -23,18 +23,54 @@ import {
 } from '@/dados/loja';
 
 /**
+ * O azul-marinho da marca, quando o lojista não escolheu cor nenhuma.
+ *
+ * Escrito aqui como hexadecimal, e não lido de `@decola/theme`, porque
+ * `textoSobre` precisa de um valor de verdade para medir a luminância — e no
+ * navegador os papéis do tema são `var(--dn-…)`, que só o CSS resolve. É o
+ * mesmo `#01395E` do desenho aprovado.
+ */
+const COR_PADRAO_DA_LOJA = '#01395E';
+
+/**
  * A cor do lojista, aplicada como variáveis CSS num escopo só.
  *
  * Variáveis, e não estilos espalhados, porque a cor precisa alcançar botões e
  * faixas que não são filhos diretos deste componente. E escopo, e não `:root`,
  * porque nada fora da vitrine deveria mudar de cor por escolha de um lojista.
+ *
+ * A CLASSE `vitrine` VEM JUNTO, e é ela que liga o desenho aprovado da loja:
+ * paleta fria, Plus Jakarta Sans nos números, cartões de imagem grande. O
+ * bloco correspondente em `estilos.css` explica por que ele é escopado.
+ *
+ * `--cor-loja` passa a existir SEMPRE, com o azul da marca como padrão. Antes
+ * ela só aparecia quando o lojista tinha escolhido uma cor, e cada regra do CSS
+ * carregava um `var(--cor-loja, …)` com a reserva escrita do lado. Com a
+ * variável sempre presente, "a cor desta loja" é uma pergunta com uma resposta
+ * só — inclusive para o `color-mix`, que não aceita reserva.
  */
 export function CoresDaLoja({ loja, children }: { loja: Loja; children: React.ReactNode }) {
-  const cor = loja.loja_cor;
-  if (!cor) return <>{children}</>;
+  const cor = loja.loja_cor || COR_PADRAO_DA_LOJA;
+
+  /**
+   * O fundo do documento também vira a cor da loja.
+   *
+   * Sem isto, puxar a página além do fim (o "elástico" do celular) mostra o
+   * cinza da plataforma por baixo do rodapé — exatamente o "por que não fica
+   * azul até embaixo?" que motivou este ajuste. A limpeza devolve o valor
+   * anterior: fora da vitrine o site continua sendo o site.
+   */
+  useEffect(() => {
+    const anterior = document.body.style.backgroundColor;
+    document.body.style.backgroundColor = cor;
+    return () => {
+      document.body.style.backgroundColor = anterior;
+    };
+  }, [cor]);
 
   return (
     <div
+      className="vitrine"
       style={
         {
           '--cor-loja': cor,
@@ -47,75 +83,166 @@ export function CoresDaLoja({ loja, children }: { loja: Loja; children: React.Re
   );
 }
 
-/* ========================================================== identidade == */
+/* ============================================================== a marca == */
 
 /**
- * O cartão de identidade da loja: logo, nome, o que ela vende e por onde
- * falar com ela.
+ * A barra da marca: o nome da loja, o que ela vende e as duas ações que o
+ * cliente repete o tempo todo.
  *
- * Os três links (WhatsApp, Instagram, endereço) só aparecem quando existem.
- * Um "Instagram" que não leva a lugar nenhum é pior do que a ausência dele:
- * ensina o visitante a desconfiar do resto da página.
+ * O QUE ELA SUBSTITUI. Antes a loja se apresentava num cartão branco com foto
+ * de perfil redonda, nome e uma fileira de pastilhas de contato — um "perfil de
+ * rede social" ocupando a primeira dobra inteira, antes de qualquer produto. O
+ * desenho aprovado troca isso por uma faixa na cor da loja, com o nome em letra
+ * de marca: ela ocupa um terço do espaço, diz a mesma coisa e ainda tinge o
+ * topo da página com a cor do lojista. Os contatos não sumiram — desceram para
+ * o rodapé, que é onde se procura telefone e endereço.
+ *
+ * A LUPA NÃO ABRE NADA. Ela leva o foco para o campo de busca da própria
+ * página, quando ele existe; nas telas que não têm busca (carrinho, pedido),
+ * volta para a vitrine, que tem. Um botão que às vezes não faz nada é pior do
+ * que um botão a menos.
  */
-export function CabecalhoDaLoja({ loja }: { loja: Loja }) {
-  const endereco = loja.endereco?.trim();
+export function BarraDaMarca({ loja, itensNoCarrinho }: { loja: Loja; itensNoCarrinho: number }) {
+  const navegar = useNavigate();
+
+  const buscar = useCallback(() => {
+    const campo = document.getElementById(ID_DA_BUSCA);
+    if (campo) {
+      campo.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      campo.focus();
+      return;
+    }
+    navegar(`/${loja.slug}`);
+  }, [navegar, loja.slug]);
 
   return (
-    <section className="loja-identidade">
-      <div className="loja-identidade-topo">
-        {loja.logo_url ? (
-          <img className="loja-logo" src={urlDaLoja(loja.logo_url)} alt="" />
-        ) : (
-          <div className="loja-logo sem-imagem" aria-hidden="true">
-            {loja.nome.charAt(0).toUpperCase()}
-          </div>
-        )}
+    <div className="loja-marca">
+      <div className="loja-marca-linha">
+        <Link to={`/${loja.slug}`} className="loja-marca-texto">
+          <span className="loja-marca-nome">{loja.nome}</span>
+          {loja.descricao ? <span className="loja-marca-tagline">{loja.descricao}</span> : null}
+        </Link>
 
-        <div className="loja-identidade-texto">
-          <h1>{loja.nome}</h1>
-          {loja.descricao ? <p className="loja-descricao">{loja.descricao}</p> : null}
+        <div className="loja-marca-acoes">
+          <button
+            type="button"
+            className="loja-marca-botao"
+            onClick={buscar}
+            aria-label="Buscar na loja"
+          >
+            <IconeBusca tamanho={23} />
+          </button>
+
+          <Link
+            to={`/${loja.slug}/carrinho`}
+            className="loja-marca-botao"
+            aria-label={
+              itensNoCarrinho > 0
+                ? `Carrinho, ${itensNoCarrinho} ${itensNoCarrinho === 1 ? 'item' : 'itens'}`
+                : 'Carrinho'
+            }
+          >
+            <IconeCarrinho tamanho={24} />
+            {itensNoCarrinho > 0 ? (
+              <span className="loja-marca-contador">{itensNoCarrinho}</span>
+            ) : null}
+          </Link>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ============================================================== rodapé == */
+
+/**
+ * Rodapé da loja: contato, navegação e a assinatura da plataforma.
+ *
+ * É ele que faz o azul chegar até embaixo — cantos arredondados em cima, cor da
+ * loja, e a inicial dela gigante e quase apagada no canto. A marca d'água não
+ * pede arte nenhuma ao lojista: ela é a primeira letra do nome que ele já
+ * digitou no cadastro.
+ *
+ * Os contatos vieram do cartão de perfil que existia no topo. Continuam
+ * condicionais um a um: um "Instagram" que não leva a lugar nenhum é pior que a
+ * ausência dele — ensina o visitante a desconfiar do resto da página.
+ */
+export function RodapeDaLoja({ loja }: { loja: Loja }) {
+  const endereco = loja.endereco?.trim();
+  const inicial = loja.nome.trim().charAt(0).toUpperCase() || 'L';
+
+  return (
+    <footer className="loja-rodape">
+      <span aria-hidden="true" className="loja-rodape-marca-dagua">
+        {inicial}
+      </span>
+
+      <div className="loja-rodape-colunas">
+        <div>
+          {loja.logo_url ? (
+            <img className="loja-rodape-logo" src={urlDaLoja(loja.logo_url)} alt="" loading="lazy" />
+          ) : null}
+          <span className="loja-rodape-nome">{loja.nome}</span>
+          {loja.descricao ? <p className="loja-rodape-tagline">{loja.descricao}</p> : null}
+        </div>
+
+        {loja.whatsapp || loja.instagram || endereco ? (
+          <div>
+            <h2>Contato</h2>
+            {loja.whatsapp ? (
+              <p>
+                <a href={`https://wa.me/${loja.whatsapp}`} target="_blank" rel="noreferrer noopener">
+                  WhatsApp
+                </a>
+              </p>
+            ) : null}
+            {loja.instagram ? (
+              <p>
+                <a
+                  href={urlDoInstagram(loja.instagram)}
+                  target="_blank"
+                  rel="noreferrer noopener"
+                >
+                  @{loja.instagram}
+                </a>
+              </p>
+            ) : null}
+            {endereco ? (
+              <p>
+                {/* Abre no mapa do aparelho: quem toca num endereço quer chegar lá. */}
+                <a
+                  href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(endereco)}`}
+                  target="_blank"
+                  rel="noreferrer noopener"
+                >
+                  {endereco}
+                </a>
+              </p>
+            ) : null}
+          </div>
+        ) : null}
+
+        <div>
+          <h2>Navegar</h2>
+          <p>
+            <Link to={`/${loja.slug}`}>Todos os produtos</Link>
+          </p>
+          <p>
+            <Link to={`/${loja.slug}/categorias`}>Categorias</Link>
+          </p>
+          <p>
+            <Link to={`/${loja.slug}/pedidos`}>Meus pedidos</Link>
+          </p>
         </div>
       </div>
 
-      <div className="loja-contatos">
-        {loja.whatsapp ? (
-          <a
-            className="loja-contato"
-            href={`https://wa.me/${loja.whatsapp}`}
-            target="_blank"
-            rel="noreferrer noopener"
-          >
-            <IconeWhatsapp />
-            WhatsApp
-          </a>
-        ) : null}
-
-        {loja.instagram ? (
-          <a
-            className="loja-contato"
-            href={urlDoInstagram(loja.instagram)}
-            target="_blank"
-            rel="noreferrer noopener"
-          >
-            <IconeInstagram />
-            Instagram
-          </a>
-        ) : null}
-
-        {endereco ? (
-          // Abre no mapa do aparelho: quem toca num endereço quer chegar lá.
-          <a
-            className="loja-contato"
-            href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(endereco)}`}
-            target="_blank"
-            rel="noreferrer noopener"
-          >
-            <IconeLocal />
-            Endereço
-          </a>
-        ) : null}
+      <div className="loja-rodape-fim">
+        <span>
+          © {new Date().getFullYear()} {loja.nome}
+        </span>
+        <span>Loja criada com Decola Negócios</span>
       </div>
-    </section>
+    </footer>
   );
 }
 
@@ -284,6 +411,7 @@ export function CarrosselDaLoja({ loja }: { loja: Loja }) {
   const deslocamento = largura > 0 ? -indice * largura + arrasto : 0;
 
   return (
+    <div className="loja-carrossel-area">
     <div
       className="loja-carrossel"
       // `onTouchMove` não é passivo aqui porque precisamos impedir a rolagem
@@ -346,7 +474,16 @@ export function CarrosselDaLoja({ loja }: { loja: Loja }) {
           );
         })}
       </div>
+    </div>
 
+      {/**
+        * OS PONTOS FICAM FORA DA MOLDURA, e não por cima da imagem.
+        *
+        * Sobre um banner claro — e banner de promoção costuma ser claro — o
+        * ponto branco desaparecia, e junto com ele a única pista de que havia
+        * mais de um. Abaixo, sobre o fundo da página, eles usam a cor da loja e
+        * se leem em qualquer banner.
+        */}
       {total > 1 ? (
         <div className="loja-carrossel-pontos">
           {banners.map((b, i) => (
@@ -370,19 +507,30 @@ export function CarrosselDaLoja({ loja }: { loja: Loja }) {
 
 /* ================================================================ busca == */
 
+/**
+ * O campo de busca tem um nome fixo no documento porque a lupa da barra da
+ * marca precisa achá-lo de outro canto da árvore. Um `ref` não serviria: os
+ * dois componentes não têm parentesco nenhum.
+ */
+export const ID_DA_BUSCA = 'loja-busca';
+
 export function BuscaDeProdutos({
   valor,
   aoMudar,
-  placeholder = 'Buscar produtos…',
+  placeholder = 'Buscar na loja…',
+  /** `true` na vitrine: a busca acompanha a rolagem, grudada no topo. */
+  fixa = false,
 }: {
   valor: string;
   aoMudar: (v: string) => void;
   placeholder?: string;
+  fixa?: boolean;
 }) {
-  return (
+  const campo = (
     <div className="loja-busca">
-      <IconeBusca />
+      <IconeBusca tamanho={21} />
       <input
+        id={ID_DA_BUSCA}
         type="search"
         value={valor}
         onChange={(e) => aoMudar(e.target.value)}
@@ -396,89 +544,126 @@ export function BuscaDeProdutos({
       ) : null}
     </div>
   );
+
+  return fixa ? <div className="loja-busca-topo">{campo}</div> : campo;
 }
 
 /* =========================================================== categorias == */
 
 /**
- * Categorias em círculo, como no balcão: a foto de um produto representa a
- * seção inteira.
+ * Cabeçalho do catálogo: o título, quantos itens ele tem e o funil.
  *
- * A capa vem emprestada do primeiro produto da categoria (a view resolve
- * isso). Pedir uma imagem de categoria ao lojista seria pedir trabalho para
- * obter o que as fotos dele já dão.
+ * O QUE ELE SUBSTITUI. A vitrine trazia uma fileira de categorias em círculo,
+ * com a foto emprestada de um produto. Ela era bonita e custava uma dobra
+ * inteira acima do primeiro produto — numa loja de seis categorias o cliente
+ * rolava um catálogo de fotos antes de chegar ao catálogo de verdade. O desenho
+ * aprovado troca a fileira por um botão de 40px: quem quer filtrar toca nele,
+ * quem não quer vê produto onde antes via categoria.
+ *
+ * As categorias não mudaram de endereço — são as mesmas rotas de sempre, agora
+ * listadas dentro da folha.
  */
-export function CirculosDeCategoria({
+export function CabecalhoDoCatalogo({
+  titulo,
+  contagem,
   slug,
   categorias,
   ativa = null,
 }: {
+  titulo: string;
+  /** Texto à direita do título ("12 produtos"). Vazio esconde. */
+  contagem?: string;
   slug: string;
   categorias: CategoriaVitrine[];
-  /** `null` = "Todos" em destaque. */
   ativa?: string | null;
 }) {
-  if (categorias.length === 0) return null;
+  const [aberta, setAberta] = useState(false);
 
   return (
-    <nav className="categorias-circulos" aria-label="Categorias">
-      <Link
-        to={`/${slug}`}
-        className={ativa === null ? 'categoria-circulo ativo' : 'categoria-circulo'}
-      >
-        <span className="categoria-imagem grade" aria-hidden="true">
-          <IconeGrade />
-        </span>
-        <span className="categoria-nome">Todos</span>
-      </Link>
+    <div className="loja-secao-topo">
+      <div className="loja-secao-titulo-grupo">
+        <h2 className="loja-secao-titulo">{titulo}</h2>
+        {contagem ? <span className="loja-secao-contagem">{contagem}</span> : null}
+      </div>
 
-      {categorias.map((categoria) => (
-        <Link
-          key={categoria.id}
-          to={`/${slug}/categoria/${categoria.id}`}
-          className={ativa === categoria.id ? 'categoria-circulo ativo' : 'categoria-circulo'}
-        >
-          {categoria.capa ? (
-            <img className="categoria-imagem" src={urlDaImagem(categoria.capa)} alt="" loading="lazy" />
-          ) : (
-            <span className="categoria-imagem sem-imagem" aria-hidden="true">
-              {categoria.nome.charAt(0).toUpperCase()}
-            </span>
-          )}
-          <span className="categoria-nome">{categoria.nome}</span>
-        </Link>
-      ))}
-    </nav>
+      {categorias.length > 0 ? (
+        <>
+          <button
+            type="button"
+            className={ativa === null ? 'loja-filtro-botao' : 'loja-filtro-botao ativo'}
+            onClick={() => setAberta(true)}
+            aria-label="Filtrar por categoria"
+            aria-haspopup="dialog"
+          >
+            <IconeFunil />
+          </button>
+
+          {aberta ? (
+            <FolhaDeCategorias
+              slug={slug}
+              categorias={categorias}
+              ativa={ativa}
+              aoFechar={() => setAberta(false)}
+            />
+          ) : null}
+        </>
+      ) : null}
+    </div>
   );
 }
 
-/** As mesmas categorias, em pastilhas — para o topo da página de categoria. */
-export function ChipsDeCategoria({
+/** A folha que sobe de baixo com as categorias da loja. */
+function FolhaDeCategorias({
   slug,
   categorias,
   ativa,
+  aoFechar,
 }: {
   slug: string;
   categorias: CategoriaVitrine[];
   ativa: string | null;
+  aoFechar: () => void;
 }) {
-  if (categorias.length === 0) return null;
+  // Fechar no Esc: quem abriu a folha sem querer, no computador, não deveria
+  // precisar mirar num × de 40px para sair dela.
+  useEffect(() => {
+    const aoTeclar = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') aoFechar();
+    };
+    window.addEventListener('keydown', aoTeclar);
+    return () => window.removeEventListener('keydown', aoTeclar);
+  }, [aoFechar]);
 
   return (
-    <nav className="categoria-chips" aria-label="Categorias">
-      <Link to={`/${slug}`} className={ativa === null ? 'chip ativo' : 'chip'}>
-        Todos
-      </Link>
-      {categorias.map((c) => (
-        <Link
-          key={c.id}
-          to={`/${slug}/categoria/${c.id}`}
-          className={ativa === c.id ? 'chip ativo' : 'chip'}
-        >
-          {c.nome}
-        </Link>
-      ))}
-    </nav>
+    <div className="loja-folha" role="dialog" aria-modal="true" aria-label="Filtrar por categoria">
+      <button type="button" className="loja-folha-fundo" aria-label="Fechar" onClick={aoFechar} />
+
+      <div className="loja-folha-corpo">
+        <div className="loja-folha-topo">
+          <h2>Filtrar</h2>
+          <button type="button" className="loja-folha-fechar" aria-label="Fechar" onClick={aoFechar}>
+            ×
+          </button>
+        </div>
+
+        <h3 className="loja-folha-rotulo">Categoria</h3>
+        <div className="loja-folha-chips">
+          <Link to={`/${slug}`} onClick={aoFechar} className={ativa === null ? 'chip ativo' : 'chip'}>
+            Todos
+          </Link>
+          {categorias.map((c) => (
+            <Link
+              key={c.id}
+              to={`/${slug}/categoria/${c.id}`}
+              onClick={aoFechar}
+              className={ativa === c.id ? 'chip ativo' : 'chip'}
+            >
+              {c.nome}
+            </Link>
+          ))}
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -511,7 +696,51 @@ export function CapaDoProduto({
   return <img className={classe} src={urlDaImagem(capa)} alt={produto.nome} loading="lazy" />;
 }
 
-/** Cartão vertical — usado na grade e na faixa de destaques. */
+/** A partir de quantas unidades o estoque deixa de ser notícia. */
+const ESTOQUE_BAIXO = 3;
+
+/**
+ * O que a linha de estoque diz, e por que ela existe.
+ *
+ * O desenho original desta vitrine trazia estrelas e número de avaliações. Não
+ * temos nem uma coisa nem outra — e inventar "4,8 (124)" numa loja que nunca
+ * recebeu uma avaliação seria mentir para o cliente do lojista. O estoque ocupa
+ * o mesmo lugar e é verdade: já está na view, calculado como
+ * `estoque_atual - estoque_reservado`.
+ *
+ * Ele também trabalha. "Últimas 3 unidades" apressa a decisão; "Sem estoque"
+ * evita a frustração de tocar, esperar carregar e só então descobrir.
+ */
+function linhaDeEstoque(disponivel: number): { texto: string; baixo: boolean } {
+  if (disponivel <= 0) return { texto: 'Sem estoque', baixo: false };
+  if (disponivel <= ESTOQUE_BAIXO) {
+    return {
+      texto: `${disponivel === 1 ? 'Última unidade' : `Últimas ${disponivel} unidades`}`,
+      baixo: true,
+    };
+  }
+  return { texto: `${disponivel} disponíveis`, baixo: false };
+}
+
+/**
+ * Cartão de produto — a peça que o desenho aprovado mais mudou.
+ *
+ * ANTES: foto pequena, nome, preço na cor da marca e um botão redondo de 40px
+ * no canto, com só um ícone de carrinho dentro. O botão era discreto ao ponto
+ * de passar despercebido, e o cartão inteiro cabia em 150px porque a grade se
+ * arranjava sozinha com `auto-fill`.
+ *
+ * AGORA: a foto é um ladrilho quadrado que ocupa a largura toda do cartão, o
+ * preço é o maior texto da peça e na cor da loja, e a ação virou um botão de
+ * largura total com a palavra escrita. Em cima da foto, quando há o que dizer,
+ * um selo: laranja para "Mais vendido" (o `destaque` que o lojista marca no
+ * aplicativo), cinza para "Esgotado".
+ *
+ * ESGOTADO CONTINUA SENDO UM BOTÃO, e desabilitado. Um cartão que perde o botão
+ * muda de altura e desalinha a linha inteira da grade; e "Indisponível" escrito
+ * onde a pessoa procura "Adicionar" responde a pergunta dela sem ela precisar
+ * caçar a resposta em outro canto do cartão.
+ */
 export function CartaoDeProduto({
   slug,
   produto,
@@ -522,72 +751,57 @@ export function CartaoDeProduto({
   aoAdicionar: (id: string) => void;
 }) {
   const esgotado = produto.disponivel <= 0;
+  const estoque = linhaDeEstoque(produto.disponivel);
+  const capa = produto.imagens[0];
+  const selo = esgotado ? 'Esgotado' : produto.destaque ? 'Mais vendido' : null;
 
   return (
     <article className={esgotado ? 'produto esgotado' : 'produto'}>
-      <Link to={`/${slug}/produto/${produto.id}`} className="produto-link">
-        <CapaDoProduto produto={produto} />
-        <span className="produto-nome">{produto.nome}</span>
+      <Link to={`/${slug}/produto/${produto.id}`} className="produto-ladrilho">
+        {capa ? (
+          <img src={urlDaImagem(capa)} alt={produto.nome} loading="lazy" />
+        ) : (
+          <span className="produto-ladrilho-vazio" aria-hidden="true">
+            {produto.nome.charAt(0).toUpperCase()}
+          </span>
+        )}
+
+        {selo ? (
+          <span className={esgotado ? 'produto-selo apagado' : 'produto-selo'}>{selo}</span>
+        ) : null}
+      </Link>
+
+      <div className="produto-corpo">
+        <Link to={`/${slug}/produto/${produto.id}`} className="produto-nome-link">
+          <h3 className="produto-nome">{produto.nome}</h3>
+        </Link>
+
+        <span className={estoque.baixo ? 'produto-estoque baixo' : 'produto-estoque'}>
+          {estoque.texto}
+        </span>
+
         <span className="produto-preco">{moeda(produto.preco)}</span>
-      </Link>
 
-      {esgotado ? (
-        <span className="esgotado-selo">Sem estoque</span>
-      ) : (
         <button
           type="button"
-          className="produto-add"
+          className="produto-cta"
+          disabled={esgotado}
           onClick={() => aoAdicionar(produto.id)}
-          aria-label={`Adicionar ${produto.nome} ao carrinho`}
+          aria-label={
+            esgotado ? `${produto.nome} indisponível` : `Adicionar ${produto.nome} ao carrinho`
+          }
         >
-          <IconeCarrinho />
+          <IconeCarrinho tamanho={16} />
+          {esgotado ? (
+            <span>Indisponível</span>
+          ) : (
+            <span>
+              <span className="rotulo-curto">Adicionar</span>
+              <span className="rotulo-longo">Adicionar ao carrinho</span>
+            </span>
+          )}
         </button>
-      )}
-    </article>
-  );
-}
-
-/** Linha horizontal — usada na lista de uma categoria e nos resultados. */
-export function LinhaDeProduto({
-  slug,
-  produto,
-  aoAdicionar,
-  mostrarCategoria = true,
-}: {
-  slug: string;
-  produto: ProdutoVitrine;
-  aoAdicionar: (id: string) => void;
-  /** Falso dentro da própria categoria: repetir "Cabelos" em toda linha da
-   *  página "Cabelos" ocupa espaço sem dizer nada. */
-  mostrarCategoria?: boolean;
-}) {
-  const esgotado = produto.disponivel <= 0;
-
-  return (
-    <article className={esgotado ? 'produto-linha esgotado' : 'produto-linha'}>
-      <Link to={`/${slug}/produto/${produto.id}`} className="produto-linha-link">
-        <CapaDoProduto produto={produto} />
-        <div className="produto-linha-texto">
-          <span className="produto-nome">{produto.nome}</span>
-          {mostrarCategoria && produto.categoria_nome ? (
-            <span className="produto-categoria">{produto.categoria_nome}</span>
-          ) : null}
-          <span className="produto-preco">{moeda(produto.preco)}</span>
-        </div>
-      </Link>
-
-      {esgotado ? (
-        <span className="esgotado-selo">Sem estoque</span>
-      ) : (
-        <button
-          type="button"
-          className="produto-add"
-          onClick={() => aoAdicionar(produto.id)}
-          aria-label={`Adicionar ${produto.nome} ao carrinho`}
-        >
-          <IconeCarrinho />
-        </button>
-      )}
+      </div>
     </article>
   );
 }
@@ -678,12 +892,21 @@ function IconeGrade() {
   );
 }
 
-function IconeCarrinho() {
+function IconeCarrinho({ tamanho = 20 }: { tamanho?: number }) {
   return (
-    <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+    <svg viewBox="0 0 24 24" width={tamanho} height={tamanho} aria-hidden="true">
       <path d="M3 4.5h2.2l2.3 10.2h9.8l2.2-7.2H6.4" {...traco} />
       <circle cx="9.2" cy="19" r="1.5" {...traco} />
       <circle cx="16.6" cy="19" r="1.5" {...traco} />
+    </svg>
+  );
+}
+
+/** O funil do filtro. */
+function IconeFunil() {
+  return (
+    <svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true">
+      <path d="M3 5.5h18l-7 8v5.5l-4 2v-7.5l-7-8Z" {...traco} strokeWidth={1.9} />
     </svg>
   );
 }
@@ -697,39 +920,11 @@ function IconePessoa() {
   );
 }
 
-function IconeBusca() {
+function IconeBusca({ tamanho = 18 }: { tamanho?: number }) {
   return (
-    <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
-      <circle cx="10.8" cy="10.8" r="6.3" {...traco} />
-      <path d="m15.4 15.4 4 4" {...traco} />
-    </svg>
-  );
-}
-
-function IconeWhatsapp() {
-  return (
-    <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
-      <path d="M4 20l1.3-4A8 8 0 1 1 8 18.7L4 20Z" {...traco} />
-      <path d="M9 9.6c.4 2.2 2.2 4 4.4 4.4l1-1.2 1.7.7-.3 1.6c-2.9.6-6.4-2.9-5.8-5.8l1.6-.3.7 1.7-1.3 1" {...traco} />
-    </svg>
-  );
-}
-
-function IconeInstagram() {
-  return (
-    <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
-      <rect x="3.6" y="3.6" width="16.8" height="16.8" rx="5" {...traco} />
-      <circle cx="12" cy="12" r="4" {...traco} />
-      <circle cx="17" cy="7" r="1" fill="currentColor" stroke="none" />
-    </svg>
-  );
-}
-
-function IconeLocal() {
-  return (
-    <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
-      <path d="M12 21s6.5-5.6 6.5-10a6.5 6.5 0 0 0-13 0c0 4.4 6.5 10 6.5 10Z" {...traco} />
-      <circle cx="12" cy="11" r="2.4" {...traco} />
+    <svg viewBox="0 0 24 24" width={tamanho} height={tamanho} aria-hidden="true">
+      <circle cx="10.8" cy="10.8" r="6.3" {...traco} strokeWidth={2} />
+      <path d="m15.4 15.4 4 4" {...traco} strokeWidth={2} />
     </svg>
   );
 }

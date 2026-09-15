@@ -12,7 +12,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { Aviso, Carregando } from '@/componentes/Basicos';
-import { BuscaDeProdutos, ChipsDeCategoria, LinhaDeProduto } from '@/componentes/Loja';
+import { BuscaDeProdutos, CabecalhoDoCatalogo, CartaoDeProduto } from '@/componentes/Loja';
 import { MolduraDaLoja } from '@/componentes/MolduraDaLoja';
 import { adicionarAoCarrinho } from '@/dados/carrinho';
 import {
@@ -118,24 +118,29 @@ export function Categoria() {
 
   return (
     <MolduraDaLoja loja={loja}>
+      {daCategoria.length > 3 ? (
+        <BuscaDeProdutos
+          valor={busca}
+          aoMudar={setBusca}
+          placeholder={`Buscar em ${categoria?.nome ?? 'esta categoria'}…`}
+          fixa
+        />
+      ) : null}
+
       <main className="pagina">
         <Link to={`/${slug}`} className="voltar">
           ← {loja.nome}
         </Link>
 
-        <div className="cabecalho-pagina">
-          <h1>{categoria?.nome ?? 'Categoria'}</h1>
-        </div>
-
-        <ChipsDeCategoria slug={slug} categorias={categorias} ativa={id} />
-
-        {daCategoria.length > 3 ? (
-          <BuscaDeProdutos
-            valor={busca}
-            aoMudar={setBusca}
-            placeholder={`Buscar em ${categoria?.nome ?? 'esta categoria'}…`}
-          />
-        ) : null}
+        {/* O título da categoria já traz o filtro do lado: quem entrou em
+            "Cabelos" pelo caminho errado troca sem voltar duas telas. */}
+        <CabecalhoDoCatalogo
+          titulo={categoria?.nome ?? 'Categoria'}
+          contagem={`${visiveis.length} ${visiveis.length === 1 ? 'produto' : 'produtos'}`}
+          slug={slug}
+          categorias={categorias}
+          ativa={id ?? null}
+        />
 
         {visiveis.length === 0 ? (
           <div className="card">
@@ -149,14 +154,13 @@ export function Categoria() {
             </Link>
           </div>
         ) : (
-          <div className="lista-produtos">
+          <div className="grade-produtos">
             {visiveis.map((produto) => (
-              <LinhaDeProduto
+              <CartaoDeProduto
                 key={produto.id}
                 slug={slug}
                 produto={produto}
                 aoAdicionar={adicionar}
-                mostrarCategoria={false}
               />
             ))}
           </div>

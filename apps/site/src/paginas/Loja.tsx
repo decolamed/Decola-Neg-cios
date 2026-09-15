@@ -12,15 +12,13 @@
  * duzentos produtos ela é uma parede.
  */
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { Aviso, Carregando } from '@/componentes/Basicos';
 import {
   BuscaDeProdutos,
-  CabecalhoDaLoja,
+  CabecalhoDoCatalogo,
   CartaoDeProduto,
   CarrosselDaLoja,
-  CirculosDeCategoria,
-  LinhaDeProduto,
 } from '@/componentes/Loja';
 import { MolduraDaLoja } from '@/componentes/MolduraDaLoja';
 import { adicionarAoCarrinho } from '@/dados/carrinho';
@@ -136,31 +134,33 @@ export function Loja() {
 
   return (
     <MolduraDaLoja loja={loja}>
+      {/* A busca vem ANTES do banner, e não depois. Ela é a única coisa da
+          página que precisa acompanhar a rolagem — logo abaixo da barra da
+          marca ela gruda no topo sem cobrir nada; embaixo do banner, ela
+          grudaria por cima dele. */}
+      <BuscaDeProdutos valor={busca} aoMudar={setBusca} fixa />
+      <CarrosselDaLoja loja={loja} />
+
       <main className="pagina">
-        <CarrosselDaLoja loja={loja} />
-        <CabecalhoDaLoja loja={loja} />
-
-        <BuscaDeProdutos valor={busca} aoMudar={setBusca} />
-
-        {/* Buscando, a página inteira vira o resultado: categorias e
-            destaques abaixo de uma busca ativa são ruído entre a pessoa e o
-            que ela acabou de pedir. */}
+        {/* Buscando, a página inteira vira o resultado: destaques abaixo de uma
+            busca ativa são ruído entre a pessoa e o que ela acabou de pedir. */}
         {buscando ? (
           <section className="loja-secao">
-            <h2 className="loja-secao-titulo">
-              {resultados.length === 0
-                ? 'Nenhum produto encontrado'
-                : `${resultados.length} ${resultados.length === 1 ? 'resultado' : 'resultados'}`}
-            </h2>
+            <CabecalhoDoCatalogo
+              titulo="Resultados"
+              contagem={rotuloDaContagem(resultados.length)}
+              slug={slug}
+              categorias={categorias}
+            />
 
             {resultados.length === 0 ? (
               <p className="legenda">
-                Tente outra palavra, ou use as categorias para ver tudo o que a loja tem.
+                Tente outra palavra, ou use o filtro para ver tudo o que a loja tem.
               </p>
             ) : (
-              <div className="lista-produtos">
+              <div className="grade-produtos">
                 {resultados.map((produto) => (
-                  <LinhaDeProduto
+                  <CartaoDeProduto
                     key={produto.id}
                     slug={slug}
                     produto={produto}
@@ -172,17 +172,14 @@ export function Loja() {
           </section>
         ) : (
           <>
-            <CirculosDeCategoria slug={slug} categorias={categorias} />
-
             {destaques.length > 0 ? (
               <section className="loja-secao">
-                <div className="loja-secao-cabecalho">
-                  <h2 className="loja-secao-titulo">Produtos em destaque</h2>
-                </div>
-                {/* Faixa que rola de lado: destaque é convite, não catálogo.
-                    Empilhados, os destaques empurrariam o resto da loja para
-                    fora da tela. */}
-                <div className="faixa-produtos">
+                <CabecalhoDoCatalogo
+                  titulo="Destaques"
+                  slug={slug}
+                  categorias={[]}
+                />
+                <div className="grade-produtos">
                   {destaques.map((produto) => (
                     <CartaoDeProduto
                       key={produto.id}
@@ -196,16 +193,12 @@ export function Loja() {
             ) : null}
 
             <section className="loja-secao">
-              <div className="loja-secao-cabecalho">
-                <h2 className="loja-secao-titulo">
-                  {destaques.length > 0 ? 'Todos os produtos' : 'Produtos'}
-                </h2>
-                {categorias.length > 0 ? (
-                  <Link className="loja-secao-link" to={`/${slug}/categorias`}>
-                    Ver categorias →
-                  </Link>
-                ) : null}
-              </div>
+              <CabecalhoDoCatalogo
+                titulo="Produtos"
+                contagem={rotuloDaContagem(produtos.length)}
+                slug={slug}
+                categorias={categorias}
+              />
 
               {produtos.length === 0 ? (
                 <div className="card">
@@ -229,4 +222,9 @@ export function Loja() {
       </main>
     </MolduraDaLoja>
   );
+}
+
+/** "1 produto" / "12 produtos" — o texto discreto ao lado do título. */
+function rotuloDaContagem(quantos: number): string {
+  return `${quantos} ${quantos === 1 ? 'produto' : 'produtos'}`;
 }

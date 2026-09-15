@@ -6,12 +6,19 @@
  * descobre que algo mudou desde que colocou no carrinho — e o texto diz isso
  * em vez de simplesmente corrigir o número por baixo do pano.
  */
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { Aviso, Carregando } from '@/componentes/Basicos';
 import { CapaDoProduto } from '@/componentes/Loja';
+import { MolduraDaLoja } from '@/componentes/MolduraDaLoja';
 import { definirQuantidade, itensDoCarrinho, removerDoCarrinho } from '@/dados/carrinho';
-import { listarProdutos, moeda, type ProdutoVitrine } from '@/dados/loja';
+import {
+  carregarLoja,
+  listarProdutos,
+  moeda,
+  type Loja as TipoLoja,
+  type ProdutoVitrine,
+} from '@/dados/loja';
 
 type Linha = { produto: ProdutoVitrine; quantidade: number; excedeu: boolean };
 
@@ -22,6 +29,32 @@ export function Carrinho() {
   const [linhas, setLinhas] = useState<Linha[] | null>(null);
   const [sumiram, setSumiram] = useState(0);
   const [erro, setErro] = useState<string | null>(null);
+  /**
+   * A loja, só para vestir a tela.
+   *
+   * O carrinho é destino da barra de navegação da vitrine: sair de uma loja
+   * inteira na cor do lojista e cair numa página cinza da Decola é a única
+   * emenda visível do caminho de compra. Por isso ele carrega a loja também.
+   *
+   * MAS ELE NÃO DEPENDE DELA. Se a consulta falhar, a moldura não aparece e o
+   * carrinho continua funcionando igual — um enfeite não pode ser motivo para
+   * ninguém conseguir fechar o pedido.
+   */
+  const [loja, setLoja] = useState<TipoLoja | null>(null);
+
+  useEffect(() => {
+    let vivo = true;
+    carregarLoja(slug)
+      .then((l) => {
+        if (vivo) setLoja(l);
+      })
+      .catch(() => {
+        /* sem moldura, e nada mais. */
+      });
+    return () => {
+      vivo = false;
+    };
+  }, [slug]);
 
   const montar = useCallback(async () => {
     try {
@@ -75,18 +108,22 @@ export function Carrinho() {
     void montar();
   };
 
+  /** A tela dentro da moldura da loja — ou sozinha, se a loja não veio. */
+  const comMoldura = (conteudo: ReactNode) =>
+    loja ? <MolduraDaLoja loja={loja}>{conteudo}</MolduraDaLoja> : conteudo;
+
   if (linhas === null) {
-    return (
+    return comMoldura(
       <main className="pagina estreita">
         <Carregando />
-      </main>
+      </main>,
     );
   }
 
   const total = linhas.reduce((soma, l) => soma + l.produto.preco * l.quantidade, 0);
   const temProblema = linhas.some((l) => l.excedeu);
 
-  return (
+  return comMoldura(
     <main className="pagina estreita">
       <Link to={`/${slug}`} className="voltar">
         ← Continuar comprando
@@ -182,6 +219,6 @@ export function Carrinho() {
           ) : null}
         </>
       )}
-    </main>
+    </main>,
   );
 }

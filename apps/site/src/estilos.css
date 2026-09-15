@@ -373,17 +373,6 @@ a.botao {
  * uma cor clara receba texto escuro. Contraste não é escolha do lojista.
  */
 
-.loja-cabecalho {
-  display: flex;
-  gap: var(--espaco-md);
-  align-items: center;
-  margin-bottom: var(--espaco-lg);
-}
-
-.loja-cabecalho h1 {
-  color: var(--cor-loja, var(--cor-primaria));
-}
-
 /* Carrossel: proporção fixa para a página não pular enquanto a imagem carrega
    nem mudar de altura quando os banners trocam. */
 .loja-carrossel {
@@ -461,14 +450,6 @@ a.botao {
 .loja-carrossel-pontos .ponto.ativo::before {
   background: #fff;
   transform: scale(1.25);
-}
-
-.loja-logo {
-  width: 64px;
-  height: 64px;
-  border-radius: var(--raio-md);
-  object-fit: cover;
-  flex-shrink: 0;
 }
 
 .loja-descricao {
@@ -561,18 +542,6 @@ a.botao {
 
 /* O botão de adicionar é absoluto no canto do cartão: sem esta folga ele
    encosta no preço quando o nome ocupa três linhas. */
-.grade-produtos .produto-link,
-.faixa-produtos .produto-link {
-  padding-bottom: 44px;
-}
-
-.grade-produtos .produto-nome,
-.faixa-produtos .produto-nome {
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
 
 .produto-descricao {
   color: var(--cor-textoSuave);
@@ -584,13 +553,6 @@ a.botao {
   min-height: 38px;
   font-size: var(--fonte-legenda-tamanho);
   padding: var(--espaco-xs) var(--espaco-md);
-}
-
-.esgotado {
-  text-align: center;
-  font-size: var(--fonte-legenda-tamanho);
-  color: var(--cor-textoSuave);
-  padding: var(--espaco-sm);
 }
 
 .miniaturas {
@@ -1160,49 +1122,6 @@ a.botao {
 
 /* ---------------------------------------------------------- identidade --- */
 
-.loja-identidade {
-  background: var(--cor-fundoCard);
-  border-radius: var(--raio-lg);
-  padding: var(--espaco-md);
-  box-shadow: var(--sombra-card);
-  margin-bottom: var(--espaco-md);
-}
-
-.loja-identidade-topo {
-  display: flex;
-  align-items: center;
-  gap: var(--espaco-md);
-}
-
-.loja-logo {
-  width: 56px;
-  height: 56px;
-  border-radius: var(--raio-pill, 999px);
-  object-fit: cover;
-  flex-shrink: 0;
-  background: var(--cor-fundo);
-}
-
-.loja-logo.sem-imagem {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-family: var(--familia-titulo);
-  font-size: 24px;
-  color: var(--cor-sobre-loja, var(--cor-textoInverso));
-  background: var(--cor-loja, var(--cor-primaria));
-}
-
-.loja-identidade-texto {
-  min-width: 0;
-}
-
-.loja-identidade-texto h1 {
-  font-size: var(--fonte-h2-tamanho);
-  color: var(--cor-loja, var(--cor-primaria));
-  margin: 0;
-}
-
 .loja-descricao {
   margin: 2px 0 0;
   color: var(--cor-textoSuave);
@@ -1212,33 +1131,6 @@ a.botao {
 
 /* Os contatos rolam de lado quando não cabem: quebrar a linha empurraria a
    busca para fora da primeira dobra em telas pequenas. */
-.loja-contatos {
-  display: flex;
-  gap: var(--espaco-sm);
-  margin-top: var(--espaco-md);
-  overflow-x: auto;
-  scrollbar-width: none;
-}
-
-.loja-contatos::-webkit-scrollbar {
-  display: none;
-}
-
-.loja-contato {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  flex-shrink: 0;
-  padding: 8px 14px;
-  min-height: 38px;
-  border-radius: 999px;
-  border: 1px solid var(--cor-borda);
-  background: var(--cor-fundo);
-  color: var(--cor-loja, var(--cor-primaria));
-  font-size: var(--fonte-legenda-tamanho);
-  font-weight: var(--fonte-corpoDestacado-peso);
-  text-decoration: none;
-}
 
 /* -------------------------------------------------------------- busca ---- */
 
@@ -1280,78 +1172,6 @@ a.botao {
 }
 
 /* --------------------------------------------------------- categorias ---- */
-
-.categorias-circulos {
-  display: flex;
-  gap: var(--espaco-md);
-  overflow-x: auto;
-  padding-bottom: var(--espaco-sm);
-  margin-bottom: var(--espaco-md);
-  scrollbar-width: none;
-}
-
-.categorias-circulos::-webkit-scrollbar {
-  display: none;
-}
-
-.categoria-circulo {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
-  width: 72px;
-  flex-shrink: 0;
-  text-decoration: none;
-  color: var(--cor-texto);
-  font-size: var(--fonte-micro-tamanho, 12px);
-}
-
-.categoria-imagem {
-  width: 60px;
-  height: 60px;
-  border-radius: 999px;
-  object-fit: cover;
-  background: var(--cor-fundoCampo);
-  border: 2px solid transparent;
-}
-
-.categoria-circulo.ativo .categoria-imagem {
-  border-color: var(--cor-loja, var(--cor-acaoPrimaria));
-}
-
-.categoria-imagem.grade,
-.categoria-imagem.sem-imagem {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-family: var(--familia-titulo);
-  font-size: 20px;
-  color: var(--cor-sobre-loja, var(--cor-textoInverso));
-  background: var(--cor-loja, var(--cor-primaria));
-}
-
-.categoria-nome {
-  text-align: center;
-  line-height: 1.2;
-  /* Duas linhas no máximo: "Cuidados pessoais" não pode empurrar a faixa. */
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
-.categoria-chips {
-  display: flex;
-  gap: var(--espaco-sm);
-  overflow-x: auto;
-  margin-bottom: var(--espaco-md);
-  padding-bottom: 4px;
-  scrollbar-width: none;
-}
-
-.categoria-chips::-webkit-scrollbar {
-  display: none;
-}
 
 .chip {
   flex-shrink: 0;
@@ -1427,21 +1247,9 @@ a.botao {
   margin-bottom: var(--espaco-lg);
 }
 
-.loja-secao-cabecalho {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: var(--espaco-md);
-  margin-bottom: var(--espaco-sm);
-}
-
 .loja-secao-titulo {
   font-size: var(--fonte-h2-tamanho);
   margin: 0 0 var(--espaco-sm);
-}
-
-.loja-secao-cabecalho .loja-secao-titulo {
-  margin-bottom: 0;
 }
 
 .loja-secao-link {
@@ -1452,19 +1260,6 @@ a.botao {
 }
 
 /* Faixa horizontal dos destaques. */
-.faixa-produtos {
-  display: flex;
-  gap: var(--espaco-md);
-  overflow-x: auto;
-  padding-bottom: var(--espaco-sm);
-  scroll-snap-type: x mandatory;
-}
-
-.faixa-produtos .produto {
-  width: 158px;
-  flex-shrink: 0;
-  scroll-snap-align: start;
-}
 
 /* ---------------------------------------------------------- produtos ----- */
 
@@ -1472,90 +1267,6 @@ a.botao {
    largura total com a palavra "Adicionar" comia a altura da foto. */
 .produto {
   position: relative;
-}
-
-.produto-add {
-  position: absolute;
-  right: var(--espaco-sm);
-  bottom: var(--espaco-sm);
-  width: 40px;
-  height: 40px;
-  border: none;
-  border-radius: var(--raio-md);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--cor-loja, var(--cor-acaoPrimaria));
-  color: var(--cor-sobre-loja, var(--cor-textoSobreAcao));
-}
-
-.produto.esgotado .produto-capa,
-.produto-linha.esgotado .produto-capa {
-  opacity: 0.55;
-}
-
-.esgotado-selo {
-  align-self: flex-start;
-  font-size: var(--fonte-legenda-tamanho);
-  color: var(--cor-textoSuave);
-  background: var(--cor-fundo);
-  border-radius: var(--raio-sm);
-  padding: 4px 10px;
-}
-
-.lista-produtos {
-  display: grid;
-  gap: var(--espaco-sm);
-}
-
-.produto-linha {
-  position: relative;
-  display: flex;
-  align-items: center;
-  gap: var(--espaco-md);
-  background: var(--cor-fundoCard);
-  border-radius: var(--raio-lg);
-  padding: var(--espaco-sm) var(--espaco-md);
-  box-shadow: var(--sombra-card);
-}
-
-.produto-linha-link {
-  display: flex;
-  align-items: center;
-  gap: var(--espaco-md);
-  flex: 1;
-  min-width: 0;
-  text-decoration: none;
-  color: inherit;
-}
-
-.produto-linha .produto-capa {
-  width: 72px;
-  height: 72px;
-  flex-shrink: 0;
-}
-
-.produto-linha-texto {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 0;
-}
-
-.produto-categoria {
-  font-size: var(--fonte-legenda-tamanho);
-  color: var(--cor-textoSuave);
-}
-
-.produto-linha .produto-add {
-  position: static;
-  flex-shrink: 0;
-}
-
-.produto-linha .esgotado-selo {
-  align-self: center;
-  flex-shrink: 0;
 }
 
 /* Atributos do produto: o que o gestor marcou como visível na loja. */
@@ -1752,4 +1463,907 @@ a.botao {
   text-align: left;
   word-break: break-all;
   color: var(--cor-textoSuave);
+}
+
+/* ======================================================= vitrine — 2026 == */
+/*
+ * O DESENHO APROVADO DA LOJA VIRTUAL, aplicado por cima do que já existia.
+ *
+ * Duas coisas explicam a forma deste bloco.
+ *
+ * PRIMEIRA: ele é ESCOPADO. Tudo aqui vive dentro de `.vitrine`, a moldura que
+ * `CoresDaLoja` desenha em volta das telas do lojista. Fora dela — planos,
+ * cadastro, "como funciona" — quem fala é a Decola, e nada disto pode
+ * atravessar. Um `:root` teria repintado o site inteiro.
+ *
+ * SEGUNDA: ele é uma PONTE, e não uma reescrita. As regras antigas da vitrine
+ * leem `--cor-fundoCard`, `--cor-borda`, `--sombra-card`. Em vez de trocar
+ * cinquenta declarações uma a uma — e esquecer três —, o bloco abaixo troca o
+ * VALOR desses nomes dentro do escopo. As regras continuam as mesmas; o que
+ * mudou foi o que elas encontram.
+ *
+ * `--cor-loja` e `--cor-sobre-loja` continuam vindo do componente, calculadas
+ * da cor que o lojista escolheu. São o `--accent` e o `--on-accent` do desenho:
+ * a cor é dele, o contraste é conta nossa.
+ */
+
+.vitrine {
+  /* ---- os tokens do desenho ---- */
+  --v-fundo: #eef3f9;
+  --v-superficie: #ffffff;
+  --v-tinta: #10283f;
+  --v-suave: #6a7f95;
+  --v-linha: #e1e9f2;
+  --v-ladrilho: #f4f6f9;
+  --v-sombra:
+    0 1px 2px rgba(16, 40, 63, 0.04),
+    0 10px 26px -14px rgba(16, 40, 63, 0.22);
+  --v-display: 'Plus Jakarta Sans', 'Montserrat', system-ui, sans-serif;
+  --v-corpo: 'Public Sans', 'Montserrat', system-ui, sans-serif;
+  --v-raio-botao: 999px;
+  --v-raio-cartao: 18px;
+  /* Laranja de aviso — fixo de propósito. Ele existe para NÃO ser a cor da
+     loja: um selo "Mais vendido" na mesma cor do resto some no cartão. */
+  --v-selo: #f97316;
+  --v-selo-apagado: #4b5a6b;
+
+  /* ---- a ponte: os nomes antigos, com os valores novos ---- */
+  --cor-fundo: var(--v-fundo);
+  --cor-fundoCard: var(--v-superficie);
+  --cor-fundoCampo: var(--v-superficie);
+  --cor-superficie: var(--v-superficie);
+  --cor-texto: var(--v-tinta);
+  --cor-textoSuave: var(--v-suave);
+  --cor-borda: var(--v-linha);
+  --cor-bordaSuave: var(--v-linha);
+  --sombra-card: var(--v-sombra);
+  --raio-lg: var(--v-raio-cartao);
+  --raio-md: 12px;
+  --raio-pill: var(--v-raio-botao);
+  --familia-titulo: var(--v-display);
+  --familia-corpo: var(--v-corpo);
+  /* DENTRO DA LOJA, "a cor primária" É A COR DA LOJA. É o que faz os links
+     comuns — "← Continuar comprando", "Ver o pedido", o resumo do copia-e-cola
+     do Pix — pararem de sair azul-marinho no meio de uma loja rosa. */
+  --cor-primaria: var(--cor-loja);
+
+  /* O azul chega até embaixo: o rodapé é da cor da loja e tem cantos
+     arredondados em cima, então o que aparece atrás dele precisa ser a mesma
+     cor — senão sobra uma faixa clara nos dois cantos. */
+  background: var(--cor-loja);
+  color: var(--v-tinta);
+  font-family: var(--v-corpo);
+  min-height: 100vh;
+  overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/*
+ * O miolo claro, que ocupa a tela toda quando a página é curta.
+ *
+ * Sem o `flex: 1`, uma loja de duas categorias terminava no meio da tela e o
+ * resto era um bloco da cor da loja com nada dentro — parecia erro de
+ * carregamento, não desenho. Com ele, o rodapé desce até o fim da janela e a
+ * cor só aparece onde deve: atrás dos cantos arredondados e no elástico da
+ * rolagem.
+ */
+.vitrine-conteudo {
+  background: var(--v-fundo);
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.vitrine-conteudo > .loja-rodape {
+  margin-top: auto;
+}
+
+.vitrine h1,
+.vitrine h2,
+.vitrine h3 {
+  font-family: var(--v-display);
+  letter-spacing: -0.035em;
+}
+
+.vitrine .pagina {
+  max-width: 1240px;
+  padding: var(--espaco-md) 16px;
+  width: 100%;
+}
+
+/* Carrinho e checkout continuam estreitos. A regra acima tem a mesma força que
+   `.pagina.estreita` e vem depois, então sem esta linha o carrinho se esparrama
+   por 1240px no computador — uma coluna de leitura com um metro de largura. */
+.vitrine .pagina.estreita {
+  max-width: 560px;
+}
+
+/* ---------------------------------------------------------- a marca ------ */
+
+.loja-marca {
+  position: relative;
+  background: var(--cor-loja);
+  color: var(--cor-sobre-loja);
+  border-radius: 0 0 28px 28px;
+  overflow: hidden;
+}
+
+/* Dois halos: um claro em cima à direita, um escuro embaixo à esquerda. É o
+   que impede a barra de parecer um retângulo chapado de tinta. */
+.loja-marca::before,
+.loja-marca::after {
+  content: '';
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.loja-marca::before {
+  top: -40%;
+  right: -12%;
+  width: 62%;
+  padding-top: 62%;
+  background: radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0) 68%);
+}
+
+.loja-marca::after {
+  bottom: -55%;
+  left: -18%;
+  width: 70%;
+  padding-top: 70%;
+  background: radial-gradient(circle at 50% 50%, rgba(0, 0, 0, 0.26), rgba(0, 0, 0, 0) 66%);
+}
+
+.loja-marca-linha {
+  position: relative;
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 11px 16px;
+  display: flex;
+  align-items: center;
+  gap: 13px;
+}
+
+.loja-marca-texto {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  color: inherit;
+  text-decoration: none;
+}
+
+.loja-marca-nome {
+  font-family: var(--v-display);
+  font-weight: 800;
+  font-size: clamp(18px, 5vw, 26px);
+  line-height: 1.1;
+  letter-spacing: -0.035em;
+}
+
+.loja-marca-tagline {
+  font-size: clamp(12px, 3.4vw, 13.5px);
+  line-height: 1.35;
+  opacity: 0.76;
+}
+
+.loja-marca-acoes {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.loja-marca-botao {
+  position: relative;
+  width: 44px;
+  height: 44px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  color: inherit;
+}
+
+.loja-marca-contador {
+  position: absolute;
+  top: 3px;
+  right: 2px;
+  min-width: 19px;
+  height: 19px;
+  padding: 0 5px;
+  display: grid;
+  place-items: center;
+  background: var(--v-selo);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  border-radius: 999px;
+}
+
+/* ---------------------------------------------------------- a busca ------ */
+
+/* Gruda no topo: numa loja de duzentos itens, rolar até o fim e ter de voltar
+   para buscar é o caminho que ninguém faz — desiste antes. */
+.loja-busca-topo {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  background: var(--v-fundo);
+  border-bottom: 1px solid var(--v-linha);
+}
+
+.loja-busca-topo > .loja-busca {
+  max-width: 1240px;
+  margin: 0 auto;
+}
+
+.vitrine .loja-busca {
+  height: 48px;
+  padding: 0 16px;
+  gap: 11px;
+  border-radius: var(--v-raio-botao);
+  border: 1px solid var(--v-linha);
+  background: var(--v-superficie);
+  box-shadow: var(--v-sombra);
+  margin: 10px 16px 11px;
+  color: var(--v-suave);
+}
+
+.vitrine .loja-busca input {
+  min-height: 0;
+  height: 46px;
+  font-size: 15px;
+}
+
+/* ------------------------------------------------------- o carrossel ----- */
+
+.loja-carrossel-area {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 10px 16px 0;
+}
+
+.vitrine .loja-carrossel {
+  margin-bottom: 0;
+  border-radius: 16px;
+  background: var(--cor-loja);
+}
+
+/* Os pontos saíram de cima da imagem: sobre um banner claro eles sumiam, e
+   ninguém ia caçar contraste num alvo de oito pixels. Agora ficam abaixo, na
+   cor da loja. */
+.vitrine .loja-carrossel-pontos {
+  position: static;
+  padding: 9px 0 0;
+  gap: 7px;
+}
+
+.vitrine .loja-carrossel-pontos .ponto {
+  width: 18px;
+  height: 18px;
+}
+
+.vitrine .loja-carrossel-pontos .ponto::before {
+  width: 8px;
+  height: 8px;
+  box-shadow: none;
+  background: color-mix(in oklch, var(--cor-loja) 26%, var(--v-fundo));
+}
+
+.vitrine .loja-carrossel-pontos .ponto.ativo::before {
+  background: var(--cor-loja);
+  transform: none;
+}
+
+/* ------------------------------------------------- cabeçalho de seção ---- */
+
+.loja-secao-topo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 0 11px;
+}
+
+.loja-secao-titulo-grupo {
+  min-width: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 9px;
+}
+
+.vitrine .loja-secao-titulo {
+  margin: 0;
+  font-family: var(--v-display);
+  font-weight: 800;
+  font-size: clamp(20px, 5.2vw, 27px);
+  letter-spacing: -0.04em;
+}
+
+.loja-secao-contagem {
+  font-size: 12.5px;
+  color: var(--v-suave);
+  white-space: nowrap;
+}
+
+.vitrine .loja-secao-link {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--v-suave);
+}
+
+/* Ícone, e não a palavra "Filtrar": ao lado de um título de 27px a palavra
+   disputa a leitura; o funil não. */
+.loja-filtro-botao {
+  position: relative;
+  width: 40px;
+  height: 40px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  background: var(--v-superficie);
+  color: var(--v-tinta);
+  border: 1px solid var(--v-linha);
+  cursor: pointer;
+  border-radius: 14px;
+}
+
+.loja-filtro-botao.ativo {
+  background: var(--cor-loja);
+  color: var(--cor-sobre-loja);
+  border-color: var(--cor-loja);
+}
+
+/* ------------------------------------------------ cartões de produto ----- */
+
+/* Duas colunas fixas no celular, e não `auto-fill`: com `minmax` a grade
+   decidia sozinha, e em telas de 360px caía para uma coluna só — cada produto
+   ocupando a tela inteira. */
+.vitrine .grade-produtos {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+@media (min-width: 860px) {
+  .vitrine .grade-produtos {
+    grid-template-columns: repeat(auto-fill, minmax(268px, 1fr));
+    gap: 18px;
+  }
+}
+
+.vitrine .produto {
+  position: relative;
+  background: var(--v-superficie);
+  border: 1px solid var(--v-linha);
+  border-radius: var(--v-raio-cartao);
+  box-shadow: var(--v-sombra);
+  padding: 8px 8px 12px;
+  gap: 0;
+}
+
+.produto-ladrilho {
+  position: relative;
+  display: block;
+  aspect-ratio: 1 / 1;
+  background: var(--v-ladrilho);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.produto-ladrilho img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* Sem foto, a inicial — na cor da loja bem clareada. Chapada ela viraria um
+   bloco de tinta no meio da grade; apagada demais, o cartão parece quebrado. */
+.produto-ladrilho-vazio {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-family: var(--v-display);
+  font-weight: 800;
+  font-size: 46px;
+  color: color-mix(in oklch, var(--cor-loja) 45%, #fff);
+}
+
+.produto-selo {
+  position: absolute;
+  top: 9px;
+  left: 9px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: var(--v-selo);
+  color: #fff;
+  font-size: 11.5px;
+  font-weight: 600;
+  box-shadow: 0 2px 8px -2px rgba(16, 40, 63, 0.3);
+}
+
+.produto-selo.apagado {
+  background: var(--v-selo-apagado);
+}
+
+.produto-corpo {
+  padding: 11px 6px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+
+.vitrine .produto-nome {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.35;
+  color: var(--v-tinta);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* O estoque é o que a loja tem a dizer no lugar da nota de avaliação que ela
+   não tem: "Últimas 3 unidades" empurra, "Sem estoque" evita a frustração de
+   tocar e descobrir depois. */
+.produto-estoque {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--v-suave);
+}
+
+.produto-estoque.baixo {
+  color: var(--cor-loja);
+}
+
+.vitrine .produto-preco {
+  margin-top: auto;
+  padding-top: 8px;
+  font-family: var(--v-display);
+  font-size: clamp(18px, 4.8vw, 21px);
+  font-weight: 800;
+  letter-spacing: -0.035em;
+  color: var(--cor-loja);
+}
+
+.produto-cta {
+  height: 46px;
+  margin-top: 11px;
+  width: 100%;
+  padding: 0 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border-radius: var(--v-raio-botao);
+  background: var(--cor-loja);
+  color: var(--cor-sobre-loja);
+  border: 1px solid var(--cor-loja);
+  font-family: var(--v-corpo);
+  font-size: 12.5px;
+  font-weight: 600;
+  line-height: 1.1;
+  cursor: pointer;
+}
+
+.produto-cta:disabled {
+  background: #f1f4f8;
+  color: var(--v-suave);
+  border-color: var(--v-linha);
+  cursor: not-allowed;
+}
+
+.produto-cta span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* "Adicionar" cabe em 158px; "Adicionar ao carrinho" só a partir de duas
+   colunas largas. */
+.produto-cta .rotulo-longo {
+  display: none;
+}
+
+@media (min-width: 560px) {
+  .produto-cta .rotulo-curto {
+    display: none;
+  }
+  .produto-cta .rotulo-longo {
+    display: inline;
+  }
+}
+
+/* Na página do produto o preço continua sendo o número grande da tela, e não
+   o do cartão: sem esta linha o `clamp` acima o encolheria para 21px. */
+.vitrine .produto-preco.grande {
+  margin-top: 0;
+  padding-top: 0;
+  font-size: var(--fonte-numero-tamanho);
+}
+
+/* ---------------------------------------------------- folha de filtro ---- */
+
+.loja-folha {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: flex-end;
+  animation: loja-surge 0.16s ease;
+}
+
+.loja-folha-fundo {
+  position: absolute;
+  inset: 0;
+  border: none;
+  padding: 0;
+  background: rgba(16, 40, 63, 0.45);
+  cursor: pointer;
+}
+
+.loja-folha-corpo {
+  position: relative;
+  width: 100%;
+  max-height: 82vh;
+  overflow-y: auto;
+  background: var(--v-fundo);
+  padding: 16px 16px calc(26px + env(safe-area-inset-bottom, 0px));
+  border-radius: 22px 22px 0 0;
+  animation: loja-sobe 0.22s ease;
+}
+
+.loja-folha-topo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.loja-folha-topo h2 {
+  margin: 0;
+  font-family: var(--v-display);
+  font-weight: 800;
+  font-size: 18px;
+  letter-spacing: -0.03em;
+}
+
+.loja-folha-fechar {
+  width: 40px;
+  height: 40px;
+  background: none;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  color: var(--v-suave);
+}
+
+.loja-folha-rotulo {
+  margin: 0 0 9px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--v-suave);
+}
+
+.loja-folha-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.vitrine .loja-folha-chips .chip {
+  height: 40px;
+  padding: 0 16px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--v-tinta);
+  background: var(--v-superficie);
+}
+
+/* O FUNDO PRECISA SER REPETIDO AQUI. A regra `.chip.ativo` lá em cima pinta o
+   chip com a cor da loja, mas ela tem duas classes e a de cima tem três — a
+   mais específica vence, e o chip marcado voltava a ser branco. Descoberto pelo
+   teste; a olho nu "Todos" branco parece só mais um chip. */
+.vitrine .loja-folha-chips .chip.ativo {
+  background: var(--cor-loja);
+  border-color: var(--cor-loja);
+  color: var(--cor-sobre-loja);
+}
+
+@keyframes loja-surge {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes loja-sobe {
+  from {
+    transform: translateY(24px);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+
+/* -------------------------------------------------------- categorias ---- */
+
+.vitrine .chip {
+  background: var(--v-superficie);
+  border-color: var(--v-linha);
+}
+
+/* Mesmo empate de especificidade da folha, e mesmo motivo para estar escrito:
+   `.vitrine .chip` e `.chip.ativo` valem o mesmo, e esta vem depois. */
+.vitrine .chip.ativo {
+  background: var(--cor-loja);
+  border-color: var(--cor-loja);
+}
+
+.vitrine .cartao-categoria,
+.vitrine .card,
+.vitrine .pedido-linha,
+.vitrine .linha-carrinho {
+  border: 1px solid var(--v-linha);
+}
+
+/* ----------------------------------------------------------- rodapé ----- */
+
+.loja-rodape {
+  position: relative;
+  margin-top: 36px;
+  background: var(--cor-loja);
+  color: var(--cor-sobre-loja);
+  border-radius: 28px 28px 0 0;
+  overflow: hidden;
+}
+
+/* A inicial gigante e quase apagada: dá peso ao rodapé sem pedir nenhuma arte
+   ao lojista — ele já digitou o nome da loja. */
+/*
+ * ELA FOI PARA CIMA, e o desenho a punha embaixo.
+ *
+ * No protótipo o rodapé terminava na borda da tela. Aqui a barra de navegação
+ * FLUTUA por cima dele, ocupando justamente os últimos oitenta pixels — que era
+ * onde a letra estava. Sobrava dela uma tira de três centímetros: não se lia
+ * como um "B", lia-se como um retângulo claro esquecido no canto, que é pior do
+ * que não ter marca d'água nenhuma.
+ *
+ * No alto à direita ela cabe inteira. As colunas do rodapé são `position:
+ * relative` e continuam desenhando por cima dela — em telas largas, onde a
+ * coluna "Navegar" alcança esse canto, o texto passa na frente e a letra
+ * continua sendo o que deve ser: textura.
+ */
+.loja-rodape-marca-dagua {
+  position: absolute;
+  right: -10px;
+  top: 22px;
+  font-family: var(--v-display);
+  font-weight: 800;
+  font-size: clamp(120px, 34vw, 210px);
+  line-height: 0.7;
+  color: rgba(255, 255, 255, 0.09);
+  letter-spacing: -0.07em;
+  pointer-events: none;
+}
+
+.loja-rodape-colunas {
+  position: relative;
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 30px 18px 16px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 24px;
+}
+
+.loja-rodape-logo {
+  width: 46px;
+  height: 46px;
+  border-radius: 12px;
+  object-fit: cover;
+  display: block;
+  margin-bottom: 10px;
+}
+
+.loja-rodape-nome {
+  display: block;
+  margin-bottom: 10px;
+  font-family: var(--v-display);
+  font-weight: 800;
+  font-size: clamp(22px, 6vw, 30px);
+  letter-spacing: -0.04em;
+}
+
+.loja-rodape-tagline {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.55;
+  opacity: 0.82;
+  max-width: 300px;
+}
+
+.loja-rodape h2 {
+  margin: 0 0 10px;
+  font-family: var(--v-corpo);
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  opacity: 0.7;
+}
+
+.loja-rodape p {
+  margin: 0 0 6px;
+  font-size: 13.5px;
+  line-height: 1.5;
+  opacity: 0.9;
+}
+
+.loja-rodape a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.loja-rodape-fim {
+  position: relative;
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 14px 18px calc(100px + env(safe-area-inset-bottom, 0px));
+  border-top: 1px solid rgba(255, 255, 255, 0.18);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: space-between;
+  font-size: 11.5px;
+  opacity: 0.72;
+}
+
+/* A folga de baixo VALE EM QUALQUER LARGURA. No protótipo ela caía para 22px no
+   computador, porque lá a barra de navegação some acima de 860px. Aqui ela não
+   some — só encolhe e se centra —, e sem a folga ela passava por cima do
+   endereço da loja no rodapé. */
+
+/* -------------------------------------------------- barra flutuante ----- */
+
+/* Ela solta do rodapé da tela: colada na borda, no iPhone ela divide espaço
+   com a faixa do gesto de voltar e os dois se atrapalham. */
+.vitrine .loja-barra {
+  left: 12px;
+  right: 12px;
+  bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+  z-index: 50;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  background: var(--v-superficie);
+  border: 1px solid var(--v-linha);
+  border-top: 1px solid var(--v-linha);
+  border-radius: 22px;
+  box-shadow: 0 8px 28px -10px rgba(16, 40, 63, 0.28);
+  padding-bottom: 0;
+}
+
+.vitrine .loja-barra-item {
+  position: relative;
+  justify-content: center;
+  gap: 4px;
+  height: 62px;
+  min-height: 0;
+  padding: 0 4px 6px;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: var(--v-suave);
+}
+
+.vitrine .loja-barra-item.ativo {
+  color: var(--cor-loja);
+}
+
+/* O tracinho embaixo do item ativo. A cor sozinha não basta: numa loja de cor
+   clara a diferença entre ativo e inativo fica no limite do perceptível. */
+.vitrine .loja-barra-item.ativo::after {
+  content: '';
+  position: absolute;
+  bottom: 8px;
+  width: 22px;
+  height: 3px;
+  background: currentColor;
+  border-radius: 999px;
+}
+
+.vitrine .loja-barra-contador {
+  background: var(--cor-loja);
+  color: var(--cor-sobre-loja);
+  font-size: 10.5px;
+}
+
+/* A folga para a barra flutuante é do RODAPÉ, e de mais ninguém.
+   `.loja-rodape-fim` já reserva os 100px embaixo. Reservar de novo aqui deixava
+   uma faixa clara vazia entre o último produto e o rodapé. */
+.vitrine .com-barra-inferior {
+  padding-bottom: 0;
+}
+
+/* O nome do produto é link, mas não parece um: azul e sublinhado num cartão
+   com preço, selo e botão seria a quarta coisa disputando a atenção. */
+.produto-nome-link {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* ------------------------------------------------- acertos de largura --- */
+
+/* O banner não pode virar um pôster de meia tela no computador: a 1200px de
+   largura, 16/7 dá 525px de altura e o primeiro produto só apareceria depois
+   de rolar. */
+@media (min-width: 860px) {
+  .vitrine .loja-banner {
+    max-height: 260px;
+  }
+}
+
+/* A barra de navegação flutuante é um gesto de celular. No computador ela
+   continua existindo — é a única navegação da loja —, mas centrada e estreita:
+   uma barra de 1200px de ponta a ponta com quatro ícones no meio pareceria um
+   erro de layout. */
+@media (min-width: 860px) {
+  .vitrine .loja-barra {
+    left: 50%;
+    right: auto;
+    transform: translateX(-50%);
+    width: min(520px, calc(100% - 24px));
+  }
+}
+
+/* O RODAPÉ DA PLATAFORMA SOME ONDE O DA LOJA APARECE.
+ *
+ * Os dois diziam a mesma coisa — "Loja online feita com Decola Negócios" logo
+ * abaixo de "Loja criada com Decola Negócios" —, e o de fora ficava sobre a cor
+ * da loja com a cor de texto do site, quase ilegível. Ele continua valendo nas
+ * telas de fluxo (carrinho, checkout, pedido), que não têm rodapé próprio; é
+ * exatamente isso que o `:has` distingue. Onde ele não for suportado, sobra uma
+ * linha repetida — nada quebra. */
+body:has(.loja-rodape) > * > .rodape {
+  display: none;
+}
+
+/* A foto do esgotado sai de cena sem levar o cartão junto. */
+.vitrine .produto.esgotado .produto-ladrilho img,
+.vitrine .produto.esgotado .produto-ladrilho-vazio {
+  opacity: 0.55;
+}
+
+/* Ações secundárias do carrinho ("Remover") ficam apagadas, e não na cor da
+   loja: pintadas de rosa elas competiriam com "Continuar", que é o botão que a
+   pessoa veio apertar. */
+.vitrine .botao.texto {
+  color: var(--v-suave);
+}
+
+.vitrine .voltar {
+  color: var(--v-suave);
 }

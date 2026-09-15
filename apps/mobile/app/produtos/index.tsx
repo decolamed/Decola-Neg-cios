@@ -170,11 +170,24 @@ export default function TelaEstoque() {
             />
 
             {podeCadastrar ? (
-              <Botao
-                titulo="Adicionar produto"
-                aoPressionar={() => router.push('/produtos/novo')}
-                estilo={{ marginBottom: tema.espacamento.md }}
-              />
+              <>
+                <Botao
+                  titulo="Adicionar produto"
+                  aoPressionar={() => router.push('/produtos/novo')}
+                  estilo={{ marginBottom: tema.espacamento.sm }}
+                />
+                {/* Dois caminhos para a mesma tela porque são dois momentos
+                    diferentes: cadastrar UM produto, e sentar para cadastrar o
+                    estoque inteiro. O segundo abre já em série, com o código de
+                    barras na frente — quem está com o leitor na mão não deveria
+                    ter que achar uma opção antes de começar. */}
+                <Botao
+                  titulo="Cadastrar vários (leitor de código)"
+                  variante="contorno"
+                  aoPressionar={() => router.push('/produtos/novo?rapido=1')}
+                  estilo={{ marginBottom: tema.espacamento.md }}
+                />
+              </>
             ) : null}
 
             {!podeEscrever ? (

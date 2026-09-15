@@ -4,7 +4,7 @@
  *
  * `senha` habilita o mostrar/ocultar exigido pela tela de Login (Seção 7.11).
  */
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View, type ViewStyle } from 'react-native';
 import tema from '@decola/theme';
 
@@ -27,6 +27,23 @@ type Props = {
   estilo?: ViewStyle;
   /** Texto centralizado — usado em campos curtos, como quantidade. */
   centralizado?: boolean;
+  /**
+   * Muda de valor e o campo recebe o foco.
+   *
+   * Um NÚMERO, e não um booleano: no cadastro rápido o foco volta para o mesmo
+   * campo depois de cada produto salvo, e um booleano que já é `true` não tem
+   * como pedir de novo. Contar é o que deixa o pedido acontecer toda vez.
+   */
+  focarQuando?: number;
+  /**
+   * O valor foi dado por encerrado.
+   *
+   * Dispara na tecla de confirmação do teclado E AO SAIR DO CAMPO. O segundo
+   * caso não é detalhe: quase ninguém aperta "ok" — digita o código e toca no
+   * campo seguinte. Sem o `blur`, quem não apertasse a tecla ficaria sem a
+   * busca e concluiria que ela não funciona.
+   */
+  aoConfirmar?: () => void;
 };
 
 export function CampoTexto({
@@ -41,7 +58,19 @@ export function CampoTexto({
   autoCompletar = 'off',
   estilo,
   centralizado = false,
+  focarQuando,
+  aoConfirmar,
 }: Props) {
+  const campo = useRef<TextInput>(null);
+
+  useEffect(() => {
+    if (focarQuando === undefined) return;
+    // Um quadro de espera: em cadastro rápido o formulário é limpo no mesmo
+    // instante, e pedir foco a um campo que está remontando não pega.
+    const relogio = setTimeout(() => campo.current?.focus(), 60);
+    return () => clearTimeout(relogio);
+  }, [focarQuando]);
+
   const [oculto, setOculto] = useState(senha);
 
   return (
@@ -58,8 +87,12 @@ export function CampoTexto({
         ]}
       >
         <TextInput
+          ref={campo}
           value={valor}
           onChangeText={aoMudar}
+          returnKeyType={aoConfirmar ? 'done' : undefined}
+          onSubmitEditing={aoConfirmar}
+          onBlur={aoConfirmar}
           editable={!bloqueado}
           placeholder={placeholder}
           placeholderTextColor={tema.cores.textoSuave}

@@ -123,6 +123,32 @@ export async function buscarProdutoPorCodigo(codigo: string): Promise<ProdutoCom
   return (data as unknown as ProdutoComStatus) ?? null;
 }
 
+/**
+ * Seção 7.5 — o mesmo código, mas do ponto de vista do CADASTRO.
+ *
+ * Difere de `buscarProdutoPorCodigo` num ponto que importa: inclui produtos
+ * ARQUIVADOS. O índice único de (empresa, código) só ignora os excluídos —
+ * então um produto arquivado com este código também barra o cadastro, e
+ * procurar apenas entre os ativos deixaria o app oferecer um cadastro que o
+ * banco recusa no fim, com um erro de índice que ninguém entende.
+ *
+ * A venda continua usando a outra função: lá, arquivado é o mesmo que
+ * inexistente.
+ */
+export async function buscarProdutoPorCodigoParaCadastro(
+  codigo: string,
+): Promise<ProdutoComStatus | null> {
+  const { data, error } = await supabase
+    .from('produtos_com_status')
+    .select(CAMPOS)
+    .eq('codigo', codigo.trim())
+    .neq('ciclo_vida', 'excluido')
+    .maybeSingle();
+
+  if (error) throw new Error(mensagemDeErro(error));
+  return (data as unknown as ProdutoComStatus) ?? null;
+}
+
 export type DadosDeProduto = {
   nome: string;
   codigo: string | null;

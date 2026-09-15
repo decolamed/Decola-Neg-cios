@@ -1,10 +1,29 @@
 /**
  * Cadastro de Produto — Seção 7.5 ("Adicionar produto": cadastro completo,
  * campos padrão + personalizados). Exige `cadastrar_produto`.
+ *
+ * O CÓDIGO DE BARRAS PASSOU A SER O COMEÇO DO CADASTRO, e não mais um campo
+ * opcional no meio do formulário. Bipar (ou digitar e confirmar) dispara duas
+ * perguntas, nesta ordem:
+ *
+ *   1. ESTE CÓDIGO JÁ É DE UM PRODUTO MEU? Se for, a tela carrega aquele
+ *      produto e passa a EDITÁ-LO. Antes, o cadastro seguia como se fosse novo
+ *      e o banco recusava no fim — o índice único de (empresa, código) existe
+ *      desde a migração 0003 — depois de a pessoa ter digitado tudo. Ou pior,
+ *      ela mudava um dígito para "resolver" e ficava com dois produtos iguais.
+ *
+ *   2. ALGUÉM SABE O QUE É ISSO? Aí entra o catálogo (`buscar-codigo`):
+ *      primeiro o banco interno da Decola, depois as bases abertas. O que vier
+ *      preenche nome e foto, e o lojista corrige o que quiser antes de salvar.
+ *      O PREÇO nunca vem de lá: é dele.
+ *
+ * CADASTRO RÁPIDO (`?rapido=1`): depois de salvar, a tela não vai para o
+ * produto — ela se limpa e devolve o foco ao campo do código, para o próximo.
+ * É a diferença entre cadastrar trinta produtos e desistir no oitavo.
  */
-import { useCallback, useEffect, useState } from 'react';
-import { router } from 'expo-router';
-import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text } from 'react-native';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { router, useLocalSearchParams } from 'expo-router';
+import { Image, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import tema from '@decola/theme';
 import { Aviso } from '@/componentes/Aviso';
@@ -17,12 +36,21 @@ import {
 } from '@/componentes/FormularioDeProduto';
 import { useSessao } from '@/contexto/SessaoContexto';
 import { listarCamposAtivos, type CampoConfigurado } from '@/dados/camposProduto';
+import { Checkbox } from '@/componentes/Checkbox';
 import { listarCategorias, type Categoria } from '@/dados/categorias';
-import { criarProduto } from '@/dados/produtos';
+import { consultarCatalogo } from '@/dados/catalogoDeCodigos';
+import { salvarImagensDoProduto } from '@/dados/imagensProduto';
+import {
+  buscarProdutoPorCodigoParaCadastro,
+  criarProduto,
+  editarProduto,
+  type ProdutoComStatus,
+} from '@/dados/produtos';
 import { textoDoErro } from '@/lib/erros';
 
 export default function NovoProduto() {
   const { conta, temPermissao, podeEscrever } = useSessao();
+  const { rapido } = useLocalSearchParams<{ rapido?: string }>();
 
   const [valores, setValores] = useState<ValoresDoProduto>(VALORES_INICIAIS);
   const [categorias, setCategorias] = useState<Categoria[]>([]);
@@ -32,6 +60,27 @@ export default function NovoProduto() {
   const [erroDeCarga, setErroDeCarga] = useState<string | null>(null);
   const [mensagem, setMensagem] = useState<string | null>(null);
   const [erros, setErros] = useState<Record<string, string | null>>({});
+
+  /** Cadastro rápido: salva e já abre o próximo, sem sair da tela. */
+  const [emSerie, setEmSerie] = useState(rapido === '1');
+
+  /**
+   * O produto que JÁ EXISTE com este código, quando existe.
+   *
+   * Enquanto ele estiver preenchido, esta tela não cadastra: ela edita. É o que
+   * impede o duplicado — e impede ANTES, e não com uma recusa do banco depois
+   * de a pessoa ter preenchido tudo.
+   */
+  const [existente, setExistente] = useState<ProdutoComStatus | null>(null);
+  const [doCatalogo, setDoCatalogo] = useState<{ nome: string; marca: string | null; imagem: string | null } | null>(null);
+  const [semResultado, setSemResultado] = useState(false);
+  const [buscandoCodigo, setBuscandoCodigo] = useState(false);
+
+  /** Muda para devolver o foco ao campo do código. */
+  const [foco, setFoco] = useState(0);
+
+  /** O último código já consultado — evita repetir a busca por nada. */
+  const ultimoBuscado = useRef<string | null>(null);
 
   const empresaId = conta?.empresa.id;
 
@@ -56,6 +105,102 @@ export default function NovoProduto() {
   useEffect(() => {
     void carregar();
   }, [carregar]);
+
+  /**
+   * O código foi confirmado: procurar.
+   *
+   * PRIMEIRO NA LOJA, depois no catálogo. A ordem não é preferência — é o que
+   * distingue "atualizar o que já tenho" de "cadastrar o que ainda não tenho",
+   * e essa é a decisão que muda o que o botão de salvar vai fazer.
+   */
+  const procurarCodigo = useCallback(
+    async (codigo: string) => {
+      const limpo = codigo.replace(/\D/g, '');
+
+      // Campo esvaziado: a tela volta a ser um cadastro comum.
+      if (limpo === '') {
+        ultimoBuscado.current = null;
+        setExistente(null);
+        setDoCatalogo(null);
+        setSemResultado(false);
+        return;
+      }
+
+      if (limpo === ultimoBuscado.current) return;
+      ultimoBuscado.current = limpo;
+
+      setBuscandoCodigo(true);
+      setDoCatalogo(null);
+      setSemResultado(false);
+      try {
+        const meu = await buscarProdutoPorCodigoParaCadastro(limpo);
+        if (meu) {
+          setExistente(meu);
+          // Carrega o que já está cadastrado para a pessoa CONFERIR e corrigir,
+          // em vez de redigitar. A quantidade fica de fora: estoque não se
+          // mexe por aqui (é `ajustarEstoque` quem faz, com permissão própria).
+          setValores((atual) => ({
+            ...atual,
+            nome: meu.nome,
+            codigo: limpo,
+            categoriaId: meu.categoria_id,
+            preco: String(meu.preco).replace('.', ','),
+            descricao: meu.descricao ?? '',
+            visivelNaLoja: meu.visivel_na_loja,
+            destaque: meu.destaque,
+            atributos: (meu.atributos ?? {}) as Record<string, unknown>,
+          }));
+          setErros({});
+          return;
+        }
+
+        setExistente(null);
+        const achado = await consultarCatalogo(limpo);
+        if (!achado) {
+          // NADA INVENTADO: o nome fica como está (vazio, se estava vazio).
+          setSemResultado(true);
+          return;
+        }
+
+        setDoCatalogo({ nome: achado.nome, marca: achado.marca, imagem: achado.imagem });
+        // Só preenche o nome se ele estiver VAZIO. Quem já digitou não quer ver
+        // o próprio texto ser substituído por um do catálogo.
+        setValores((atual) => (atual.nome.trim() ? atual : { ...atual, nome: achado.nome }));
+        setErros((atual) => ({ ...atual, nome: null }));
+      } catch (e) {
+        // Procurar é conveniência: falhar aqui não pode impedir o cadastro.
+        setMensagem(textoDoErro(e, 'Não foi possível consultar este código.'));
+      } finally {
+        setBuscandoCodigo(false);
+      }
+    },
+    [],
+  );
+
+  /**
+   * Limpa a tela para o próximo produto, no cadastro rápido.
+   *
+   * A CATEGORIA FICA. Quem cadastra trinta itens seguidos está quase sempre
+   * cadastrando trinta itens da MESMA seção, e reescolher a categoria a cada
+   * produto é o tipo de repetição que faz a pessoa desistir na metade.
+   */
+  const proximo = useCallback(
+    (aviso: string) => {
+      setValores((atual) => ({
+        ...VALORES_INICIAIS,
+        categoriaId: atual.categoriaId,
+        visivelNaLoja: atual.visivelNaLoja,
+      }));
+      setErros({});
+      setExistente(null);
+      setDoCatalogo(null);
+      setSemResultado(false);
+      ultimoBuscado.current = null;
+      setMensagem(aviso);
+      setFoco((n) => n + 1);
+    },
+    [],
+  );
 
   const aoSalvar = useCallback(async () => {
     if (!conta) return;
@@ -83,26 +228,68 @@ export default function NovoProduto() {
 
     setSalvando(true);
     try {
-      const id = await criarProduto({
-        empresaId: conta.empresa.id,
-        criadoPor: conta.vinculo.usuario_id!,
+      const dados = {
         nome: valores.nome,
         codigo: valores.codigo,
         categoriaId: valores.categoriaId,
         preco: preco!,
-        quantidadeInicial: Number(valores.quantidadeInicial || '0'),
         atributos: valores.atributos,
         descricao: valores.descricao,
         visivelNaLoja: valores.visivelNaLoja,
         destaque: valores.destaque,
+      };
+
+      /**
+       * CÓDIGO CONHECIDO ATUALIZA, não duplica.
+       *
+       * O estoque não entra aqui de propósito: mexer em quantidade exige
+       * `gerenciar_estoque` e passa por `ajustarEstoque`. Somar a "quantidade
+       * inicial" a um produto que já existe seria uma entrada de estoque
+       * disfarçada de cadastro — e sem registro de movimentação.
+       */
+      if (existente) {
+        await editarProduto(existente.id, dados);
+        if (emSerie) {
+          proximo(`${valores.nome.trim()} atualizado.`);
+        } else {
+          router.replace(`/produtos/${existente.id}`);
+        }
+        return;
+      }
+
+      const id = await criarProduto({
+        ...dados,
+        empresaId: conta.empresa.id,
+        criadoPor: conta.vinculo.usuario_id!,
+        quantidadeInicial: Number(valores.quantidadeInicial || '0'),
       });
-      router.replace(`/produtos/${id}`);
+
+      /**
+       * A foto do catálogo entra como imagem do produto.
+       *
+       * É uma URL do nosso próprio armazenamento (a função já copiou para lá), e
+       * `urlDaImagem` deixa URL completa passar direto — então ela funciona
+       * igual a uma foto que o lojista tivesse enviado, na loja e no aplicativo.
+       *
+       * Falhar aqui não desfaz o cadastro: o produto existe, e a foto pode ser
+       * posta depois pela tela de fotos.
+       */
+      if (doCatalogo?.imagem) {
+        try {
+          await salvarImagensDoProduto(id, [doCatalogo.imagem]);
+        } catch (e) {
+          console.warn('[produto] foto do catálogo não anexada:', e);
+        }
+      }
+
+      if (emSerie) proximo(`${valores.nome.trim()} cadastrado.`);
+      else router.replace(`/produtos/${id}`);
     } catch (e) {
       setMensagem(textoDoErro(e, 'Não foi possível salvar o produto.'));
     } finally {
       setSalvando(false);
     }
-  }, [conta, valores, campos]);
+  }, [conta, valores, campos, existente, emSerie, doCatalogo, proximo]);
 
   if (!conta || carregando) return <TelaCarregando />;
 
@@ -120,6 +307,64 @@ export default function NovoProduto() {
     );
   }
 
+  /**
+   * A faixa abaixo do código: o que a busca respondeu.
+   *
+   * São quatro respostas possíveis e elas levam a ações diferentes, então cada
+   * uma diz explicitamente o que vai acontecer ao salvar. A quarta — "não
+   * achei" — é a mais importante de escrever bem: é ela que impede a pessoa de
+   * achar que a tela travou e ficar esperando um nome que nunca vem.
+   */
+  const avisoDoCodigo = buscandoCodigo ? (
+    <View style={estilos.faixa}>
+      <Text style={estilos.faixaTexto}>Procurando este código…</Text>
+    </View>
+  ) : existente ? (
+    <View style={[estilos.faixa, estilos.faixaConhecida]}>
+      <Text style={estilos.faixaTitulo}>
+        {existente.ciclo_vida === 'arquivado'
+          ? 'Este código é de um produto arquivado'
+          : 'Este produto já existe na sua loja'}
+      </Text>
+      <Text style={estilos.faixaTexto}>
+        {existente.nome} — os dados abaixo são os dele. Ao salvar, este produto é
+        atualizado; nenhum duplicado é criado.
+      </Text>
+      {existente.ciclo_vida === 'arquivado' ? (
+        <Text style={estilos.faixaTexto}>
+          Ele continua arquivado depois de salvar. Para voltar a vendê-lo, abra o
+          produto e restaure.
+        </Text>
+      ) : null}
+      <Pressable onPress={() => router.push(`/produtos/${existente.id}`)}>
+        <Text style={estilos.faixaLink}>Abrir o produto →</Text>
+      </Pressable>
+    </View>
+  ) : doCatalogo ? (
+    <View style={[estilos.faixa, estilos.faixaCatalogo]}>
+      {doCatalogo.imagem ? (
+        <Image source={{ uri: doCatalogo.imagem }} style={estilos.miniatura} />
+      ) : null}
+      <View style={estilos.faixaCorpo}>
+        <Text style={estilos.faixaTitulo}>Encontrado pelo código</Text>
+        <Text style={estilos.faixaTexto}>
+          {doCatalogo.nome}
+          {doCatalogo.marca ? ` · ${doCatalogo.marca}` : ''}
+        </Text>
+        <Text style={estilos.faixaTexto}>
+          Confira o nome e informe o preço — o preço é sempre seu.
+        </Text>
+      </View>
+    </View>
+  ) : semResultado ? (
+    <View style={estilos.faixa}>
+      <Text style={estilos.faixaTexto}>
+        Não encontramos este código nem na sua loja nem no catálogo. Escreva o nome
+        do produto — nada é preenchido por adivinhação.
+      </Text>
+    </View>
+  ) : null;
+
   return (
     <SafeAreaView style={estilos.tela}>
       <KeyboardAvoidingView
@@ -127,21 +372,35 @@ export default function NovoProduto() {
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <ScrollView contentContainerStyle={estilos.conteudo} keyboardShouldPersistTaps="handled">
-          <Text style={estilos.titulo}>Novo produto</Text>
+          <Text style={estilos.titulo}>{existente ? 'Atualizar produto' : 'Novo produto'}</Text>
 
           {mensagem ? <Aviso mensagem={mensagem} /> : null}
+
+          <Checkbox marcado={emSerie} aoMudar={setEmSerie} bloqueado={salvando}>
+            <Text style={estilos.opcaoTitulo}>Cadastrar vários seguidos</Text>
+            <Text style={estilos.opcaoTexto}>
+              O código de barras vem primeiro e, ao salvar, a tela já fica pronta
+              para o próximo produto — mantendo a categoria.
+            </Text>
+          </Checkbox>
 
           <FormularioDeProduto
             valores={valores}
             aoMudar={setValores}
             categorias={categorias}
             camposAtivos={campos}
-            modo="cadastro"
+            /* Produto que já existe não recebe "quantidade inicial": estoque se
+               mexe em `ajustarEstoque`, com permissão e movimentação próprias. */
+            modo={existente ? 'edicao' : 'cadastro'}
             aoSalvar={aoSalvar}
             salvando={salvando}
             bloqueado={salvando}
-            rotuloSalvar="Cadastrar produto"
+            rotuloSalvar={existente ? 'Atualizar produto' : 'Cadastrar produto'}
             erros={erros}
+            aoConfirmarCodigo={procurarCodigo}
+            focarCodigoQuando={foco}
+            codigoPrimeiro={emSerie}
+            avisoDoCodigo={avisoDoCodigo}
           />
         </ScrollView>
       </KeyboardAvoidingView>
@@ -153,4 +412,32 @@ const estilos = StyleSheet.create({
   tela: { flex: 1, backgroundColor: tema.cores.fundo },
   conteudo: { padding: tema.espacamento.lg },
   titulo: { ...tema.tipografia.h1, color: tema.cores.texto, marginBottom: tema.espacamento.md },
+
+  opcaoTitulo: { ...tema.tipografia.corpoDestacado, color: tema.cores.texto },
+  opcaoTexto: { ...tema.tipografia.legenda, color: tema.cores.textoSuave },
+
+  faixa: {
+    backgroundColor: tema.tons.primaria,
+    borderRadius: tema.raio.md,
+    padding: tema.espacamento.md,
+    marginBottom: tema.espacamento.md,
+    gap: tema.espacamento.xs,
+  },
+  faixaConhecida: { backgroundColor: tema.tons.destaque },
+  faixaCatalogo: {
+    backgroundColor: tema.tons.secundaria,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: tema.espacamento.sm,
+  },
+  faixaCorpo: { flex: 1, gap: tema.espacamento.xs },
+  faixaTitulo: { ...tema.tipografia.corpoDestacado, color: tema.cores.texto },
+  faixaTexto: { ...tema.tipografia.legenda, color: tema.cores.texto },
+  faixaLink: { ...tema.tipografia.legenda, color: tema.cores.primaria, fontWeight: '600' },
+  miniatura: {
+    width: 56,
+    height: 56,
+    borderRadius: tema.raio.sm,
+    backgroundColor: tema.cores.superficie,
+  },
 });

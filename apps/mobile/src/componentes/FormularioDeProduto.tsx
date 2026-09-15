@@ -5,7 +5,7 @@
  * cadastro: depois disso, mexer em estoque exige `gerenciar_estoque` e passa
  * pela ação "Adicionar estoque" (Seções 7.5 e 8.3).
  */
-import { useMemo, useState } from 'react';
+import { useMemo, useState , type ReactNode } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import tema from '@decola/theme';
 import type { CampoConfigurado } from '@/dados/camposProduto';
@@ -58,6 +58,21 @@ type Props = {
   rotuloSalvar?: string;
   /** Erros por campo, vindos da validação local. */
   erros?: Record<string, string | null>;
+
+  /**
+   * O código foi confirmado — lido pela câmera ou digitado e confirmado.
+   *
+   * É AQUI que a busca acontece, e não a cada letra digitada: um código de
+   * barras tem treze dígitos, e procurar em todos os treze estados
+   * intermediários seria treze consultas para uma resposta.
+   */
+  aoConfirmarCodigo?: (codigo: string) => void;
+  /** Muda de valor e o campo do código recebe o foco. */
+  focarCodigoQuando?: number;
+  /** O código vem primeiro — é a ordem do cadastro rápido. */
+  codigoPrimeiro?: boolean;
+  /** Mensagem sobre o que a busca do código encontrou. */
+  avisoDoCodigo?: ReactNode;
 };
 
 export function precoParaNumero(texto: string): number | null {
@@ -78,6 +93,10 @@ export function FormularioDeProduto({
   salvando = false,
   rotuloSalvar = 'Salvar produto',
   erros = {},
+  aoConfirmarCodigo,
+  focarCodigoQuando,
+  codigoPrimeiro = false,
+  avisoDoCodigo,
 }: Props) {
   const [lendoCodigo, setLendoCodigo] = useState(false);
 
@@ -124,40 +143,65 @@ export function FormularioDeProduto({
         aoLer={(codigo) => {
           definir('codigo', codigo);
           setLendoCodigo(false);
+          // Bipou: procura na hora. É o gesto inteiro do cadastro rápido —
+          // apontar a câmera e o resto aparecer.
+          aoConfirmarCodigo?.(codigo);
         }}
         aoCancelar={() => setLendoCodigo(false)}
       />
     );
   }
 
-  return (
-    <View>
-      <CampoTexto
-        rotulo="Nome do produto *"
-        valor={valores.nome}
-        aoMudar={(v) => definir('nome', v)}
-        erro={erros.nome}
-        bloqueado={bloqueado}
-      />
+  const campoDoNome = (
+    <CampoTexto
+      rotulo="Nome do produto *"
+      valor={valores.nome}
+      aoMudar={(v) => definir('nome', v)}
+      erro={erros.nome}
+      bloqueado={bloqueado}
+    />
+  );
 
+  const campoDoCodigo = (
+    <View>
       {/* Ler o código com a câmera era o que faltava aqui: digitar treze
-          dígitos de um EAN à mão é onde nasce o produto que a venda depois não
+          dígitos de uma etiqueta é onde o cadastro trava e onde o erro
           encontra. O leitor é o MESMO da tela de venda. */}
       <CampoTexto
-        rotulo="Código / código de barras"
+        rotulo="Código de barras"
         valor={valores.codigo}
         aoMudar={(v) => definir('codigo', v)}
         erro={erros.codigo}
         bloqueado={bloqueado}
-        placeholder="Opcional"
+        /* "Opcional" era verdade quando o código era só um apelido do produto.
+           Agora ele é o que identifica: é por ele que a tela reconhece um
+           produto que já existe e é por ele que o catálogo responde. Continua
+           dando para cadastrar sem — mas dizer "opcional" a quem tem o leitor
+           na mão é convidar a pular o campo que faz o resto funcionar. */
+        placeholder={aoConfirmarCodigo ? 'Bipe ou digite o código' : 'Opcional'}
+        tipoTeclado="number-pad"
+        focarQuando={focarCodigoQuando}
+        aoConfirmar={() => aoConfirmarCodigo?.(valores.codigo)}
       />
       <Botao
         titulo={valores.codigo ? 'Ler outro código' : 'Ler código de barras'}
         variante="contorno"
         aoPressionar={() => setLendoCodigo(true)}
         desabilitado={bloqueado}
-        estilo={{ marginBottom: tema.espacamento.md }}
+        estilo={{ marginBottom: avisoDoCodigo ? tema.espacamento.sm : tema.espacamento.md }}
       />
+      {avisoDoCodigo}
+    </View>
+  );
+
+  return (
+    <View>
+      {/* A ORDEM DOS DOIS PRIMEIROS CAMPOS depende do modo.
+          No cadastro rápido o código vem primeiro: é ele que preenche o resto,
+          e quem está com o leitor na mão bipa antes de olhar para a tela. No
+          cadastro normal o nome continua abrindo o formulário. */}
+      {codigoPrimeiro ? campoDoCodigo : campoDoNome}
+      {codigoPrimeiro ? campoDoNome : campoDoCodigo}
 
       <CampoTexto
         rotulo="Preço de venda *"

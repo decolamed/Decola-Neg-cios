@@ -115,6 +115,14 @@ export type Empresa = {
    */
   horario_funcionamento: HorarioSemanal | null;
 
+  // -- Primeiro acesso (0060) ----------------------------------------------
+  /**
+   * Quando o Gestor pediu para não ver mais o roteiro de boas-vindas. O que
+   * FALTA configurar não mora aqui: é derivado dos próprios dados, para a
+   * resposta não ter como envelhecer.
+   */
+  configuracao_inicial_dispensada_em: string | null;
+
   criado_em: string;
   atualizado_em: string;
 };

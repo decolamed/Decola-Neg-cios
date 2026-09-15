@@ -98,3 +98,21 @@ export async function salvarHorarioDeFuncionamento(
 
   if (error) throw new Error(mensagemDeErro(error));
 }
+
+/**
+ * "Configurar depois": silencia o roteiro de primeiro acesso.
+ *
+ * Grava só a data da dispensa. O que FALTA configurar continua sendo derivado
+ * dos dados — ver `@/dados/primeiraConfiguracao` — porque uma anotação sobre o
+ * que está pronto pode discordar da realidade, e o dado não pode.
+ */
+export async function dispensarConfiguracaoInicial(empresaId: string): Promise<void> {
+  await exigirConexao();
+
+  const { error } = await supabase
+    .from('empresas')
+    .update({ configuracao_inicial_dispensada_em: new Date().toISOString() })
+    .eq('id', empresaId);
+
+  if (error) throw new Error(mensagemDeErro(error));
+}

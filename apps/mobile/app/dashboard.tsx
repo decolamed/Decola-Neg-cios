@@ -9,7 +9,7 @@
  * O estado da conta (trial, carência, modo limitado, empresa suspensa) fica no
  * topo porque é aqui que a Seção 7.11 manda sinalizá-lo depois do login.
  */
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { router, useFocusEffect } from 'expo-router';
 import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -22,6 +22,7 @@ import { MenuInferior } from '@/componentes/MenuInferior';
 import { useSessao } from '@/contexto/SessaoContexto';
 import { carregarResumo, observarAvisos, type ResumoDoDashboard } from '@/dados/dashboard';
 import { enderecoCompleto } from '@/dados/loja';
+import { deveAbrirORoteiro } from '@/dados/primeiraConfiguracao';
 import { moeda } from '@/lib/formato';
 import { textoDoErro } from '@/lib/erros';
 
@@ -99,6 +100,26 @@ export default function Dashboard() {
       void buscar();
     });
   }, [empresaId, buscar]);
+
+  /**
+   * O ROTEIRO DE PRIMEIRO ACESSO abre sozinho — uma vez.
+   *
+   * `router.replace`, e não `push`: o roteiro substitui o Início em vez de
+   * empilhar sobre ele, senão o botão de voltar do celular devolveria a pessoa
+   * para uma tela que ela nunca chegou a ver.
+   *
+   * O `useRef` é o que impede o laço. `deveAbrirORoteiro` continua verdadeiro
+   * até a gravação da dispensa chegar de volta na sessão, e sem a trava cada
+   * render do Início mandaria de novo para `/comecar` — inclusive DEPOIS de a
+   * pessoa tocar em "Configurar depois", enquanto o `recarregar()` não termina.
+   */
+  const jaMandou = useRef(false);
+  useEffect(() => {
+    if (jaMandou.current || carregando || !conta) return;
+    if (!deveAbrirORoteiro(conta.empresa, conta.ehGestor)) return;
+    jaMandou.current = true;
+    router.replace('/comecar');
+  }, [carregando, conta]);
 
   if (carregando) return <TelaCarregando />;
 

@@ -15,12 +15,23 @@
  * CONFIGURAÇÃO NECESSÁRIA (secrets do projeto):
  *   RESEND_API_KEY ....... credencial do provedor de e-mail
  *   EMAIL_REMETENTE ...... remetente verificado, ex: "Decola <nao-responda@seu-dominio>"
- *   URL_CONVITE_BASE ..... base do link de aceite. Sem ela, cai no esquema do
- *                          app (decolanegocios://convite/<id>), que funciona no
- *                          dispositivo mas é bloqueado por vários webmails —
- *                          o ideal é apontar para uma página web que redirecione.
+ *
+ * O LINK DO CONVITE NÃO É MAIS CONFIGURÁVEL, e isto foi um conserto.
+ *
+ * Ele saía de um secret `URL_CONVITE_BASE` que ninguém tinha cadastrado, e a
+ * reserva era `decolanegocios://convite/<id>` — o esquema de um aplicativo
+ * NATIVO. O Decola Negócios abre no navegador; esse esquema não está registrado
+ * em lugar nenhum. O resultado chegava assim ao funcionário: o botão "Aceitar
+ * convite" não fazia nada, e o endereço alternativo, colado no navegador,
+ * também não. Os dois caminhos que o e-mail oferece estavam mortos, e o e-mail
+ * era entregue normalmente — ninguém tinha como desconfiar.
+ *
+ * Agora o endereço vem de `_shared/enderecos.ts`, como o do e-mail de acesso e
+ * o do retorno do pagamento. É fato do repositório, versionado: não tem como
+ * ficar desatualizado calado num painel que ninguém abre.
  */
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
+import { URL_DO_SITE } from '../_shared/enderecos.ts';
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -43,12 +54,38 @@ function escaparHtml(texto: string): string {
     .replace(/"/g, '&quot;');
 }
 
+/**
+ * O endereço que o funcionário vai abrir.
+ *
+ * `URL_CONVITE_BASE` continua sendo respeitada — um domínio próprio no futuro
+ * se resolve com ela —, MAS SÓ SE FOR http(s). Foi um valor que não era um
+ * endereço de navegador que criou o problema; aceitar qualquer coisa de novo
+ * seria deixar a mesma porta aberta. Qualquer outra coisa é ignorada e o e-mail
+ * sai com o endereço do site, que é o que funciona.
+ */
+function enderecoDoConvite(vinculoId: string): string {
+  const configurada = Deno.env.get('URL_CONVITE_BASE')?.trim();
+  const base =
+    configurada && /^https?:\/\//i.test(configurada)
+      ? configurada.replace(/\/+$/, '')
+      : `${URL_DO_SITE}/convite`;
+
+  if (configurada && !/^https?:\/\//i.test(configurada)) {
+    console.error(
+      `URL_CONVITE_BASE ignorada por não ser http(s): "${configurada}". ` +
+        `Usando ${URL_DO_SITE}/convite.`,
+    );
+  }
+
+  return `${base}/${vinculoId}`;
+}
+
 function montarEmail(nome: string, empresa: string, link: string): string {
   const nomeSeguro = escaparHtml(nome);
   const empresaSeguro = escaparHtml(empresa);
-  // O link vem de um secret nosso mais um UUID do banco, então hoje não tem
-  // como carregar caractere perigoso. Escapar mesmo assim: o dia em que a
-  // base virar algo configurável, este ponto não precisa ser lembrado.
+  // O link é o endereço do site mais um UUID do banco — hoje não tem como
+  // carregar caractere perigoso. Escapado mesmo assim, porque `URL_CONVITE_BASE`
+  // ainda pode sobrescrever a base e ela vem de fora.
   const linkSeguro = escaparHtml(link);
 
   // O botão usa amarelo sobre azul-marinho: o par acaoPrimaria/textoSobreAcao
@@ -140,8 +177,7 @@ Deno.serve(async (requisicao) => {
     );
   }
 
-  const base = Deno.env.get('URL_CONVITE_BASE') ?? 'decolanegocios://convite';
-  const link = `${base.replace(/\/$/, '')}/${vinculo.id}`;
+  const link = enderecoDoConvite(vinculo.id);
   const empresa = (vinculo.empresas as { nome: string } | null)?.nome ?? 'sua empresa';
 
   const resposta = await fetch('https://api.resend.com/emails', {

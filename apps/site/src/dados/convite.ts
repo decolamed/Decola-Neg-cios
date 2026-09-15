@@ -26,11 +26,29 @@ export async function criarContaDoConvidado(
   nome: string,
   email: string,
   senha: string,
+  /** O convite que trouxe a pessoa até aqui. Ver a nota abaixo. */
+  vinculoId: string,
 ): Promise<void> {
   const { data, error } = await supabase.auth.signUp({
     email: email.trim(),
     password: senha,
-    options: { data: { nome: nome.trim() } },
+    options: {
+      data: { nome: nome.trim() },
+      /**
+       * SE O PROJETO EXIGIR CONFIRMAÇÃO DE E-MAIL, o link de confirmação traz a
+       * pessoa DE VOLTA PARA ESTE CONVITE — e não para a porta da frente do
+       * site, que é o padrão.
+       *
+       * Sem isto, o caminho de quem precisa confirmar termina num beco: a conta
+       * existe, o vínculo não, e a pessoa está numa página que não sabe que
+       * havia um convite. Ela teria de achar o e-mail do convite de novo, e o
+       * botão dele, para fechar o que começou.
+       *
+       * Quando a confirmação está desligada (que é como o projeto está hoje),
+       * esta linha não custa nada: o Supabase simplesmente não usa.
+       */
+      emailRedirectTo: `${window.location.origin}/convite/${vinculoId}`,
+    },
   });
 
   if (error) {
@@ -49,9 +67,11 @@ export async function criarContaDoConvidado(
   }
 
   if (!data.session) {
+    // O `emailRedirectTo` acima faz o link da confirmação voltar para esta
+    // mesma página, então a instrução pode ser curta e verdadeira.
     throw new Error(
-      'Sua conta foi criada, mas é preciso confirmar o e-mail antes de aceitar o convite. ' +
-        'Verifique sua caixa de entrada.',
+      'Sua conta foi criada. Abra o e-mail de confirmação que acabamos de enviar ' +
+        'e clique no link — ele traz você de volta para cá e o convite é aceito.',
     );
   }
 }

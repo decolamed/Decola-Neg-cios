@@ -72,7 +72,7 @@ export function Convite() {
           await entrarComSenha(email, senha);
         } else {
           if (!nome.trim()) throw new Error('Informe seu nome completo.');
-          await criarContaDoConvidado(nome, email, senha);
+          await criarContaDoConvidado(nome, email, senha, id);
         }
         await aceitarConvite(id);
         setEstado('aceito');

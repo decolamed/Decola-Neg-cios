@@ -222,6 +222,13 @@ export type ConfiguracaoPlataforma = {
   trial_ativo: boolean;
   trial_dias: number;
   carencia_dias: number;
+  /**
+   * Chave geral da busca por código de barras (0065).
+   *
+   * Quando uma das APIs externas fica instável, o administrador desliga aqui e
+   * a Edge Function para de consultar — sem publicar código.
+   */
+  busca_por_codigo_ativa: boolean;
   atualizado_em: string;
   atualizado_por: string | null;
 };

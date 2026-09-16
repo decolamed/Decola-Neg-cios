@@ -77,7 +77,9 @@ export function ehOMesmoProduto(digitado: string, doCatalogo: string): boolean {
  * troca um cadastro bom por nenhum cadastro — se a busca falhar, o lojista
  * simplesmente digita o nome, que é o que ele já fazia antes disto existir.
  */
-export async function consultarCatalogo(codigo: string): Promise<ProdutoDoCatalogo | null> {
+export async function consultarCatalogo(
+  codigo: string,
+): Promise<ProdutoDoCatalogo | 'desligada' | null> {
   const limpo = codigo.replace(/\D/g, '');
   if (limpo.length < 8) return null;
 
@@ -91,7 +93,19 @@ export async function consultarCatalogo(codigo: string): Promise<ProdutoDoCatalo
       return null;
     }
 
-    const resposta = data as { encontrado?: boolean; produto?: ProdutoDoCatalogo } | null;
+    const resposta = data as
+      | { encontrado?: boolean; motivo?: string; produto?: ProdutoDoCatalogo }
+      | null;
+
+    /**
+     * A CHAVE GERAL ESTÁ DESLIGADA.
+     *
+     * Não é o mesmo que "não achei", e a tela precisa saber a diferença: dizer
+     * "não encontramos este código em base nenhuma" quando ninguém chegou a
+     * procurar é mentira, e manda o lojista conferir um código que está certo.
+     */
+    if (resposta?.motivo === 'busca_desligada') return 'desligada';
+
     if (!resposta?.encontrado || !resposta.produto?.nome) return null;
 
     return resposta.produto;

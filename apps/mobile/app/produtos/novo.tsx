@@ -62,7 +62,16 @@ export default function NovoProduto() {
   const [carregando, setCarregando] = useState(true);
   const [salvando, setSalvando] = useState(false);
   const [erroDeCarga, setErroDeCarga] = useState<string | null>(null);
-  const [mensagem, setMensagem] = useState<string | null>(null);
+  /**
+   * O RECADO CARREGA O PRÓPRIO TOM.
+   *
+   * Guardar só o texto obrigava a tela a mostrá-lo sempre do mesmo jeito, e o
+   * `Aviso` começa em vermelho. "Nescau cadastrado." saía com cara de falha —
+   * quem cadastra trinta produtos seguidos via trinta caixas vermelhas
+   * confirmando que deu tudo certo. Vermelho é para erro; confirmação é verde.
+   */
+  const [recado, setRecado] = useState<{ texto: string; tom: 'erro' | 'sucesso' } | null>(null);
+  const falhar = useCallback((texto: string) => setRecado({ texto, tom: 'erro' }), []);
   const [erros, setErros] = useState<Record<string, string | null>>({});
 
   /** Cadastro rápido: salva e já abre o próximo, sem sair da tela. */
@@ -77,7 +86,14 @@ export default function NovoProduto() {
    */
   const [existente, setExistente] = useState<ProdutoComStatus | null>(null);
   const [doCatalogo, setDoCatalogo] = useState<ProdutoDoCatalogo | null>(null);
-  const [semResultado, setSemResultado] = useState(false);
+  /**
+   * `'nao_achei'` e `'desligada'` são respostas DIFERENTES.
+   *
+   * Dizer "não encontramos este código em base nenhuma" quando a chave geral
+   * está desligada e ninguém chegou a procurar manda o lojista conferir um
+   * código que está certo.
+   */
+  const [semResultado, setSemResultado] = useState<'nao_achei' | 'desligada' | null>(null);
   const [buscandoCodigo, setBuscandoCodigo] = useState(false);
 
   /** Muda para devolver o foco ao campo do código. */
@@ -126,7 +142,7 @@ export default function NovoProduto() {
         ultimoBuscado.current = null;
         setExistente(null);
         setDoCatalogo(null);
-        setSemResultado(false);
+        setSemResultado(null);
         return;
       }
 
@@ -135,7 +151,7 @@ export default function NovoProduto() {
 
       setBuscandoCodigo(true);
       setDoCatalogo(null);
-      setSemResultado(false);
+      setSemResultado(null);
       try {
         const meu = await buscarProdutoPorCodigoParaCadastro(limpo);
         if (meu) {
@@ -160,9 +176,13 @@ export default function NovoProduto() {
 
         setExistente(null);
         const achado = await consultarCatalogo(limpo);
+        if (achado === 'desligada') {
+          setSemResultado('desligada');
+          return;
+        }
         if (!achado) {
           // NADA INVENTADO: o nome fica como está (vazio, se estava vazio).
-          setSemResultado(true);
+          setSemResultado('nao_achei');
           return;
         }
 
@@ -195,12 +215,12 @@ export default function NovoProduto() {
         setErros((atual) => ({ ...atual, nome: null }));
       } catch (e) {
         // Procurar é conveniência: falhar aqui não pode impedir o cadastro.
-        setMensagem(textoDoErro(e, 'Não foi possível consultar este código.'));
+        falhar(textoDoErro(e, 'Não foi possível consultar este código.'));
       } finally {
         setBuscandoCodigo(false);
       }
     },
-    [],
+    [falhar],
   );
 
   /**
@@ -220,9 +240,9 @@ export default function NovoProduto() {
       setErros({});
       setExistente(null);
       setDoCatalogo(null);
-      setSemResultado(false);
+      setSemResultado(null);
       ultimoBuscado.current = null;
-      setMensagem(aviso);
+      setRecado({ texto: aviso, tom: 'sucesso' });
       setFoco((n) => n + 1);
     },
     [],
@@ -231,7 +251,7 @@ export default function NovoProduto() {
   const aoSalvar = useCallback(async () => {
     if (!conta) return;
 
-    setMensagem(null);
+    setRecado(null);
     const novosErros: Record<string, string | null> = {};
 
     if (valores.nome.trim().length === 0) novosErros.nome = 'Informe o nome do produto.';
@@ -311,7 +331,7 @@ export default function NovoProduto() {
       if (emSerie) proximo(`${valores.nome.trim()} cadastrado.`);
       else router.replace(`/produtos/${id}`);
     } catch (e) {
-      setMensagem(textoDoErro(e, 'Não foi possível salvar o produto.'));
+      falhar(textoDoErro(e, 'Não foi possível salvar o produto.'));
     } finally {
       setSalvando(false);
     }
@@ -397,7 +417,14 @@ export default function NovoProduto() {
         </Text>
       </View>
     </View>
-  ) : semResultado ? (
+  ) : semResultado === 'desligada' ? (
+    <View style={estilos.faixa}>
+      <Text style={estilos.faixaTexto}>
+        A busca automática por código está temporariamente desligada. O código fica
+        guardado no produto normalmente — só o nome precisa ser digitado.
+      </Text>
+    </View>
+  ) : semResultado === 'nao_achei' ? (
     <View style={estilos.faixa}>
       <Text style={estilos.faixaTexto}>
         Não encontramos este código nem na sua loja nem no catálogo. Escreva o nome
@@ -415,7 +442,7 @@ export default function NovoProduto() {
         <ScrollView contentContainerStyle={estilos.conteudo} keyboardShouldPersistTaps="handled">
           <Text style={estilos.titulo}>{existente ? 'Atualizar produto' : 'Novo produto'}</Text>
 
-          {mensagem ? <Aviso mensagem={mensagem} /> : null}
+          {recado ? <Aviso mensagem={recado.texto} tom={recado.tom} /> : null}
 
           <Checkbox marcado={emSerie} aoMudar={setEmSerie} bloqueado={salvando}>
             <Text style={estilos.opcaoTitulo}>Cadastrar vários seguidos</Text>

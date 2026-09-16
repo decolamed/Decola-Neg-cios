@@ -11,8 +11,9 @@
  * serviço externo, e o painel não deve gastá-las a cada navegação. Quem decide
  * quando testar é quem está olhando.
  */
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Aviso } from '@/componentes/Basicos';
+import { carregarConfiguracoes, salvarConfiguracoes } from '@/dados/planos';
 import { useSessaoAdmin } from '@/contexto/SessaoAdmin';
 import {
   ROTULO_SITUACAO,
@@ -139,6 +140,80 @@ export function Integracoes() {
     }
   }, [administrador]);
 
+  /**
+   * A CHAVE GERAL DA BUSCA POR CÓDIGO DE BARRAS.
+   *
+   * Mora aqui, e não em Configurações SaaS, porque o que ela controla é uma
+   * dependência EXTERNA — e é nesta tela que se descobre que uma delas está
+   * mal. Quem acabou de ver "falha" num serviço precisa poder desligá-lo no
+   * mesmo lugar, não procurar outra tela.
+   *
+   * `null` enquanto carrega: assim o interruptor não pisca ligado antes de
+   * saber como está, que seria dizer ao administrador algo que ainda não foi
+   * conferido.
+   */
+  const [configId, setConfigId] = useState<string | null>(null);
+  const [buscaAtiva, setBuscaAtiva] = useState<boolean | null>(null);
+  const [trocandoChave, setTrocandoChave] = useState(false);
+  const [avisoDaChave, setAvisoDaChave] = useState<
+    { texto: string; tom: 'erro' | 'sucesso' } | null
+  >(null);
+
+  useEffect(() => {
+    let vivo = true;
+    void carregarConfiguracoes()
+      .then((c) => {
+        if (!vivo) return;
+        setConfigId(c.id);
+        setBuscaAtiva(c.busca_por_codigo_ativa);
+      })
+      .catch((e) => {
+        if (!vivo) return;
+        setAvisoDaChave({
+          texto: e instanceof Error ? e.message : 'Não foi possível ler a chave da busca.',
+          tom: 'erro',
+        });
+      });
+    return () => {
+      vivo = false;
+    };
+  }, []);
+
+  /**
+   * O estado só muda na tela DEPOIS de o banco confirmar.
+   *
+   * O contrário — mexer o interruptor na hora e corrigir se der erro — mostra
+   * "desligada" numa busca que continua ligada. Numa chave que existe para
+   * apagar incêndio, acreditar que se desligou algo que não desligou é pior do
+   * que esperar meio segundo.
+   */
+  const trocarChave = useCallback(
+    async (ligar: boolean) => {
+      if (!configId) return;
+      setAvisoDaChave(null);
+      setTrocandoChave(true);
+      try {
+        await salvarConfiguracoes(configId, { busca_por_codigo_ativa: ligar });
+        const confirmado = await carregarConfiguracoes();
+        setBuscaAtiva(confirmado.busca_por_codigo_ativa);
+        setAvisoDaChave({
+          tom: 'sucesso',
+          texto: confirmado.busca_por_codigo_ativa
+            ? 'Busca por código LIGADA. Os lojistas voltam a receber nome e foto ao bipar.'
+            : 'Busca por código DESLIGADA. O cadastro de produto segue normalmente, com o nome digitado à mão.',
+        });
+      } catch (e) {
+        setAvisoDaChave({
+          texto: e instanceof Error ? e.message : 'Não foi possível alterar a chave.',
+          tom: 'erro',
+        });
+      } finally {
+        setTrocandoChave(false);
+      }
+    },
+    [configId],
+  );
+
   const comProblema =
     diagnostico?.verificacoes.filter((v) => v.situacao !== 'ok').length ?? 0;
 
@@ -159,6 +234,63 @@ export function Integracoes() {
       </div>
 
       {erro ? <Aviso mensagem={erro} /> : null}
+
+      <div
+        className="card"
+        style={{
+          borderLeft: `4px solid ${
+            buscaAtiva === false ? 'var(--cor-alerta)' : 'var(--cor-positivo)'
+          }`,
+        }}
+      >
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'baseline',
+            gap: 'var(--espaco-md)',
+            flexWrap: 'wrap',
+          }}
+        >
+          <h2 style={{ margin: 0 }}>Busca por código de barras</h2>
+          <strong
+            style={{
+              color: buscaAtiva === false ? 'var(--cor-alerta)' : 'var(--cor-positivo)',
+            }}
+          >
+            {buscaAtiva === null ? 'Lendo…' : buscaAtiva ? 'Ligada' : 'Desligada'}
+          </strong>
+        </div>
+
+        <p style={{ marginTop: 'var(--espaco-sm)' }}>
+          Ao bipar um código no cadastro de produto, o servidor procura no catálogo da Decola e,
+          se não achar, nas bases externas (Open Food Facts e UPCitemdb). Se alguma delas ficar
+          instável, desligue aqui: a consulta para na hora, sem publicar código.
+        </p>
+
+        <p className="legenda">
+          Desligar <strong>não quebra o cadastro</strong> — o lojista continua cadastrando com o
+          nome digitado à mão, e o reconhecimento de produto que já existe na loja dele (o que
+          impede duplicado) continua valendo, porque não depende de API externa.
+        </p>
+
+        {avisoDaChave ? <Aviso mensagem={avisoDaChave.texto} tom={avisoDaChave.tom} /> : null}
+
+        <div className="acoes" style={{ marginTop: 'var(--espaco-md)' }}>
+          <button
+            type="button"
+            className={buscaAtiva ? 'botao secundario' : 'botao'}
+            onClick={() => void trocarChave(!buscaAtiva)}
+            disabled={trocandoChave || buscaAtiva === null}
+          >
+            {trocandoChave
+              ? 'Alterando…'
+              : buscaAtiva
+                ? 'Desligar a busca'
+                : 'Ligar a busca'}
+          </button>
+        </div>
+      </div>
 
       <div className="card">
         <h2 style={{ margin: 0 }}>Enviar e-mail de teste</h2>

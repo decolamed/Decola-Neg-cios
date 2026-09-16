@@ -14,6 +14,12 @@
  *      acessório, vestuário), mas é limitado: cem consultas por dia, POR IP. É
  *      a última porta de propósito.
  *
+ * TEM UMA CHAVE GERAL ANTES DAS TRÊS (`configuracoes_plataforma.
+ * busca_por_codigo_ativa`). As bases externas não são nossas; quando uma delas
+ * fica instável, o administrador desliga no painel e esta função para de
+ * consultar — sem publicar código, e sem quebrar o cadastro, que segue com o
+ * nome digitado à mão.
+ *
  * O QUE ELA NUNCA FAZ: INVENTAR. Se nenhuma das três souber, a resposta é
  * "não achei" e o campo do nome chega vazio ao lojista. Um nome plausível
  * preenchido sozinho é pior do que campo vazio — ele parece conferido, vai para
@@ -524,6 +530,39 @@ Deno.serve(async (requisicao) => {
     Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
     { auth: { persistSession: false } },
   );
+
+  /**
+   * ------------------------------------------- 0. a chave geral está ligada?
+   *
+   * A busca depende de APIs que não são nossas. Quando uma delas fica instável,
+   * o estrago chega ao lojista como cadastro que trava ou que preenche errado —
+   * e apagar esse incêndio não pode exigir publicar código. O administrador da
+   * plataforma desliga no painel e liga de volta quando passar.
+   *
+   * A PERGUNTA É FEITA AQUI, no servidor, e não na tela. Esconder o botão no
+   * aplicativo não impediria nada: a função é o que consulta as APIs, e é ela
+   * que precisa parar. A tela também respeita a resposta, mas isso é cortesia,
+   * não o controle.
+   *
+   * FALHA DE LEITURA NÃO DESLIGA A BUSCA. Se a consulta a
+   * `configuracoes_plataforma` falhar, a chave é tratada como LIGADA: uma
+   * indisponibilidade do banco derrubando um recurso que estava funcionando
+   * seria transformar um problema pequeno em dois.
+   */
+  const { data: config, error: erroDeConfig } = await admin
+    .from('configuracoes_plataforma')
+    .select('busca_por_codigo_ativa')
+    .limit(1)
+    .maybeSingle();
+
+  if (erroDeConfig) {
+    console.error('chave geral não lida, seguindo ligada:', erroDeConfig.message);
+  } else if (config && config.busca_por_codigo_ativa === false) {
+    // Não é erro, e não é "não achei": é uma terceira resposta, para a tela
+    // poder dizer a verdade ("a busca está desligada") em vez de mentir que o
+    // produto não existe em base nenhuma.
+    return responder({ encontrado: false, motivo: 'busca_desligada' });
+  }
 
   // ------------------------------------------- 1. o catálogo da Decola
   const { data: guardado, error: erroDeLeitura } = await admin

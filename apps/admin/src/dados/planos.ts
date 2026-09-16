@@ -117,9 +117,22 @@ export async function carregarConfiguracoes(): Promise<ConfiguracaoPlataforma> {
   return data;
 }
 
+/**
+ * Grava um PEDAÇO da linha de configuração.
+ *
+ * Era uma assinatura fechada nos três campos do trial, e a chave geral da
+ * busca por código mora na mesma linha mas é salva de outra tela. Exigir os
+ * três ali obrigaria aquela tela a reenviar valores que ela não controla — e
+ * um dia reenviaria um valor velho por cima de uma alteração de outra pessoa.
+ */
 export async function salvarConfiguracoes(
   id: string,
-  valores: { trial_ativo: boolean; trial_dias: number; carencia_dias: number },
+  valores: Partial<
+    Pick<
+      ConfiguracaoPlataforma,
+      'trial_ativo' | 'trial_dias' | 'carencia_dias' | 'busca_por_codigo_ativa'
+    >
+  >,
 ): Promise<void> {
   const { error } = await supabase
     .from('configuracoes_plataforma')

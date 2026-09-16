@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { observarInstalacao } from '@/lib/instalacao';
 import { Stack } from 'expo-router';
 import { useFonts } from 'expo-font';
 import { StatusBar } from 'expo-status-bar';
@@ -56,6 +57,17 @@ export default function LayoutRaiz() {
   // Com o mapa vazio (fontes ainda não fornecidas) `carregadas` já vem true e
   // o app sobe direto com a fonte do sistema — ver src/lib/fontes.ts.
   const [carregadas, erroDeFonte] = useFonts(MAPA_DE_FONTES);
+
+  /**
+   * O convite de instalação chega LOGO depois do carregamento, uma vez só.
+   *
+   * Escutar apenas quando a etapa do tutorial abre significaria perder o evento
+   * em quase todos os casos — e o botão "Instalar" ficaria morto, sem erro
+   * nenhum para explicar. Por isso a escuta começa na raiz do aplicativo.
+   */
+  useEffect(() => {
+    observarInstalacao();
+  }, []);
 
   useEffect(() => {
     conferirConsistenciaDasFontes();

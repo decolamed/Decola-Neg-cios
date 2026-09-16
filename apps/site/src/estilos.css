@@ -2516,3 +2516,61 @@ body:has(.loja-rodape) > * > .rodape {
 body:has(.vitrine-carregando) > * > .rodape {
   display: none;
 }
+
+/**
+ * O botão de pesquisar da barra de busca.
+ *
+ * Ele existe para quem digitou e está esperando um "confirmar" — a lista já
+ * filtra a cada letra, mas no celular o teclado cobre o resultado e não havia
+ * nada para tocar. Redondo e na cor da loja porque é a ação da barra; o × ao
+ * lado continua discreto, porque limpar não é o que se quer fazer ali.
+ */
+.loja-busca-ir {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: var(--cor-loja, var(--cor-primaria));
+  color: var(--cor-sobre-barra, #fff);
+  padding: 0;
+  margin-left: 2px;
+}
+
+.loja-busca-ir svg {
+  stroke: currentColor;
+}
+
+/**
+ * O botão confirmando que o produto entrou no carrinho.
+ *
+ * O carrinho é local e instantâneo, e era esse o problema: nada acontecia na
+ * tela: o contador subia lá no rodapé, longe do dedo, e a pessoa clicava de
+ * novo achando que o primeiro toque não pegou.
+ *
+ * O pulo é curto de propósito (180ms). O que precisa ser notado é a MUDANÇA, e
+ * uma animação longa num botão que a pessoa vai tocar de novo logo em seguida
+ * atrapalha em vez de informar.
+ *
+ * `prefers-reduced-motion` desliga o pulo — e só ele. O texto e a cor
+ * continuam mudando, porque são eles que carregam a informação; quem pediu
+ * menos movimento não pediu menos resposta.
+ */
+.produto-cta.adicionado {
+  background: var(--cor-positivo, #58b7e6);
+  border-color: var(--cor-positivo, #58b7e6);
+  color: #fff;
+  animation: cta-confirmou 180ms ease-out;
+}
+
+@keyframes cta-confirmou {
+  0% { transform: scale(1); }
+  55% { transform: scale(1.06); }
+  100% { transform: scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .produto-cta.adicionado { animation: none; }
+}

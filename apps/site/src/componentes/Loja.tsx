@@ -9,7 +9,7 @@
  * o resto do arquivo só as consome — nenhuma cor de marca aparece escrita nos
  * componentes, senão a loja de cada cliente sairia igual à nossa.
  */
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   estadoDaLoja,
@@ -650,8 +650,26 @@ export function BuscaDeProdutos({
   placeholder?: string;
   fixa?: boolean;
 }) {
+  /**
+   * ELA FILTRA ENQUANTO SE DIGITA — e mesmo assim precisava de um "pesquisar".
+   *
+   * O relato foi "digito e não tenho como confirmar; o Enter não faz nada". Os
+   * resultados já apareciam a cada letra, mas no celular ninguém via: o teclado
+   * cobre a tela inteira, a tecla de busca não fazia nada (um `input` solto não
+   * tem o que submeter) e a pessoa ficava esperando um botão que não existia.
+   *
+   * Virar `form` resolve os dois de uma vez: o Enter e a tecla "pesquisar" do
+   * teclado passam a submeter, e submeter aqui significa TIRAR O TECLADO DA
+   * FRENTE — é o foco no campo que o mantém aberto. Não há nada a recarregar,
+   * então o `preventDefault` é o comportamento inteiro.
+   */
+  const confirmar = (evento: FormEvent) => {
+    evento.preventDefault();
+    document.getElementById(ID_DA_BUSCA)?.blur();
+  };
+
   const campo = (
-    <div className="loja-busca">
+    <form className="loja-busca" onSubmit={confirmar} role="search">
       <IconeBusca tamanho={21} />
       <input
         id={ID_DA_BUSCA}
@@ -660,13 +678,22 @@ export function BuscaDeProdutos({
         onChange={(e) => aoMudar(e.target.value)}
         placeholder={placeholder}
         aria-label="Buscar produtos"
+        /* No celular, a tecla de ação do teclado passa a dizer "pesquisar". */
+        enterKeyHint="search"
       />
       {valor ? (
-        <button type="button" onClick={() => aoMudar('')} aria-label="Limpar busca">
-          ×
-        </button>
+        <>
+          <button type="button" onClick={() => aoMudar('')} aria-label="Limpar busca">
+            ×
+          </button>
+          {/* Só aparece com texto digitado: um botão de pesquisar sobre um
+              campo vazio não faria nada, e ocupa o lugar de quem está lendo. */}
+          <button type="submit" className="loja-busca-ir" aria-label="Pesquisar">
+            <IconeBusca tamanho={18} />
+          </button>
+        </>
       ) : null}
-    </div>
+    </form>
   );
 
   return fixa ? <div className="loja-busca-topo">{campo}</div> : campo;
@@ -865,6 +892,63 @@ function linhaDeEstoque(disponivel: number): { texto: string; baixo: boolean } {
  * onde a pessoa procura "Adicionar" responde a pergunta dela sem ela precisar
  * caçar a resposta em outro canto do cartão.
  */
+/**
+ * O "adicionado!" que o botão precisava.
+ *
+ * O carrinho é local e instantâneo, e essa era justamente a causa da queixa:
+ * NADA acontecia na tela. O contador lá no rodapé subia, longe do dedo, e a
+ * pessoa clicava de novo — e de novo — achando que o primeiro toque falhou. O
+ * estoque no cartão até muda, mas um número diminuindo não se lê como "deu
+ * certo".
+ *
+ * O aviso dura 1,4s: tempo de ser visto e de sumir antes do produto seguinte.
+ *
+ * O CLIQUE CONTINUA VALENDO enquanto ele aparece — quem quer dois toca duas
+ * vezes, e travar o botão trocaria uma dúvida por uma recusa. O que muda é só
+ * o que se vê.
+ */
+function useConfirmacaoDeAdicao(acao: () => void) {
+  const [adicionado, setAdicionado] = useState(false);
+  const relogio = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Sair da página com o relógio pendente deixaria um `setState` procurando um
+  // componente que não existe mais.
+  useEffect(
+    () => () => {
+      if (relogio.current) clearTimeout(relogio.current);
+    },
+    [],
+  );
+
+  const confirmar = useCallback(() => {
+    acao();
+    setAdicionado(true);
+    if (relogio.current) clearTimeout(relogio.current);
+    relogio.current = setTimeout(() => setAdicionado(false), 1400);
+  }, [acao]);
+
+  return { adicionado, confirmar };
+}
+
+/** O tique da confirmação. */
+export function IconeCerto({ tamanho = 16 }: { tamanho?: number }) {
+  return (
+    <svg
+      width={tamanho}
+      height={tamanho}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.6"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M20 6 9 17l-5-5" />
+    </svg>
+  );
+}
+
 export function CartaoDeProduto({
   slug,
   produto,
@@ -878,6 +962,9 @@ export function CartaoDeProduto({
   const estoque = linhaDeEstoque(produto.disponivel);
   const capa = produto.imagens[0];
   const selo = esgotado ? 'Esgotado' : produto.destaque ? 'Mais vendido' : null;
+  const { adicionado, confirmar: adicionar } = useConfirmacaoDeAdicao(() =>
+    aoAdicionar(produto.id),
+  );
 
   return (
     <article className={esgotado ? 'produto esgotado' : 'produto'}>
@@ -908,16 +995,18 @@ export function CartaoDeProduto({
 
         <button
           type="button"
-          className="produto-cta"
+          className={adicionado ? 'produto-cta adicionado' : 'produto-cta'}
           disabled={esgotado}
-          onClick={() => aoAdicionar(produto.id)}
+          onClick={adicionar}
           aria-label={
             esgotado ? `${produto.nome} indisponível` : `Adicionar ${produto.nome} ao carrinho`
           }
         >
-          <IconeCarrinho tamanho={16} />
+          {adicionado ? <IconeCerto tamanho={16} /> : <IconeCarrinho tamanho={16} />}
           {esgotado ? (
             <span>Indisponível</span>
+          ) : adicionado ? (
+            <span>Adicionado!</span>
           ) : (
             <span>
               <span className="rotulo-curto">Adicionar</span>

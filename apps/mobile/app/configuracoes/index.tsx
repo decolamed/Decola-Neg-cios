@@ -8,13 +8,22 @@
  * "Backup e sincronização" NÃO aparece: foi removido da V1 por redundância com
  * a nuvem (Seção 7.9).
  */
+import { useCallback, useEffect, useState } from 'react';
 import { router } from 'expo-router';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import tema from '@decola/theme';
+import { Aviso } from '@/componentes/Aviso';
 import { TelaCarregando, TelaMensagem } from '@/componentes/EstadoDaTela';
 import { Icone, LadrilhoDeIcone, type NomeDeIcone } from '@/componentes/Icone';
 import { useSessao } from '@/contexto/SessaoContexto';
+import {
+  assinarInstalacao,
+  comoInstalarAMao,
+  estadoDaInstalacao,
+  instalar,
+  type EstadoDaInstalacao,
+} from '@/lib/instalacao';
 
 type Item = {
   titulo: string;
@@ -28,6 +37,37 @@ type Item = {
 
 export default function Configuracoes() {
   const { conta, carregando } = useSessao();
+
+  /**
+   * A instalação é uma AÇÃO, não um destino — por isso ela não entra na lista
+   * acima, que navega. E ela precisa estar aqui, e não só no tutorial: quem
+   * fechou o storyboard, ou quem hoje abriu o Decola noutro aparelho, não tem
+   * por que rever sete etapas para pôr o ícone na tela inicial.
+   */
+  const [instalacao, setInstalacao] = useState<EstadoDaInstalacao>(estadoDaInstalacao);
+  const [instalando, setInstalando] = useState(false);
+  const [recado, setRecado] = useState<string | null>(null);
+
+  useEffect(() => assinarInstalacao(setInstalacao), []);
+
+  const aoInstalar = useCallback(async () => {
+    // Sem o convite do navegador não há o que chamar: o caminho é o menu dele.
+    if (instalacao !== 'pronto') {
+      setRecado(comoInstalarAMao());
+      return;
+    }
+    setInstalando(true);
+    try {
+      const aceitou = await instalar();
+      setRecado(
+        aceitou
+          ? null
+          : 'A instalação não foi concluída. Você pode tentar de novo quando quiser.',
+      );
+    } finally {
+      setInstalando(false);
+    }
+  }, [instalacao]);
 
   if (carregando) return <TelaCarregando />;
   if (!conta) return <TelaMensagem mensagem="Não foi possível carregar suas configurações." />;
@@ -117,6 +157,14 @@ export default function Configuracoes() {
       cor: tema.cores.secundaria,
       disponivel: true,
     },
+    {
+      titulo: 'Ver tutorial novamente',
+      descricao: 'O passo a passo de boas-vindas, com tudo o que o aplicativo faz.',
+      destino: '/tutorial?rever=1',
+      icone: 'inicio',
+      cor: tema.cores.primaria,
+      disponivel: true,
+    },
   ];
 
   return (
@@ -145,6 +193,39 @@ export default function Configuracoes() {
             ) : null}
           </Pressable>
         ))}
+
+        {Platform.OS === 'web' ? (
+          <>
+            <Pressable
+              onPress={() => void aoInstalar()}
+              disabled={instalando || instalacao === 'instalado'}
+              style={({ pressed }) => [
+                estilos.item,
+                instalacao === 'instalado' && { opacity: tema.estados.disabledOpacidade },
+                pressed && { opacity: 0.85 },
+              ]}
+            >
+              <LadrilhoDeIcone nome="configuracoes" cor={tema.cores.apoio} />
+              <View style={estilos.itemTexto}>
+                <Text style={estilos.itemTitulo}>
+                  {instalacao === 'instalado' ? 'Aplicativo instalado' : 'Instalar aplicativo'}
+                </Text>
+                <Text style={estilos.itemDescricao}>
+                  {instalacao === 'instalado'
+                    ? 'Você já está usando o Decola como aplicativo neste aparelho.'
+                    : instalando
+                      ? 'Aguardando a confirmação do navegador…'
+                      : 'Ponha o Decola na tela inicial deste aparelho, com ícone próprio.'}
+                </Text>
+              </View>
+              {instalacao !== 'instalado' ? (
+                <Icone nome="seta" cor={tema.cores.textoSuave} tamanho={18} />
+              ) : null}
+            </Pressable>
+
+            {recado ? <Aviso mensagem={recado} tom="informacao" /> : null}
+          </>
+        ) : null}
       </ScrollView>
     </SafeAreaView>
   );

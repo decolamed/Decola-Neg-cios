@@ -23,6 +23,7 @@ import { useSessao } from '@/contexto/SessaoContexto';
 import { carregarResumo, observarAvisos, type ResumoDoDashboard } from '@/dados/dashboard';
 import { enderecoCompleto } from '@/dados/loja';
 import { deveAbrirORoteiro } from '@/dados/primeiraConfiguracao';
+import { jaViuOTutorial } from '@/dados/tutorial';
 import { moeda } from '@/lib/formato';
 import { textoDoErro } from '@/lib/erros';
 
@@ -116,6 +117,32 @@ export default function Dashboard() {
   const jaMandou = useRef(false);
   useEffect(() => {
     if (jaMandou.current || carregando || !conta) return;
+
+    /**
+     * O TUTORIAL VEM ANTES DO ROTEIRO, e a ordem importa.
+     *
+     * São coisas diferentes: o tutorial ensina o que o aplicativo é; `/comecar`
+     * cobra o que falta configurar. Cobrar antes de ensinar é pedir chave Pix a
+     * quem ainda não sabe o que está olhando — e o tutorial termina no Início,
+     * que então manda para o roteiro naturalmente.
+     */
+    const usuarioId = conta.vinculo.usuario_id;
+    if (usuarioId) {
+      jaMandou.current = true;
+      void jaViuOTutorial(usuarioId).then((viu) => {
+        if (!viu) {
+          router.replace('/tutorial');
+          return;
+        }
+        // Só então a pergunta de sempre. A trava já foi armada acima: sem isso,
+        // a espera do armazenamento deixaria uma fresta para o efeito rodar de
+        // novo e mandar para as duas telas.
+        if (deveAbrirORoteiro(conta.empresa, conta.ehGestor)) router.replace('/comecar');
+        else jaMandou.current = false;
+      });
+      return;
+    }
+
     if (!deveAbrirORoteiro(conta.empresa, conta.ehGestor)) return;
     jaMandou.current = true;
     router.replace('/comecar');

@@ -17,7 +17,7 @@
  * é o que sobra, e tem a vantagem de ser verificável: o próprio script confere
  * o resultado e falha se não encontrar onde injetar.
  */
-import { readFileSync, writeFileSync, existsSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync, copyFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 const saida = process.argv[2];
@@ -106,4 +106,27 @@ if (faltando.length > 0) {
   process.exit(1);
 }
 
-console.log('finalizar-web: manifesto, ícones e cores aplicados.');
+/**
+ * O SERVICE WORKER vai junto.
+ *
+ * Ele é a única parte do Decola que roda com o aplicativo fechado — é quem
+ * recebe o aviso e o mostra na barra de notificações. O Expo não o inclui na
+ * exportação, e ele precisa ficar na RAIZ de `/app/`: o escopo de um Service
+ * Worker é a pasta dele, e em qualquer subpasta ele não valeria para o app.
+ *
+ * Copiar aqui, e não mandar escrever à mão no dist, é o que impede a cópia
+ * publicada de divergir da versionada.
+ */
+const origemDoSw = new URL('../web/sw.js', import.meta.url).pathname;
+const destinoDoSw = join(saida, 'sw.js');
+if (!existsSync(origemDoSw)) {
+  console.error('finalizar-web: web/sw.js não encontrado — as notificações não funcionariam.');
+  process.exit(1);
+}
+copyFileSync(origemDoSw, destinoDoSw);
+if (!existsSync(destinoDoSw)) {
+  console.error('finalizar-web: falha ao copiar o Service Worker.');
+  process.exit(1);
+}
+
+console.log('finalizar-web: manifesto, ícones, cores e Service Worker aplicados.');

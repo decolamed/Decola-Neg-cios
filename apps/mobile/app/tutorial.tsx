@@ -35,6 +35,11 @@ import { Marca } from '@/componentes/Marca';
 import { useSessao } from '@/contexto/SessaoContexto';
 import { marcarTutorialVisto } from '@/dados/tutorial';
 import {
+  estadoDosAvisos,
+  ligarAvisos,
+  type EstadoDosAvisos,
+} from '@/dados/avisosNoCelular';
+import {
   assinarInstalacao,
   comoInstalarAMao,
   estadoDaInstalacao,
@@ -51,6 +56,8 @@ type Etapa = {
   itens: string[];
   /** A etapa da instalação tem conteúdo próprio. */
   instalar?: true;
+  /** A etapa dos avisos pede a permissão do navegador. */
+  avisos?: true;
 };
 
 const ETAPAS: Etapa[] = [
@@ -66,6 +73,34 @@ const ETAPAS: Etapa[] = [
       'O botão do meio abre a venda rápida',
       'Este tutorial leva menos de um minuto',
     ],
+  },
+  {
+    icone: 'configuracoes',
+    cor: tema.cores.apoio,
+    titulo: 'Instale na tela inicial',
+    texto:
+      'O Decola Negócios abre no navegador — não precisa baixar de loja nenhuma. Instalando, ' +
+      'ele ganha ícone próprio e abre em tela cheia, como qualquer aplicativo.',
+    itens: [
+      'Abre mais rápido, sem digitar endereço',
+      'Ocupa quase nada no aparelho',
+      'Pode instalar em quantos aparelhos quiser',
+    ],
+    instalar: true,
+  },
+  {
+    icone: 'sino',
+    cor: tema.cores.secundaria,
+    titulo: 'Avisos no seu celular',
+    texto:
+      'Pedido novo, estoque acabando, assinatura vencendo: o Decola avisa na barra de ' +
+      'notificações do aparelho — mesmo com o aplicativo fechado.',
+    itens: [
+      'Você escolhe o que quer receber em Configurações',
+      'Vale para cada aparelho onde você permitir',
+      'Sem isso, só dá para saber abrindo o app',
+    ],
+    avisos: true,
   },
   {
     icone: 'vendas',
@@ -132,20 +167,6 @@ const ETAPAS: Etapa[] = [
       'Este tutorial pode ser reaberto por lá quando quiser',
     ],
   },
-  {
-    icone: 'configuracoes',
-    cor: tema.cores.apoio,
-    titulo: 'Instale na tela inicial',
-    texto:
-      'O Decola Negócios abre no navegador — não precisa baixar de loja nenhuma. Instalando, ' +
-      'ele ganha ícone próprio e abre em tela cheia, como qualquer aplicativo.',
-    itens: [
-      'Abre mais rápido, sem digitar endereço',
-      'Ocupa quase nada no aparelho',
-      'Pode instalar em quantos aparelhos quiser',
-    ],
-    instalar: true,
-  },
 ];
 
 export default function Tutorial() {
@@ -156,6 +177,8 @@ export default function Tutorial() {
   const [indice, setIndice] = useState(0);
   const [instalacao, setInstalacao] = useState<EstadoDaInstalacao>(estadoDaInstalacao);
   const [instalando, setInstalando] = useState(false);
+  const [avisos, setAvisos] = useState<EstadoDosAvisos>(estadoDosAvisos);
+  const [ligandoAvisos, setLigandoAvisos] = useState(false);
 
   useEffect(() => assinarInstalacao(setInstalacao), []);
 
@@ -175,6 +198,15 @@ export default function Tutorial() {
     if (rever === '1') router.back();
     else router.replace('/dashboard');
   }, [conta, rever]);
+
+  const aoLigarAvisos = useCallback(async () => {
+    setLigandoAvisos(true);
+    try {
+      setAvisos(await ligarAvisos());
+    } finally {
+      setLigandoAvisos(false);
+    }
+  }, []);
 
   const aoInstalar = useCallback(async () => {
     setInstalando(true);
@@ -215,6 +247,12 @@ export default function Tutorial() {
           estado={instalacao}
           instalando={instalando}
           aoInstalar={() => void aoInstalar()}
+        /> : null}
+
+        {etapa.avisos ? <EtapaDeAvisos
+          estado={avisos}
+          ligando={ligandoAvisos}
+          aoLigar={() => void aoLigarAvisos()}
         /> : null}
       </ScrollView>
 
@@ -300,6 +338,86 @@ function EtapaDeInstalacao({
       variante="secundario"
       aoPressionar={aoInstalar}
       desabilitado={instalando}
+      estilo={{ marginTop: tema.espacamento.md }}
+    />
+  );
+}
+
+/**
+ * O bloco de avisos.
+ *
+ * A PERMISSÃO SÓ PODE SER PEDIDA A PARTIR DE UM TOQUE — o navegador ignora (ou
+ * pune) quem pede sozinho ao abrir a página. Por isso há um botão aqui, e nada
+ * acontece antes dele.
+ *
+ * NO IPHONE ISTO DEPENDE DA ETAPA ANTERIOR. O Safari só entrega Web Push a um
+ * site que já está na tela inicial; é do sistema, não nosso. Foi por isso que
+ * "Instalar" passou a vir antes: nesta ordem, quem instalou chega aqui podendo
+ * ligar, em vez de ler que não dá.
+ */
+function EtapaDeAvisos({
+  estado,
+  ligando,
+  aoLigar,
+}: {
+  estado: EstadoDosAvisos;
+  ligando: boolean;
+  aoLigar: () => void;
+}) {
+  if (Platform.OS !== 'web') return null;
+
+  if (estado === 'ligado') {
+    return (
+      <View style={[estilos.caixa, { backgroundColor: tema.tons.secundaria }]}>
+        <Text style={estilos.caixaTitulo}>Avisos ligados</Text>
+        <Text style={estilos.caixaTexto}>
+          Este aparelho já recebe os avisos do Decola na barra de notificações.
+        </Text>
+      </View>
+    );
+  }
+
+  if (estado === 'exige_instalacao') {
+    return (
+      <View style={[estilos.caixa, { backgroundColor: tema.tons.destaque }]}>
+        <Text style={estilos.caixaTitulo}>Instale primeiro</Text>
+        <Text style={estilos.caixaTexto}>
+          No iPhone, os avisos só funcionam com o Decola na tela inicial. Volte uma etapa,
+          instale, e depois ligue os avisos por aqui ou em Configurações.
+        </Text>
+      </View>
+    );
+  }
+
+  if (estado === 'bloqueado') {
+    return (
+      <View style={[estilos.caixa, { backgroundColor: tema.tons.destaque }]}>
+        <Text style={estilos.caixaTitulo}>As notificações estão bloqueadas</Text>
+        <Text style={estilos.caixaTexto}>
+          O navegador guardou a recusa e só ele pode desfazê-la: abra as permissões deste site
+          nas configurações do navegador e libere as notificações.
+        </Text>
+      </View>
+    );
+  }
+
+  if (estado === 'indisponivel') {
+    return (
+      <View style={estilos.caixa}>
+        <Text style={estilos.caixaTexto}>
+          Este navegador não recebe avisos. Você continua vendo tudo dentro do aplicativo, no
+          sino do topo.
+        </Text>
+      </View>
+    );
+  }
+
+  return (
+    <Botao
+      titulo={ligando ? 'Aguardando…' : 'Ativar avisos'}
+      variante="secundario"
+      aoPressionar={aoLigar}
+      desabilitado={ligando}
       estilo={{ marginTop: tema.espacamento.md }}
     />
   );

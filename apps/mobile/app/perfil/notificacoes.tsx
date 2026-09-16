@@ -10,7 +10,7 @@
  * segue aparecendo no sino do Dashboard — é a fonte confiável.
  */
 import { useCallback, useEffect, useState } from 'react';
-import { ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
+import { Platform, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import tema from '@decola/theme';
 import { Aviso } from '@/componentes/Aviso';
@@ -23,7 +23,31 @@ import {
   salvarPreferencias,
   type CategoriaNotificacao,
 } from '@/dados/preferencias';
+import {
+  desligarAvisos,
+  estadoDosAvisos,
+  ligarAvisos,
+  type EstadoDosAvisos,
+} from '@/dados/avisosNoCelular';
 import { textoDoErro } from '@/lib/erros';
+
+/** O que dizer sobre o aparelho, em cada situação que o navegador impõe. */
+function textoDoEstado(estado: EstadoDosAvisos): string {
+  switch (estado) {
+    case 'ligado':
+      return 'Você recebe os avisos na barra de notificações, mesmo com o app fechado.';
+    case 'desligado':
+      return 'Ligue para receber na barra de notificações, mesmo com o app fechado.';
+    case 'bloqueado':
+      return 'As notificações estão bloqueadas nas permissões do navegador para este site. ' +
+        'Só por lá dá para liberar de novo.';
+    case 'exige_instalacao':
+      return 'No iPhone, os avisos só funcionam com o Decola instalado na tela inicial. ' +
+        'Instale em Configurações e volte aqui.';
+    default:
+      return 'Este navegador não recebe avisos. Tudo continua no sino, dentro do aplicativo.';
+  }
+}
 
 type Estado =
   | { nome: 'carregando' }
@@ -37,7 +61,12 @@ export default function PreferenciasDeNotificacao() {
   const [estado, setEstado] = useState<Estado>({ nome: 'carregando' });
   const [preferencias, setPreferencias] =
     useState<Record<CategoriaNotificacao, boolean>>(PREFERENCIAS_PADRAO);
-  const [aviso, setAviso] = useState<{ texto: string; tom: 'erro' | 'sucesso' } | null>(null);
+  const [aviso, setAviso] = useState<{
+    texto: string;
+    tom: 'erro' | 'sucesso' | 'alerta';
+  } | null>(null);
+  const [avisos, setAvisos] = useState<EstadoDosAvisos>(estadoDosAvisos);
+  const [mexendoNosAvisos, setMexendoNosAvisos] = useState(false);
 
   const carregar = useCallback(async () => {
     if (!usuarioId) return;
@@ -67,6 +96,30 @@ export default function PreferenciasDeNotificacao() {
   if (estado.nome === 'erro') {
     return <TelaMensagem mensagem={estado.mensagem} aoTentarNovamente={carregar} />;
   }
+
+  const alternarAvisos = async (ligar: boolean) => {
+    setMexendoNosAvisos(true);
+    setAviso(null);
+    try {
+      if (ligar) {
+        const resultado = await ligarAvisos();
+        setAvisos(resultado);
+        setAviso(
+          resultado === 'ligado'
+            ? { texto: 'Pronto. Este aparelho vai avisar você.', tom: 'sucesso' }
+            : { texto: textoDoEstado(resultado), tom: 'alerta' },
+        );
+      } else {
+        await desligarAvisos();
+        setAvisos('desligado');
+        setAviso({ texto: 'Este aparelho não vai mais avisar.', tom: 'sucesso' });
+      }
+    } catch (e) {
+      setAviso({ texto: textoDoErro(e, 'Não foi possível alterar os avisos.'), tom: 'erro' });
+    } finally {
+      setMexendoNosAvisos(false);
+    }
+  };
 
   const alternar = async (chave: CategoriaNotificacao, ligado: boolean) => {
     const anterior = preferencias;
@@ -99,6 +152,26 @@ export default function PreferenciasDeNotificacao() {
         </Text>
 
         {aviso ? <Aviso mensagem={aviso.texto} tom={aviso.tom} /> : null}
+
+        {/* ESTE APARELHO, antes das categorias — e de propósito.
+            Escolher "quero saber de pedidos" não serve de nada se o aparelho
+            não recebe nada. A permissão é a chave geral; as categorias abaixo
+            só decidem o que passa por ela. */}
+        {Platform.OS === 'web' ? (
+          <View style={estilos.item}>
+            <View style={estilos.itemTexto}>
+              <Text style={estilos.itemTitulo}>Avisar neste aparelho</Text>
+              <Text style={estilos.itemDescricao}>{textoDoEstado(avisos)}</Text>
+            </View>
+            {avisos === 'ligado' || avisos === 'desligado' ? (
+              <Switch
+                value={avisos === 'ligado'}
+                onValueChange={(ligar) => void alternarAvisos(ligar)}
+                disabled={mexendoNosAvisos}
+              />
+            ) : null}
+          </View>
+        ) : null}
 
         {CATEGORIAS_NOTIFICACAO.map((categoria) => (
           <View key={categoria.chave} style={estilos.item}>

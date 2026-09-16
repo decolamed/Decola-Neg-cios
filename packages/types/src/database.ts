@@ -390,6 +390,20 @@ export type DispositivoPush = {
   atualizado_em: string;
 };
 
+/** Um navegador/aparelho inscrito para receber avisos de push (0066). */
+export type InscricaoWebPush = {
+  id: string;
+  usuario_id: string;
+  /** O endereço de entrega daquele aparelho. Único: identifica a inscrição. */
+  endpoint: string;
+  /** As duas chaves da criptografia de ponta a ponta (RFC 8291). */
+  p256dh: string;
+  auth: string;
+  agente: string | null;
+  criado_em: string;
+  usado_em: string | null;
+};
+
 export type PreferenciaNotificacao = {
   usuario_id: string;
   estoque: boolean;
@@ -557,6 +571,11 @@ export type Database = {
       solicitacoes_cancelamento: Linha<SolicitacaoCancelamento>;
       dispositivos_push: Linha<DispositivoPush>;
       preferencias_notificacao: Linha<PreferenciaNotificacao>;
+      inscricoes_web_push: Linha<
+        InscricaoWebPush,
+        Omit<InscricaoWebPush, 'id' | 'criado_em' | 'usado_em'> & { id?: string },
+        Partial<InscricaoWebPush>
+      >;
       logs_auditoria: Linha<LogAuditoria>;
       administradores_plataforma: Linha<AdministradorPlataforma>;
       pedidos: Linha<Pedido>;

@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { observarInstalacao } from '@/lib/instalacao';
+import { prepararAvisos } from '@/dados/avisosNoCelular';
 import { Stack } from 'expo-router';
 import { useFonts } from 'expo-font';
 import { StatusBar } from 'expo-status-bar';
@@ -67,6 +68,10 @@ export default function LayoutRaiz() {
    */
   useEffect(() => {
     observarInstalacao();
+    // Registrar o Service Worker não pede permissão nem incomoda ninguém — só
+    // deixa pronto. Precisa ser cedo porque o registro é assíncrono: começar
+    // só no toque do botão faria o primeiro toque falhar.
+    void prepararAvisos();
   }, []);
 
   useEffect(() => {
